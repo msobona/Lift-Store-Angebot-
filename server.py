@@ -831,7 +831,7 @@ def compose_offer(payload: ComposeOfferRequest):
         "meta": {
             "offerNumber": f"ANG-{created.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
             "createdAt": created.isoformat(timespec="seconds"),
-            "validUntil": (created + timedelta(days=30)).date().isoformat(),
+            "validUntil": (created + timedelta(days=30)).strftime("%d.%m.%Y"),
             "preparedBy": prepared_by,
             "templateSource": "Anhang zu Software_v2.6.X.docx",
             "documentDate": created.strftime("%d.%m.%Y"),
@@ -854,7 +854,6 @@ def compose_offer(payload: ComposeOfferRequest):
             "standardLead": template.get("standardLead", ""),
             "recommendation": template["recommendation"],
             "footnotes": template.get("footnotes", []),
-            "coverImage": template.get("coverImage"),
             "annexLabel": template.get("documentLabel", "Anhang zur Software"),
             "configurationSummary": {
                 "instanceName": instance_name,
