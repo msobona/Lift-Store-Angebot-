@@ -406,6 +406,7 @@
             <li><a href="#sec-requirements">Anforderungen</a></li>
             <li><a href="#sec-responsibilities">Zuständigkeiten</a></li>
             <li><a href="#sec-documents">Begleitende Dokumente</a></li>
+            <li><a href="#sec-terms">Kaufmännische Bedingungen (Schweiz)</a></li>
           </ol>
         </nav>
 
@@ -503,29 +504,94 @@
           <p>${escapeHtml(doc.content.closing)}</p>
         </section>
 
-        <section class="offer-signoff">
-          <div>
-            <p>Ort / Datum</p>
-            <div class="offer-sign-line"></div>
-          </div>
-          <div>
-            <p>Unterschrift Kunde</p>
-            <div class="offer-sign-line"></div>
-          </div>
-          <div>
-            <p>Unterschrift SSI SCHÄFER</p>
-            <div class="offer-sign-line"></div>
-          </div>
-        </section>
+        ${renderCommercialTermsHtml(doc.content.commercialTerms)}
 
         <div class="offer-footer">
           <div>
             <div class="offer-wamas-mark offer-wamas-mark-sm">WAMAS<span>Lift &amp; Store</span></div>
-            <div>${escapeHtml(doc.meta.offerNumber)} · ${escapeHtml(doc.meta.documentDate || formatDateDe(doc.meta.createdAt))}</div>
+            <div>${escapeHtml(doc.meta.offerNumber)} · ${escapeHtml(doc.meta.documentDate || formatDateDe(doc.meta.createdAt))} · gültig bis ${escapeHtml(formatDateDe(doc.meta.validUntil))}</div>
           </div>
           <img class="offer-logo-ssi offer-logo-ssi-sm" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
         </div>
       </div>`;
+  }
+
+  function linkifyUrls(text) {
+    return escapeHtml(text).replace(
+      /(https?:\/\/[^\s]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+    );
+  }
+
+  function renderCommercialTermsHtml(terms) {
+    if (!terms || !(terms.sections || []).length) return "";
+    const sectionsHtml = (terms.sections || []).map((sec) => {
+      const paras = (sec.paragraphs || [])
+        .map((p) => `<p>${linkifyUrls(p)}</p>`)
+        .join("");
+      const bullets = (sec.bullets || []).length
+        ? `<ul>${sec.bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>`
+        : "";
+      const after = (sec.paragraphsAfter || [])
+        .map((p) => `<p>${linkifyUrls(p)}</p>`)
+        .join("");
+      const subs = (sec.subsections || [])
+        .map((sub) => `
+          <div class="offer-terms-sub">
+            <h4>${escapeHtml(sub.title)}</h4>
+            ${(sub.paragraphs || []).map((p) => `<p>${linkifyUrls(p)}</p>`).join("")}
+          </div>`)
+        .join("");
+      const table = sec.table
+        ? `<table class="offer-terms-table">
+            <thead><tr>${sec.table.headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead>
+            <tbody>
+              ${sec.table.rows.map((row) => `<tr>${row.map((c) => `<td>${escapeHtml(c)}</td>`).join("")}</tr>`).join("")}
+            </tbody>
+          </table>`
+        : "";
+      return `
+        <article class="offer-terms-section" id="term-${escapeHtml(sec.id)}">
+          <h3>${escapeHtml(sec.id)} ${escapeHtml(sec.title)}</h3>
+          ${paras}${bullets}${after}${subs}${table}
+        </article>`;
+    }).join("");
+
+    const closing = terms.closing || {};
+    const signs = (closing.signatories || [])
+      .map((s) => `
+        <div class="offer-signatory">
+          <div class="offer-sign-line"></div>
+          <strong>${escapeHtml(s.name)}</strong>
+          <span>${escapeHtml(s.title || "")}</span>
+          ${s.role ? `<span>${escapeHtml(s.role)}</span>` : ""}
+        </div>`)
+      .join("");
+
+    return `
+      <section class="offer-section offer-terms" id="sec-terms">
+        <div class="offer-terms-head">
+          <p class="offer-doc-label">Rechtliche Bedingungen</p>
+          <h2>${escapeHtml(terms.title || "Kaufmännische Bedingungen")}</h2>
+          <p>Version ${escapeHtml(terms.version || "")} · Angebotsgültigkeit ${escapeHtml(String(terms.validityDays || 14))} Tage</p>
+        </div>
+        ${sectionsHtml}
+        <div class="offer-terms-closing">
+          <p>${escapeHtml(closing.text || "")}</p>
+          <p><strong>${escapeHtml(closing.greeting || "Freundliche Grüsse")}</strong><br>${escapeHtml(closing.company || "SSI SCHÄFER AG")}</p>
+          <div class="offer-signatories">${signs}</div>
+          <div class="offer-customer-accept">
+            <div>
+              <p>Ort / Datum</p>
+              <div class="offer-sign-line"></div>
+            </div>
+            <div>
+              <p>Unterschrift / Stempel Kunde</p>
+              <div class="offer-sign-line"></div>
+            </div>
+          </div>
+        </div>
+      </section>`;
   }
 
   // -------------------- LICENSE --------------------

@@ -24,6 +24,7 @@ OFFERS_DIR = DATA_DIR / "offers"
 CATALOG_FILE = DATA_DIR / "catalog.json"
 IT_CATALOG_FILE = DATA_DIR / "it_catalog.json"
 OFFER_TEMPLATE_FILE = DATA_DIR / "offer_template.json"
+COMMERCIAL_TERMS_FILE = DATA_DIR / "commercial_terms_ch.json"
 
 OFFERS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -46,6 +47,10 @@ def load_it_catalog() -> Dict[str, Any]:
 
 def load_offer_template() -> Dict[str, Any]:
     return json.loads(OFFER_TEMPLATE_FILE.read_text(encoding="utf-8"))
+
+
+def load_commercial_terms() -> Dict[str, Any]:
+    return json.loads(COMMERCIAL_TERMS_FILE.read_text(encoding="utf-8"))
 
 
 def offer_path(offer_id: str) -> Path:
@@ -676,6 +681,11 @@ def get_offer_template():
     return load_offer_template()
 
 
+@app.get("/api/offer/commercial-terms")
+def get_commercial_terms():
+    return load_commercial_terms()
+
+
 class ComposeOfferRequest(BaseModel):
     licenseOfferId: Optional[str] = None
     itOfferId: Optional[str] = None
@@ -878,6 +888,8 @@ def compose_offer(payload: ComposeOfferRequest):
     }
 
     created = datetime.now()
+    commercial_terms = load_commercial_terms()
+    validity_days = int(commercial_terms.get("validityDays") or 14)
     intro_variant = (
         template.get("introOrderHandling")
         if has_order_handling
@@ -888,9 +900,10 @@ def compose_offer(payload: ComposeOfferRequest):
         "meta": {
             "offerNumber": f"ANG-{created.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
             "createdAt": created.isoformat(timespec="seconds"),
-            "validUntil": (created + timedelta(days=30)).strftime("%d.%m.%Y"),
+            "validUntil": (created + timedelta(days=validity_days)).strftime("%d.%m.%Y"),
+            "validityDays": validity_days,
             "preparedBy": prepared_by,
-            "templateSource": "Anhang zu Software_v2.6.X.docx",
+            "templateSource": "Anhang zu Software_v2.6.X.docx · Kaufmännische Bedingungen CH 09.2022",
             "documentDate": created.strftime("%d.%m.%Y"),
         },
         "customer": customer,
@@ -933,6 +946,7 @@ def compose_offer(payload: ComposeOfferRequest):
             "documents": template["documents"],
             "closing": template["closing"],
             "itOfferSections": (it_offer or {}).get("offerSections") or [],
+            "commercialTerms": commercial_terms,
         },
         "commercialLines": commercial,
         "priceSummary": price_summary,

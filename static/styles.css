@@ -1147,6 +1147,142 @@ textarea:focus {
 
 .offer-footer img { height: 26px; }
 
+/* Kaufmännische Bedingungen */
+.offer-terms {
+  margin-top: 2rem;
+}
+
+.offer-terms-head {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--ssi-yellow);
+  border-left: 6px solid #111;
+}
+
+.offer-terms-head h2 {
+  margin: 0.15rem 0;
+  background: transparent;
+  padding: 0;
+  display: block;
+  font-size: 1.15rem;
+}
+
+.offer-terms-head p {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+}
+
+.offer-terms-section {
+  margin: 0 0 1.1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #ececec;
+}
+
+.offer-terms-section h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  border-bottom: 2px solid var(--ssi-yellow);
+  padding-bottom: 0.2rem;
+}
+
+.offer-terms-section p,
+.offer-terms-section li {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.offer-terms-section ul {
+  margin: 0.35rem 0 0.55rem;
+  padding-left: 1.2rem;
+}
+
+.offer-terms-sub {
+  margin: 0.65rem 0;
+  padding-left: 0.65rem;
+  border-left: 3px solid var(--ssi-line);
+}
+
+.offer-terms-sub h4 {
+  margin: 0 0 0.3rem;
+  font-size: 0.88rem;
+}
+
+.offer-terms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 0.5rem;
+}
+
+.offer-terms-table th,
+.offer-terms-table td {
+  border: 1px solid var(--ssi-line);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+}
+
+.offer-terms-table th {
+  background: #efefef;
+}
+
+.offer-terms-closing {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+
+.offer-terms-closing > p {
+  font-size: 0.92rem;
+  margin: 0 0 0.75rem;
+}
+
+.offer-signatories {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.offer-signatory {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.82rem;
+}
+
+.offer-signatory strong {
+  margin-top: 0.35rem;
+}
+
+.offer-signatory span {
+  color: var(--ssi-muted);
+}
+
+.offer-customer-accept {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ssi-line);
+}
+
+.offer-customer-accept p {
+  margin: 0 0 0.45rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ssi-muted);
+}
+
+.offer-terms-section a {
+  color: inherit;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
 @media (max-width: 960px) {
   .offer-cover-meta,
   .offer-party-grid,
@@ -1155,7 +1291,9 @@ textarea:focus {
   .offer-req-grid,
   .offer-signoff,
   .offer-price-summary,
-  .offer-totals-box {
+  .offer-totals-box,
+  .offer-signatories,
+  .offer-customer-accept {
     grid-template-columns: 1fr;
   }
   .offer-legend { columns: 1; }
