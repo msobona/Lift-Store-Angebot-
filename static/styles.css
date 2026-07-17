@@ -572,21 +572,34 @@ textarea:focus {
   .hero-logos { justify-content: flex-start; }
 }
 
-/* ----- Offer document (Word-annex style) ----- */
+/* ----- Offer document (A4 / Word-annex style) ----- */
 .offer-doc {
-  background: #fff;
-  border: 1px solid var(--ssi-line);
+  background: transparent;
+  border: 0;
   padding: 0;
   color: var(--ssi-ink);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
-.offer-doc .empty-state { padding: 1.25rem; }
+.offer-doc .empty-state {
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid var(--ssi-line);
+}
 
+/* Screen preview = A4 Blatt (210 × 297 mm) */
 .offer-sheet {
+  width: 210mm;
+  min-height: 297mm;
   max-width: 210mm;
-  margin: 0 auto;
-  padding: 12mm 14mm 16mm;
+  margin: 0 auto 1.5rem;
+  padding: 15mm 18mm 18mm;
+  background: #fff;
+  border: 1px solid var(--ssi-line);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  font-size: 10.5pt;
+  line-height: 1.4;
 }
 
 .offer-cover {
@@ -1090,6 +1103,25 @@ textarea:focus {
   }
   .offer-legend { columns: 1; }
   .offer-cover-hero { min-height: 120px; }
+
+  /* Auf schmalen Screens A4-Blatt horizontal scrollbar / skaliert */
+  #view-offer {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 820px) {
+  .offer-sheet {
+    width: 210mm;
+    transform: scale(calc((100vw - 1.5rem) / 210mm));
+    transform-origin: top left;
+    margin-bottom: calc(297mm * (1 - ((100vw - 1.5rem) / 210mm)) * -1 + 1.5rem);
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 12mm 14mm 14mm;
 }
 
 @media print {
@@ -1105,24 +1137,86 @@ textarea:focus {
     display: none !important;
   }
 
-  #view-offer {
-    display: block !important;
+  html,
+  body {
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+    color: #000;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  body { background: #fff; }
-  main { width: 100%; margin: 0; padding: 0; }
+  main {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #view-offer {
+    display: block !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
   .workspace { display: block; }
   .preview { border: 0; }
   .preview-head { break-inside: avoid; }
 
   .offer-doc {
-    border: 0;
-    box-shadow: none;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   .offer-sheet {
-    max-width: none;
-    padding: 8mm 10mm;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    font-size: 10pt;
+    line-height: 1.35;
+  }
+
+  .offer-cover-band h1 {
+    font-size: 18pt;
+  }
+
+  .offer-section h2 {
+    font-size: 12pt;
+  }
+
+  .offer-price-table,
+  .offer-resp {
+    font-size: 8.5pt;
+  }
+
+  .offer-price-table th,
+  .offer-price-table td,
+  .offer-resp th,
+  .offer-resp td {
+    padding: 0.28rem 0.35rem;
+  }
+
+  .offer-price-summary {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .offer-price-card strong {
+    font-size: 12pt;
   }
 
   .offer-cover,
@@ -1139,10 +1233,16 @@ textarea:focus {
   .offer-fn,
   .offer-figure,
   .offer-price-card,
+  .offer-totals-box,
   tr {
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
-  a { text-decoration: none !important; border: 0 !important; }
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  a { text-decoration: none !important; border: 0 !important; color: inherit !important; }
 }
