@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WAMAS Lift & Store – Angebot Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand-mark">
+      <span class="brand-word">WAMAS</span>
+      <span class="brand-sub">Lift &amp; Store</span>
+    </div>
+    <nav class="top-nav">
+      <button type="button" class="nav-link active" data-view="configurator">Konfigurator</button>
+      <button type="button" class="nav-link" data-view="archive">Gespeicherte Angebote</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="view-configurator" class="view active">
+      <div class="hero">
+        <p class="hero-kicker">Angebot Generator</p>
+        <h1 class="hero-brand">WAMAS Lift &amp; Store</h1>
+        <p class="hero-lead">
+          Konfigurieren Sie Softwarepaket, Lift-Lizenzen und Module – und erzeugen Sie in Minuten ein druckfertiges Angebot.
+        </p>
+        <div class="hero-actions">
+          <button type="button" class="btn primary" id="btnScrollConfig">Konfiguration starten</button>
+          <button type="button" class="btn ghost" id="btnPrintPreview">Vorschau drucken</button>
+        </div>
+      </div>
+
+      <div id="configPanel" class="workspace">
+        <form id="offerForm" class="config-form" autocomplete="off">
+          <section class="block" id="blockCustomer">
+            <h2>Kunde &amp; Projekt</h2>
+            <p class="block-lead">Stammdaten für das Angebotskopfblatt.</p>
+            <div class="grid-2">
+              <label>Firma *
+                <input name="company" required placeholder="Muster GmbH" />
+              </label>
+              <label>Projektname
+                <input name="projectName" placeholder="LOGIMAT Halle 3" />
+              </label>
+              <label>Ansprechpartner
+                <input name="contact" placeholder="Max Mustermann" />
+              </label>
+              <label>E-Mail
+                <input name="email" type="email" placeholder="max@muster.de" />
+              </label>
+              <label>Telefon
+                <input name="phone" placeholder="+49 …" />
+              </label>
+              <label>Erstellt von
+                <input name="preparedBy" placeholder="Ihr Name" />
+              </label>
+              <label class="span-2">Adresse
+                <input name="address" placeholder="Straße, PLZ Ort" />
+              </label>
+            </div>
+          </section>
+
+          <section class="block">
+            <h2>Softwarepaket</h2>
+            <p class="block-lead">Wählen Sie die passende Ausbaustufe für die Anlage.</p>
+            <div id="packageOptions" class="option-list" role="radiogroup" aria-label="Pakete"></div>
+          </section>
+
+          <section class="block">
+            <h2>Anlage</h2>
+            <p class="block-lead">Anzahl der Vertical Lift Modules und Services.</p>
+            <div class="grid-2">
+              <label>Anzahl Lagerlifte
+                <input name="liftCount" type="number" min="1" max="50" value="1" />
+              </label>
+              <label>Schulungstage
+                <input name="trainingDays" type="number" min="0" max="30" value="1" />
+              </label>
+              <label class="check">
+                <input name="includeImplementation" type="checkbox" checked />
+                Implementierung &amp; Inbetriebnahme
+              </label>
+              <label class="check">
+                <input name="includeMaintenance" type="checkbox" checked />
+                Wartungsvertrag (jährlich)
+              </label>
+              <label>Rabatt
+                <select name="discountId" id="discountSelect"></select>
+              </label>
+            </div>
+          </section>
+
+          <section class="block">
+            <h2>Module &amp; Funktionen</h2>
+            <p class="block-lead">Paketfunktionen sind vorausgewählt. Ergänzen Sie optionale Module.</p>
+            <div id="featureOptions" class="feature-list"></div>
+          </section>
+
+          <section class="block">
+            <h2>Notizen</h2>
+            <label class="full">
+              <textarea name="notes" rows="3" placeholder="Besondere Anforderungen, Liefertermine, Annahmen …"></textarea>
+            </label>
+            <div class="form-actions">
+              <button type="button" class="btn ghost" id="btnRecalc">Neu berechnen</button>
+              <button type="submit" class="btn primary" id="btnSave">Angebot speichern</button>
+            </div>
+          </section>
+        </form>
+
+        <aside class="preview" id="previewPane" aria-live="polite">
+          <div class="preview-head">
+            <div>
+              <p class="preview-kicker">Angebotsvorschau</p>
+              <h2 id="previewOfferNo">—</h2>
+            </div>
+            <div class="preview-total">
+              <span>Brutto</span>
+              <strong id="previewGross">–</strong>
+            </div>
+          </div>
+
+          <div class="preview-meta" id="previewMeta"></div>
+          <div class="preview-table-wrap">
+            <table class="preview-table">
+              <thead>
+                <tr>
+                  <th>Position</th>
+                  <th>Menge</th>
+                  <th>Summe</th>
+                </tr>
+              </thead>
+              <tbody id="previewLines"></tbody>
+            </table>
+          </div>
+          <div class="preview-totals" id="previewTotals"></div>
+          <p class="disclaimer" id="previewDisclaimer"></p>
+          <div class="preview-actions">
+            <button type="button" class="btn ghost" id="btnExportExcel" disabled>Excel exportieren</button>
+            <button type="button" class="btn primary" id="btnPrint" disabled>Drucken / PDF</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="view-archive" class="view">
+      <div class="archive-head">
+        <h2>Gespeicherte Angebote</h2>
+        <p>Öffnen, exportieren oder löschen Sie zuvor gespeicherte Angebote.</p>
+      </div>
+      <div id="archiveList" class="archive-list"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>WAMAS Lift &amp; Store Angebot Generator</span>
+    <span>Richtwerte zu Demonstrationszwecken</span>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

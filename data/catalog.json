@@ -1,0 +1,160 @@
+{
+  "product": {
+    "name": "WAMAS Lift & Store",
+    "tagline": "Softwarelösung für einen oder mehrere Lagerlifte",
+    "vendor": "SSI SCHÄFER",
+    "currency": "EUR",
+    "vatRate": 0.19,
+    "validityDays": 30,
+    "disclaimer": "Alle Preise sind Richtwerte zu Demonstrationszwecken und stellen kein verbindliches Angebot von SSI SCHÄFER dar."
+  },
+  "basePackages": [
+    {
+      "id": "starter",
+      "name": "Starter",
+      "description": "Einstieg für einen Lagerlift mit Artikel- und Auftragsverwaltung.",
+      "basePrice": 12500,
+      "includedLiftLicenses": 1,
+      "features": ["item_mgmt", "order_mgmt", "touch_ui", "fifo_lifo"]
+    },
+    {
+      "id": "professional",
+      "name": "Professional",
+      "description": "Für wachsende Anlagen mit mehreren Liften, Chargen und Peripherie.",
+      "basePrice": 24500,
+      "includedLiftLicenses": 3,
+      "features": ["item_mgmt", "order_mgmt", "touch_ui", "fifo_lifo", "batch_expiry", "user_mgmt", "peripherals", "reports"]
+    },
+    {
+      "id": "enterprise",
+      "name": "Enterprise",
+      "description": "Volle Ausbaustufe inkl. ERP-Anbindung, Pick/Put-to-Light und Premium-Support.",
+      "basePrice": 42000,
+      "includedLiftLicenses": 8,
+      "features": ["item_mgmt", "order_mgmt", "touch_ui", "fifo_lifo", "batch_expiry", "user_mgmt", "peripherals", "reports", "erp_interface", "pick_put_light", "high_value_security", "premium_support"]
+    }
+  ],
+  "features": [
+    {
+      "id": "item_mgmt",
+      "name": "Artikelverwaltung",
+      "description": "Stammdaten, Tablar- und Behälterverwaltung inkl. Artikelbilder.",
+      "price": 0,
+      "category": "core"
+    },
+    {
+      "id": "order_mgmt",
+      "name": "Auftragsverwaltung",
+      "description": "Kommissionierung und Nachschub mit geführter Touchscreen-Bedienung.",
+      "price": 0,
+      "category": "core"
+    },
+    {
+      "id": "touch_ui",
+      "name": "Touchscreen-Führung",
+      "description": "Bedienerführung am Lift zur Fehlervermeidung und höheren Pickleistung.",
+      "price": 0,
+      "category": "core"
+    },
+    {
+      "id": "fifo_lifo",
+      "name": "FIFO / LIFO Strategien",
+      "description": "Einlagerungsstrategien für strukturierte Bestandsführung.",
+      "price": 1500,
+      "category": "process"
+    },
+    {
+      "id": "batch_expiry",
+      "name": "Chargen- & Verfallsdatum",
+      "description": "Verwaltung von Chargen und Mindesthaltbarkeitsdaten.",
+      "price": 2800,
+      "category": "process"
+    },
+    {
+      "id": "user_mgmt",
+      "name": "Benutzerverwaltung",
+      "description": "Rollen, Rechte und Nachvollziehbarkeit von Benutzeraktionen.",
+      "price": 1800,
+      "category": "security"
+    },
+    {
+      "id": "high_value_security",
+      "name": "High-Value Security",
+      "description": "Erweiterte Absicherung für hochwertige Artikel.",
+      "price": 3200,
+      "category": "security"
+    },
+    {
+      "id": "peripherals",
+      "name": "Peripherie-Anbindung",
+      "description": "Scanner, RFID-Leser, Tastaturen und Etikettendrucker.",
+      "price": 2400,
+      "category": "integration"
+    },
+    {
+      "id": "pick_put_light",
+      "name": "Pick by Light / Put to Light",
+      "description": "Visuelle Unterstützung für Kommissionierung und Einlagerung.",
+      "price": 4500,
+      "category": "integration"
+    },
+    {
+      "id": "erp_interface",
+      "name": "ERP-Schnittstelle",
+      "description": "Anbindung an übergeordnete ERP-/WMS-Systeme (z. B. SAP).",
+      "price": 8500,
+      "category": "integration"
+    },
+    {
+      "id": "reports",
+      "name": "Reports & Statistiken",
+      "description": "Leistungs- und Bestandskennzahlen für Betrieb und Optimierung.",
+      "price": 1600,
+      "category": "analytics"
+    },
+    {
+      "id": "premium_support",
+      "name": "Premium Support (12 Monate)",
+      "description": "Erweiterter Support inkl. Update-Fenster und priorisierter Reaktionszeit.",
+      "price": 4800,
+      "category": "service"
+    }
+  ],
+  "addons": [
+    {
+      "id": "extra_lift_license",
+      "name": "Zusätzliche Lift-Lizenz",
+      "description": "Lizenz für jeden weiteren Vertical Lift Module.",
+      "unitPrice": 3500,
+      "unit": "Lift"
+    },
+    {
+      "id": "implementation",
+      "name": "Implementierung & Inbetriebnahme",
+      "description": "Projektierung, Installation und Go-Live Begleitung.",
+      "unitPrice": 6500,
+      "unit": "Pauschale"
+    },
+    {
+      "id": "training",
+      "name": "Schulungspaket",
+      "description": "Key-User- und Bediener-Schulung vor Ort oder remote.",
+      "unitPrice": 2200,
+      "unit": "Tag"
+    },
+    {
+      "id": "maintenance",
+      "name": "Wartungsvertrag (jährlich)",
+      "description": "Softwarepflege, Patches und telefonischer Support.",
+      "unitPrice": 18,
+      "unit": "% vom Softwarewert / Jahr",
+      "percentOfSoftware": true
+    }
+  ],
+  "discounts": [
+    { "id": "none", "name": "Kein Rabatt", "percent": 0 },
+    { "id": "partner", "name": "Partner-Rabatt", "percent": 5 },
+    { "id": "volume", "name": "Mengenrabatt", "percent": 8 },
+    { "id": "campaign", "name": "Aktionsrabatt", "percent": 12 }
+  ]
+}
