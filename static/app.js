@@ -8,6 +8,7 @@
     savedOfferId: null,
     savedLicenseId: null,
     savedItId: null,
+    editingFromOfferId: null,
   };
 
   const licenseForm = document.getElementById("licenseForm");
@@ -154,6 +155,7 @@
     const body = {
       license: state.licenseOffer || null,
       it: state.itOffer || null,
+      basedOnOfferNumber: state.editingFromOfferId || null,
     };
     try {
       const endpoint = save ? "/api/offer/compose/save" : "/api/offer/compose";
@@ -163,15 +165,190 @@
       });
       state.offerDocument = doc;
       state.savedOfferId = doc.id || doc.meta.offerNumber;
+      const previousId = state.editingFromOfferId;
+      state.editingFromOfferId = null;
       renderOfferDocument(doc);
       document.getElementById("btnPrintOffer").disabled = false;
       document.getElementById("btnSaveOfferDoc").disabled = false;
       document.getElementById("btnExcelOfferDoc").disabled = !state.savedOfferId;
       switchView("offer");
-      if (notify) alert(`Gespeichert: ${doc.meta.offerNumber}`);
+      if (notify || previousId) {
+        const rev = previousId ? `\n(Neu erzeugt aus ${previousId})` : "";
+        alert(`Gespeichert: ${doc.meta.offerNumber}${rev}`);
+      }
     } catch (err) {
       alert(err.message);
     }
+  }
+
+  function setFormValue(form, name, value) {
+    const el = form.elements.namedItem(name);
+    if (!el) return;
+    if (el instanceof RadioNodeList) {
+      el.value = value == null ? "" : String(value);
+      return;
+    }
+    el.value = value == null ? "" : String(value);
+  }
+
+  function fillLicenseFormFromOffer(offer) {
+    if (!offer) return;
+    const c = offer.customer || {};
+    const cfg = offer.configuration || {};
+    setFormValue(licenseForm, "company", c.company || "");
+    setFormValue(licenseForm, "projectName", c.projectName || "");
+    setFormValue(licenseForm, "contact", c.contact || "");
+    setFormValue(licenseForm, "email", c.email || "");
+    setFormValue(licenseForm, "address", c.address || "");
+    setFormValue(licenseForm, "preparedBy", cfg.preparedBy || "");
+    setFormValue(licenseForm, "notes", cfg.notes || "");
+    setFormValue(licenseForm, "instanceCount", cfg.instanceCount ?? 1);
+    setFormValue(licenseForm, "extraOpeningClients", cfg.extraOpeningClients ?? 0);
+    setFormValue(licenseForm, "extraAdminClients", cfg.extraAdminClients ?? 0);
+    setFormValue(licenseForm, "mobileTerminalClients", cfg.mobileTerminalClients ?? 0);
+    setFormValue(licenseForm, "thirdPartyVlmTypes", cfg.thirdPartyVlmTypes ?? 0);
+    setFormValue(licenseForm, "testInstances", cfg.testInstances ?? 0);
+    setFormValue(licenseForm, "upgradeYears", cfg.upgradeYears ?? 0);
+
+    const instanceId = cfg.instanceId || "basic";
+    const radio = licenseForm.querySelector(`input[name="instanceId"][value="${instanceId}"]`);
+    if (radio) {
+      radio.checked = true;
+      licenseForm.querySelectorAll("#instanceOptions .option").forEach((el) => el.classList.remove("selected"));
+      radio.closest(".option")?.classList.add("selected");
+    }
+    renderIncluded();
+    renderAddons();
+    updateClientHints();
+
+    const selected = new Set(cfg.selectedAddons || []);
+    licenseForm.querySelectorAll('input[name="addon"]').forEach((el) => {
+      el.checked = selected.has(el.value) && !el.disabled;
+    });
+  }
+
+  function fillItFormFromOffer(offer) {
+    if (!offer) return;
+    const c = offer.customer || {};
+    const cfg = offer.configuration || {};
+    setFormValue(itForm, "company", c.company || "");
+    setFormValue(itForm, "projectName", c.projectName || "");
+    setFormValue(itForm, "preparedBy", cfg.preparedBy || "");
+    setFormValue(itForm, "notes", cfg.notes || "");
+    setFormValue(itForm, "realizationPeriod", cfg.realizationPeriod || "");
+    setFormValue(itForm, "deviceCount", cfg.deviceCount ?? 1);
+    setFormValue(itForm, "zoneCount", cfg.zoneCount ?? 1);
+    setFormValue(itForm, "openingCount", cfg.openingCount ?? 1);
+    setFormValue(itForm, "trips", cfg.trips ?? 0);
+    setFormValue(itForm, "travelHoursPerTrip", cfg.travelHoursPerTrip ?? 0);
+    setFormValue(itForm, "kmPerTrip", cfg.kmPerTrip ?? 0);
+    setFormValue(itForm, "overnightCount", cfg.overnightCount ?? 0);
+    setFormValue(itForm, "mealCount", cfg.mealCount ?? 0);
+
+    const opts = cfg.options || {};
+    itForm.querySelectorAll('input[name="itOption"]').forEach((el) => {
+      el.checked = Boolean(opts[el.value]);
+    });
+
+    const exts = cfg.customExtensions || [];
+    for (let i = 1; i <= 5; i += 1) {
+      const ext = exts[i - 1] || {};
+      setFormValue(itForm, `extDesc${i}`, ext.description || "");
+      setFormValue(itForm, `extHours${i}`, ext.hours ?? 0);
+    }
+  }
+
+  async function openArchiveForEdit(id) {
+    const offer = await api(`/api/offers/${encodeURIComponent(id)}`);
+    state.editingFromOfferId = offer.meta?.offerNumber || offer.id || id;
+
+    if (offer.kind === "license") {
+      fillLicenseFormFromOffer(offer);
+      applyLicenseSelectionToIt();
+      await Promise.all([recalcLicense(), recalcIt()]);
+      switchView("license");
+      alert(`Lizenzkalkulation geladen: ${state.editingFromOfferId}\nAnpassen und danach unter „Angebot“ neu erzeugen.`);
+      return;
+    }
+
+    if (offer.kind === "it") {
+      fillItFormFromOffer(offer);
+      await recalcIt();
+      switchView("it");
+      alert(`IT-Kalkulation geladen: ${state.editingFromOfferId}\nAnpassen und danach unter „Angebot“ neu erzeugen.`);
+      return;
+    }
+
+    if (offer.kind === "offer_document") {
+      const license = offer.editable?.license || null;
+      const it = offer.editable?.it || null;
+      // Fallback: Quellen aus Archiv nachladen
+      let lic = license;
+      let itOffer = it;
+      if (!lic && offer.sources?.licenseOfferNumber) {
+        try { lic = await api(`/api/offers/${encodeURIComponent(offer.sources.licenseOfferNumber)}`); }
+        catch (_) { /* ignore */ }
+      }
+      if (!itOffer && offer.sources?.itOfferNumber) {
+        try { itOffer = await api(`/api/offers/${encodeURIComponent(offer.sources.itOfferNumber)}`); }
+        catch (_) { /* ignore */ }
+      }
+      if (!lic && !itOffer) {
+        // Mindest-Fallback aus Konfigurationszusammenfassung
+        const cfg = offer.content?.configurationSummary || {};
+        const cust = offer.customer || {};
+        fillLicenseFormFromOffer({
+          customer: cust,
+          configuration: {
+            instanceId: (cfg.instanceName || "").toLowerCase().includes("advanced") ? "advanced" : "basic",
+            instanceCount: cfg.instanceCount || 1,
+            preparedBy: offer.meta?.preparedBy || "",
+            selectedAddons: [],
+            extraOpeningClients: Math.max(0, (cfg.openingCount || 1) - (cfg.deviceCount || cfg.instanceCount || 1)),
+          },
+        });
+        fillItFormFromOffer({
+          customer: cust,
+          configuration: {
+            deviceCount: cfg.deviceCount || 1,
+            zoneCount: cfg.zoneCount || 1,
+            openingCount: cfg.openingCount || 1,
+            preparedBy: offer.meta?.preparedBy || "",
+            options: { orderHandling: Boolean(cfg.hasOrderHandling) },
+            customExtensions: [],
+          },
+        });
+      } else {
+        if (lic) fillLicenseFormFromOffer(lic);
+        if (itOffer) fillItFormFromOffer(itOffer);
+        if (lic && !itOffer) applyLicenseSelectionToIt();
+      }
+      await Promise.all([recalcLicense(), recalcIt()]);
+      switchView("license");
+      alert(
+        `Gesamtangebot geladen: ${state.editingFromOfferId}\n` +
+        `Jetzt bearbeiten (Lizenz/IT), danach „Angebot erzeugen“ für eine neue Version.`
+      );
+      return;
+    }
+
+    alert("Dieser Archiv-Eintrag kann nicht geladen werden.");
+  }
+
+  async function openArchivePreview(id) {
+    const offer = await api(`/api/offers/${encodeURIComponent(id)}`);
+    if (offer.kind === "offer_document") {
+      state.offerDocument = offer;
+      state.savedOfferId = offer.id || offer.meta?.offerNumber;
+      renderOfferDocument(offer);
+      document.getElementById("btnPrintOffer").disabled = false;
+      document.getElementById("btnSaveOfferDoc").disabled = false;
+      document.getElementById("btnExcelOfferDoc").disabled = !!state.savedOfferId;
+      switchView("offer");
+      return;
+    }
+    // Einzelkalkulation → in Formular laden und Vorschau zeigen
+    await openArchiveForEdit(id);
   }
 
   function renderOfferDocument(doc) {
@@ -343,6 +520,11 @@
               <span>Gültig bis</span>
               <strong>${escapeHtml(formatDateDe(doc.meta.validUntil))}</strong>
             </div>
+            ${doc.meta.revisionOf || doc.sources?.basedOnOfferNumber ? `
+            <div>
+              <span>Revision von</span>
+              <strong>${escapeHtml(doc.meta.revisionOf || doc.sources.basedOnOfferNumber)}</strong>
+            </div>` : ""}
           </div>
           <div class="offer-party-grid">
             <div class="offer-party">
@@ -903,15 +1085,17 @@
       const kindLabel = o.kind === "it" ? "IT" : o.kind === "offer_document" ? "Gesamtangebot" : "Lizenz";
       const amountText = o.kind === "offer_document"
         ? (o.amount || "—")
-        : money(o.amount, o.currency || "EUR");
+        : money(o.amount, o.currency || "CHF");
       return `
-      <article class="archive-item" data-id="${escapeHtml(o.id)}">
+      <article class="archive-item" data-id="${escapeHtml(o.id)}" data-kind="${escapeHtml(o.kind || "")}">
         <div>
           <h3>${escapeHtml(o.offerNumber)} <span class="muted">(${kindLabel})</span></h3>
           <p>${escapeHtml(o.company || "—")} · ${escapeHtml(o.summary || "")}</p>
           <p>${escapeHtml(String(amountText))} · ${escapeHtml(o.createdAt || "")}</p>
         </div>
         <div class="archive-actions">
+          <button type="button" class="btn primary" data-action="edit">Bearbeiten</button>
+          ${o.kind === "offer_document" ? '<button type="button" class="btn" data-action="view">Anzeigen</button>' : ""}
           <button type="button" class="btn" data-action="excel">Excel</button>
           <button type="button" class="btn danger" data-action="delete">Löschen</button>
         </div>
@@ -1012,13 +1196,23 @@
       if (!btn) return;
       const id = btn.closest(".archive-item")?.dataset.id;
       if (!id) return;
-      if (btn.dataset.action === "excel") {
-        window.location.href = `/api/offers/${encodeURIComponent(id)}/excel`;
-      }
-      if (btn.dataset.action === "delete") {
-        if (!confirm("Eintrag löschen?")) return;
-        await api(`/api/offers/${encodeURIComponent(id)}`, { method: "DELETE" });
-        await loadArchive();
+      try {
+        if (btn.dataset.action === "edit") {
+          await openArchiveForEdit(id);
+        }
+        if (btn.dataset.action === "view") {
+          await openArchivePreview(id);
+        }
+        if (btn.dataset.action === "excel") {
+          window.location.href = `/api/offers/${encodeURIComponent(id)}/excel`;
+        }
+        if (btn.dataset.action === "delete") {
+          if (!confirm("Eintrag löschen?")) return;
+          await api(`/api/offers/${encodeURIComponent(id)}`, { method: "DELETE" });
+          await loadArchive();
+        }
+      } catch (err) {
+        alert(err.message);
       }
     });
 

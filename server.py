@@ -691,6 +691,7 @@ class ComposeOfferRequest(BaseModel):
     itOfferId: Optional[str] = None
     license: Optional[Dict[str, Any]] = None
     it: Optional[Dict[str, Any]] = None
+    basedOnOfferNumber: Optional[str] = None
 
 
 def _load_saved_offer(offer_id: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -957,8 +958,16 @@ def compose_offer(payload: ComposeOfferRequest):
         "sources": {
             "licenseOfferNumber": (license_offer or {}).get("meta", {}).get("offerNumber"),
             "itOfferNumber": (it_offer or {}).get("meta", {}).get("offerNumber"),
+            "basedOnOfferNumber": payload.basedOnOfferNumber,
+        },
+        # Vollständige Quellkalkulationen für späteres Wiederöffnen / Bearbeiten
+        "editable": {
+            "license": license_offer,
+            "it": it_offer,
         },
     }
+    if payload.basedOnOfferNumber:
+        doc["meta"]["revisionOf"] = payload.basedOnOfferNumber
     return doc
 
 
@@ -968,6 +977,9 @@ def save_composed_offer(payload: ComposeOfferRequest):
     doc = compose_offer(payload)
     offer_id = doc["meta"]["offerNumber"]
     doc["id"] = offer_id
+    if payload.basedOnOfferNumber:
+        doc.setdefault("sources", {})["basedOnOfferNumber"] = payload.basedOnOfferNumber
+        doc.setdefault("meta", {})["revisionOf"] = payload.basedOnOfferNumber
     offer_path(offer_id).write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
     return doc
 
