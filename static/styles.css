@@ -603,19 +603,64 @@ textarea:focus {
 }
 
 .offer-cover {
-  margin: 0 0 1.75rem;
+  margin: 0 0 1.25rem;
 }
 
-.offer-cover-top {
+.offer-letterhead {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
   margin-bottom: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 4px solid var(--ssi-yellow);
 }
 
-.offer-logo-wamas { height: 38px; width: auto; }
-.offer-logo-ssi { height: 42px; width: auto; }
+.offer-letterhead-brand p {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ssi-muted);
+}
+
+.offer-wamas-mark {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  color: #111;
+}
+
+.offer-wamas-mark span {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ssi-muted);
+}
+
+.offer-wamas-mark-sm {
+  font-size: 0.95rem;
+  margin-bottom: 0.15rem;
+}
+
+.offer-wamas-mark-sm span {
+  display: inline;
+  margin-left: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.offer-logo-ssi {
+  display: block;
+  height: 28px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+}
+
+.offer-logo-ssi-sm {
+  height: 22px;
+  max-width: 120px;
+}
 
 .offer-cover-band {
   background: var(--ssi-yellow);
@@ -645,13 +690,7 @@ textarea:focus {
   font-size: 0.95rem;
 }
 
-.offer-cover-hero {
-  margin-top: 0;
-  min-height: 170px;
-  background-size: cover;
-  background-position: center 40%;
-  border-bottom: 4px solid var(--ssi-yellow);
-}
+/* kein grosses Cover-Bild – A4-Briefkopf bleibt kompakt */
 
 .offer-cover-meta {
   display: grid;
@@ -1102,7 +1141,6 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
   .offer-legend { columns: 1; }
-  .offer-cover-hero { min-height: 120px; }
 
   /* Auf schmalen Screens A4-Blatt horizontal scrollbar / skaliert */
   #view-offer {

@@ -116,6 +116,14 @@
       .replaceAll('"', "&quot;");
   }
 
+  function formatDateDe(value) {
+    if (!value) return "—";
+    const raw = String(value).slice(0, 10);
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return `${m[3]}.${m[2]}.${m[1]}`;
+    return String(value);
+  }
+
   async function ensureCurrentCalcs() {
     // frische Live-Daten aus den Formularen holen
     applyLicenseSelectionToIt();
@@ -289,8 +297,11 @@
     root.innerHTML = `
       <div class="offer-sheet">
         <header class="offer-cover">
-          <div class="offer-cover-top">
-            <img class="offer-logo-wamas" src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
+          <div class="offer-letterhead">
+            <div class="offer-letterhead-brand">
+              <div class="offer-wamas-mark">WAMAS<span>Lift &amp; Store</span></div>
+              <p>Softwarelösung für Vertical Lift Modules</p>
+            </div>
             <img class="offer-logo-ssi" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
           </div>
           <div class="offer-cover-band">
@@ -301,11 +312,11 @@
           <div class="offer-cover-meta">
             <div>
               <span>Version</span>
-              <strong>${escapeHtml(doc.branding.softwareVersionLabel || ("Version " + doc.branding.version))}</strong>
+              <strong>${escapeHtml(doc.branding.version || "2.8")}</strong>
             </div>
             <div>
               <span>Datum</span>
-              <strong>${escapeHtml(doc.meta.documentDate || "")}</strong>
+              <strong>${escapeHtml(doc.meta.documentDate || formatDateDe(doc.meta.createdAt))}</strong>
             </div>
             <div>
               <span>Angebotsnummer</span>
@@ -313,7 +324,7 @@
             </div>
             <div>
               <span>Gültig bis</span>
-              <strong>${escapeHtml(doc.meta.validUntil || "")}</strong>
+              <strong>${escapeHtml(formatDateDe(doc.meta.validUntil))}</strong>
             </div>
           </div>
           <div class="offer-party-grid">
@@ -491,10 +502,10 @@
 
         <div class="offer-footer">
           <div>
-            <img src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
-            <div>${escapeHtml(doc.meta.offerNumber)} · ${escapeHtml(doc.meta.documentDate || "")}</div>
+            <div class="offer-wamas-mark offer-wamas-mark-sm">WAMAS<span>Lift &amp; Store</span></div>
+            <div>${escapeHtml(doc.meta.offerNumber)} · ${escapeHtml(doc.meta.documentDate || formatDateDe(doc.meta.createdAt))}</div>
           </div>
-          <div class="ssi-badge"><img src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" /></div>
+          <img class="offer-logo-ssi offer-logo-ssi-sm" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
         </div>
       </div>`;
   }
