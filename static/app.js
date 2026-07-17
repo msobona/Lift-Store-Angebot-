@@ -5,6 +5,7 @@
     licenseOffer: null,
     itOffer: null,
     offerDocument: null,
+    savedOfferId: null,
     savedLicenseId: null,
     savedItId: null,
   };
@@ -121,7 +122,7 @@
     await Promise.all([recalcLicense(), recalcIt()]);
   }
 
-  async function composeOfferDocument() {
+  async function composeOfferDocument({ save = true, notify = false } = {}) {
     await ensureCurrentCalcs();
     if (!state.licenseOffer && !state.itOffer) {
       alert("Bitte zuerst Lizenz- und/oder IT-Kalkulation ausfüllen.");
@@ -132,14 +133,19 @@
       it: state.itOffer || null,
     };
     try {
-      const doc = await api("/api/offer/compose", {
+      const endpoint = save ? "/api/offer/compose/save" : "/api/offer/compose";
+      const doc = await api(endpoint, {
         method: "POST",
         body: JSON.stringify(body),
       });
       state.offerDocument = doc;
+      state.savedOfferId = doc.id || doc.meta.offerNumber;
       renderOfferDocument(doc);
       document.getElementById("btnPrintOffer").disabled = false;
+      document.getElementById("btnSaveOfferDoc").disabled = false;
+      document.getElementById("btnExcelOfferDoc").disabled = !state.savedOfferId;
       switchView("offer");
+      if (notify) alert(`Gespeichert: ${doc.meta.offerNumber}`);
     } catch (err) {
       alert(err.message);
     }
@@ -149,8 +155,9 @@
     const root = document.getElementById("offerDocument");
     const c = doc.customer || {};
     const cfg = doc.content.configurationSummary || {};
-    const licenseTotals = doc.totals.license;
-    const itTotals = doc.totals.it;
+    const summary = doc.priceSummary || {};
+    const licSum = summary.license;
+    const itSum = summary.it;
     const arch = doc.content.architecture || {};
     const req = doc.content.requirements || {};
 
@@ -158,31 +165,73 @@
     let lastSection = "";
     (doc.commercialLines || []).forEach((line) => {
       if (line.section !== lastSection) {
-        commercialRows.push(`<tr class="section-head"><td colspan="4">${escapeHtml(line.section)}</td></tr>`);
+        commercialRows.push(
+          `<tr class="section-head"><td colspan="7">${escapeHtml(line.section)}</td></tr>`
+        );
         lastSection = line.section;
       }
+      const unit = line.unitPrice != null
+        ? money(line.unitPrice, line.currency || "EUR")
+        : "";
       commercialRows.push(`
         <tr>
-          <td>${escapeHtml(line.name)}${line.description ? `<div class="muted">${escapeHtml(line.description)}</div>` : ""}</td>
+          <td class="num">${escapeHtml(line.pos ?? "")}</td>
+          <td>
+            <strong>${escapeHtml(line.name || "")}</strong>
+            ${line.sku ? `<div class="muted">${escapeHtml(line.sku)}</div>` : ""}
+            ${line.description ? `<div class="muted">${escapeHtml(line.description)}</div>` : ""}
+          </td>
           <td class="num">${escapeHtml(line.qty ?? "")}</td>
-          <td class="num">${line.hours != null ? escapeHtml(line.hours) : ""}</td>
+          <td class="num">${unit}</td>
+          <td class="num">${line.hours != null && line.hours !== 0 ? escapeHtml(line.hours) : ""}</td>
           <td class="num">${money(line.amount, line.currency || "EUR")}</td>
+          <td class="num">${escapeHtml(line.currency || "")}</td>
         </tr>`);
     });
-    if (licenseTotals) {
+
+    if (licSum?.total != null) {
       commercialRows.push(`
-        <tr class="total">
-          <td colspan="3">Softwarelizenzen IC Total</td>
-          <td class="num">${money(licenseTotals.net, licenseTotals.currency || "EUR")}</td>
+        <tr class="subtotal">
+          <td colspan="5">A · Softwarelizenzen IC Total${licSum.sllCount != null ? ` (SLL ${licSum.sllCount})` : ""}</td>
+          <td class="num">${money(licSum.total, licSum.currency || "EUR")}</td>
+          <td class="num">${escapeHtml(licSum.currency || "EUR")}</td>
         </tr>`);
     }
-    if (itTotals) {
+    if (itSum?.total != null) {
       commercialRows.push(`
-        <tr class="total">
-          <td colspan="3">IT-Aufwand Total exkl. MwSt</td>
-          <td class="num">${money(itTotals.totalAmount, itTotals.currency || "CHF")}</td>
+        <tr class="subtotal">
+          <td colspan="5">B+C · IT-Aufwand Total${itSum.workHours != null ? ` (${itSum.workHours} h)` : ""}</td>
+          <td class="num">${money(itSum.total, itSum.currency || "CHF")}</td>
+          <td class="num">${escapeHtml(itSum.currency || "CHF")}</td>
         </tr>`);
     }
+
+    const priceCards = `
+      <div class="offer-price-summary">
+        ${licSum ? `
+          <div class="offer-price-card">
+            <span>Softwarelizenzen (IC)</span>
+            <strong>${money(licSum.total, licSum.currency || "EUR")}</strong>
+            <small>
+              Zwischensumme ${money(licSum.subtotal, licSum.currency || "EUR")}
+              ${licSum.discountAmount ? ` · Rabatt ${licSum.discountPercent}% (− ${money(licSum.discountAmount, licSum.currency || "EUR")})` : ""}
+            </small>
+          </div>` : ""}
+        ${itSum ? `
+          <div class="offer-price-card">
+            <span>IT-Aufwand / Installation</span>
+            <strong>${money(itSum.total, itSum.currency || "CHF")}</strong>
+            <small>
+              Arbeit ${money(itSum.workAmount, itSum.currency || "CHF")} (${itSum.workHours || 0} h)
+              · Reise ${money(itSum.travelAmount, itSum.currency || "CHF")}
+            </small>
+          </div>` : ""}
+        <div class="offer-price-card offer-price-card-note">
+          <span>Währungen</span>
+          <strong>EUR + CHF</strong>
+          <small>${escapeHtml(summary.note || "Alle Beträge exkl. MwSt.")}</small>
+        </div>
+      </div>`;
 
     const standardHtml = (doc.content.standardFunctions || [])
       .map((fn, idx) => `
@@ -245,13 +294,10 @@
             <img class="offer-logo-ssi" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
           </div>
           <div class="offer-cover-band">
-            <p class="offer-doc-label">${escapeHtml(doc.content.documentLabel || "Anhang zur Software")}</p>
+            <p class="offer-doc-label">${escapeHtml(doc.content.documentLabel || "Angebot / Preisliste")}</p>
             <h1>${escapeHtml(doc.content.title)}</h1>
             <p class="offer-cover-sub">${escapeHtml(doc.content.subtitle)}</p>
           </div>
-          ${doc.content.coverImage ? `
-            <div class="offer-cover-hero" style="background-image:url('${escapeHtml(doc.content.coverImage)}')"></div>
-          ` : ""}
           <div class="offer-cover-meta">
             <div>
               <span>Version</span>
@@ -282,15 +328,44 @@
               <h3>SSI SCHÄFER</h3>
               <p><strong>Erstellt von</strong><br>${escapeHtml(doc.meta.preparedBy || "—")}</p>
               <p><strong>Konfiguration</strong><br>${cfgBits || "—"}</p>
-              <p class="muted">Vorlage: ${escapeHtml(doc.meta.templateSource)}</p>
+              <p class="muted">Quellen: ${escapeHtml(doc.sources?.licenseOfferNumber || "Lizenz")} · ${escapeHtml(doc.sources?.itOfferNumber || "IT")}</p>
             </div>
           </div>
+          ${priceCards}
         </header>
 
-        <nav class="offer-toc" aria-label="Inhaltsverzeichnis">
-          <h2>Inhaltsverzeichnis</h2>
+        <section class="offer-section offer-section-prices" id="sec-commercial">
+          <h2>1. Preisliste – alle Positionen</h2>
+          <p>Vollständige Aufstellung aller kalkulierten Preise (Softwarelizenzen IC und IT-Aufwand inkl. Reisekosten).</p>
+          <table class="offer-price-table offer-price-table-full">
+            <thead>
+              <tr>
+                <th>Pos</th>
+                <th>Bezeichnung</th>
+                <th>Menge</th>
+                <th>EP</th>
+                <th>Std.</th>
+                <th>Betrag</th>
+                <th>Währ.</th>
+              </tr>
+            </thead>
+            <tbody>${commercialRows.join("") || `<tr><td colspan="7">Keine Positionen kalkuliert.</td></tr>`}</tbody>
+          </table>
+          <div class="offer-totals-box">
+            ${licSum ? `<div><span>Softwarelizenzen IC</span><strong>${money(licSum.total, licSum.currency || "EUR")}</strong></div>` : ""}
+            ${itSum ? `<div><span>IT-Aufwand inkl. Reise</span><strong>${money(itSum.total, itSum.currency || "CHF")}</strong></div>` : ""}
+          </div>
+          <p class="offer-note">${escapeHtml(summary.note || "")}</p>
+        </section>
+
+        <div class="offer-annex-start">
+          <p class="offer-doc-label">${escapeHtml(doc.content.annexLabel || "Anhang zur Software")}</p>
+          <h2>Leistungsbeschreibung WAMAS® Lift &amp; Store</h2>
+        </div>
+
+        <nav class="offer-toc" aria-label="Inhaltsverzeichnis Anhang">
+          <h2>Inhaltsverzeichnis Anhang</h2>
           <ol>
-            <li><a href="#sec-commercial">Kommerzielle Positionen</a></li>
             <li><a href="#sec-scope">Umfang WAMAS Lift &amp; Store</a>
               <ol>
                 <li><a href="#sec-functions">Standard-Funktionen / Prozesse</a></li>
@@ -305,34 +380,14 @@
           </ol>
         </nav>
 
-        <section class="offer-section" id="sec-commercial">
-          <h2>0. Kommerzielle Positionen</h2>
-          <p>Zusammenfassung aus IC License Price List und Installationskalkulation für dieses Projekt.</p>
-          <table class="offer-price-table">
-            <thead>
-              <tr>
-                <th>Position</th>
-                <th>Menge</th>
-                <th>Stunden</th>
-                <th>Betrag</th>
-              </tr>
-            </thead>
-            <tbody>${commercialRows.join("") || `<tr><td colspan="4">Keine Positionen kalkuliert.</td></tr>`}</tbody>
-          </table>
-          <p class="offer-note">
-            IC-Lizenzpreise in EUR; IT-Aufwände gemäss Installationskalkulation in CHF.
-            ${licenseTotals ? ` SLL-Rabatt: ${licenseTotals.discountPercent}% (− ${money(licenseTotals.discountAmount, licenseTotals.currency || "EUR")}).` : ""}
-          </p>
-        </section>
-
         <section class="offer-section" id="sec-scope">
-          <h2>1. Umfang WAMAS Lift &amp; Store</h2>
+          <h2>A1. Umfang WAMAS Lift &amp; Store</h2>
           <p>${escapeHtml(doc.content.intro)}</p>
           ${doc.content.introVariant ? `<p><strong>${escapeHtml(doc.content.introVariant)}</strong></p>` : ""}
         </section>
 
         <section class="offer-section" id="sec-functions">
-          <h2>1.1 Standard-Funktionen / Prozesse</h2>
+          <h2>A1.1 Standard-Funktionen / Prozesse</h2>
           <p>${escapeHtml(doc.content.standardLead || "")}</p>
           <p>${escapeHtml(doc.content.recommendation)}</p>
           <div class="offer-footnotes">
@@ -342,16 +397,16 @@
         </section>
 
         <section class="offer-section" id="sec-options">
-          <h2>1.2 Mögliche Optionen für WAMAS® Lift &amp; Store</h2>
+          <h2>A1.2 Mögliche Optionen für WAMAS® Lift &amp; Store</h2>
           <p>${escapeHtml(doc.content.machineOptionsLead || "")}</p>
           <h3>Gewählte Software-Optionen</h3>
           <div class="offer-fn-list">${optionsHtml}</div>
-          <h3>1.2.1 Hardware-Optionen vom WAMAS® Lift &amp; Store</h3>
+          <h3>A1.2.1 Hardware-Optionen vom WAMAS® Lift &amp; Store</h3>
           <div class="offer-hw-grid">${hardwareHtml}</div>
         </section>
 
         <section class="offer-section" id="sec-clients">
-          <h2>1.3 Bedienoberfläche Bediener und Admin Client</h2>
+          <h2>A1.3 Bedienoberfläche Bediener und Admin Client</h2>
           <div class="offer-client-grid">
             <div class="offer-client">
               <h4>Touch Client</h4>
@@ -369,7 +424,7 @@
         </section>
 
         <section class="offer-section" id="sec-architecture">
-          <h2>2. ${escapeHtml(arch.title || "Standard-Systemarchitektur")}</h2>
+          <h2>A2. ${escapeHtml(arch.title || "Standard-Systemarchitektur")}</h2>
           <p>${escapeHtml(arch.text || "")}</p>
           ${arch.image ? `<figure class="offer-figure"><img src="${escapeHtml(arch.image)}" alt="Systemarchitektur WAMAS Lift & Store" /></figure>` : ""}
           <ul class="offer-legend">
@@ -378,30 +433,30 @@
         </section>
 
         <section class="offer-section" id="sec-requirements">
-          <h2>3. ${escapeHtml(req.title || "Anforderungen")}</h2>
+          <h2>A3. ${escapeHtml(req.title || "Anforderungen")}</h2>
           <p>${escapeHtml(req.note || "")}</p>
           <div class="offer-req-grid">
             <div>
-              <h3>3.1 Server</h3>
+              <h3>Server</h3>
               <ul>${listItems(req.server)}</ul>
             </div>
             <div>
-              <h3>3.3 Desktop / Admin Client</h3>
+              <h3>Desktop / Admin Client</h3>
               <ul>${listItems(req.desktop)}</ul>
             </div>
             <div>
-              <h3>3.4 Touch Client / IPC</h3>
+              <h3>Touch Client / IPC</h3>
               <ul>${listItems(req.touch)}</ul>
             </div>
           </div>
-          ${req.networkHighlight ? `<p class="offer-note"><strong>3.6 Netzwerk:</strong> ${escapeHtml(req.networkHighlight)}</p>` : ""}
+          ${req.networkHighlight ? `<p class="offer-note"><strong>Netzwerk:</strong> ${escapeHtml(req.networkHighlight)}</p>` : ""}
         </section>
 
         <section class="offer-section" id="sec-responsibilities">
-          <h2>4. Zuständigkeiten</h2>
-          <h3>4.1 Endabnahme</h3>
+          <h2>A4. Zuständigkeiten</h2>
+          <h3>Endabnahme</h3>
           <p>${escapeHtml(doc.content.acceptance || "")}</p>
-          <h3>4.2 Zuständigkeitsmatrix</h3>
+          <h3>Zuständigkeitsmatrix</h3>
           <table class="offer-resp">
             <thead>
               <tr><th>Aufgabe</th><th>SSI</th><th>Kunde</th></tr>
@@ -411,7 +466,7 @@
         </section>
 
         <section class="offer-section" id="sec-documents">
-          <h2>5. Begleitende Dokumente</h2>
+          <h2>A5. Begleitende Dokumente</h2>
           <p>${escapeHtml(doc.content.documentsLead || "")}</p>
           <ul class="offer-doc-list">
             ${(doc.content.documents || []).map((d) => `<li>${escapeHtml(d)}</li>`).join("")}
@@ -727,18 +782,24 @@
       archiveList.innerHTML = '<p class="empty-state">Noch keine Kalkulationen gespeichert.</p>';
       return;
     }
-    archiveList.innerHTML = offers.map((o) => `
-      <article class="archive-item" data-id="${o.id}">
+    archiveList.innerHTML = offers.map((o) => {
+      const kindLabel = o.kind === "it" ? "IT" : o.kind === "offer_document" ? "Gesamtangebot" : "Lizenz";
+      const amountText = o.kind === "offer_document"
+        ? (o.amount || "—")
+        : money(o.amount, o.currency || "EUR");
+      return `
+      <article class="archive-item" data-id="${escapeHtml(o.id)}">
         <div>
-          <h3>${o.offerNumber} <span class="muted">(${o.kind === "it" ? "IT" : "Lizenz"})</span></h3>
-          <p>${o.company || "—"} · ${o.summary || ""}</p>
-          <p>${money(o.amount, o.currency)} · ${o.createdAt || ""}</p>
+          <h3>${escapeHtml(o.offerNumber)} <span class="muted">(${kindLabel})</span></h3>
+          <p>${escapeHtml(o.company || "—")} · ${escapeHtml(o.summary || "")}</p>
+          <p>${escapeHtml(String(amountText))} · ${escapeHtml(o.createdAt || "")}</p>
         </div>
         <div class="archive-actions">
           <button type="button" class="btn" data-action="excel">Excel</button>
           <button type="button" class="btn danger" data-action="delete">Löschen</button>
         </div>
-      </article>`).join("");
+      </article>`;
+    }).join("");
   }
 
   function bindEvents() {
@@ -844,7 +905,16 @@
       }
     });
 
-    document.getElementById("btnComposeOffer").addEventListener("click", composeOfferDocument);
+    document.getElementById("btnComposeOffer").addEventListener("click", () => composeOfferDocument({ save: true }));
+    document.getElementById("btnSaveOfferDoc").addEventListener("click", () => composeOfferDocument({ save: true, notify: true }));
+    document.getElementById("btnExcelOfferDoc").addEventListener("click", () => {
+      const id = state.savedOfferId || state.offerDocument?.id || state.offerDocument?.meta?.offerNumber;
+      if (!id) {
+        alert("Bitte das Angebot zuerst speichern.");
+        return;
+      }
+      window.location.href = `/api/offers/${encodeURIComponent(id)}/excel`;
+    });
     document.getElementById("btnPrintOffer").addEventListener("click", () => {
       switchView("offer");
       window.print();

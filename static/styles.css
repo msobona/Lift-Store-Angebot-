@@ -686,6 +686,102 @@ textarea:focus {
   font-size: 0.9rem;
 }
 
+.offer-price-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.offer-price-card {
+  background: #111;
+  color: #fff;
+  padding: 0.9rem 1rem;
+  border-top: 4px solid var(--ssi-yellow);
+}
+
+.offer-price-card span {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ccc;
+  margin-bottom: 0.35rem;
+}
+
+.offer-price-card strong {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.offer-price-card small {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: #ddd;
+  line-height: 1.35;
+}
+
+.offer-price-card-note {
+  background: #fafafa;
+  color: var(--ssi-ink);
+  border: 1px solid var(--ssi-line);
+}
+
+.offer-price-card-note span { color: var(--ssi-muted); }
+.offer-price-card-note small { color: var(--ssi-muted); }
+
+.offer-section-prices {
+  break-before: page;
+}
+
+.offer-price-table-full th:first-child,
+.offer-price-table-full td:first-child {
+  width: 2.4rem;
+}
+
+.offer-price-table tr.subtotal td {
+  background: #222;
+  color: #fff;
+  font-weight: 800;
+}
+
+.offer-totals-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.offer-totals-box > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--ssi-yellow);
+  font-weight: 700;
+}
+
+.offer-totals-box strong {
+  font-size: 1.15rem;
+}
+
+.offer-annex-start {
+  margin: 2rem 0 1rem;
+  padding: 1rem 1.1rem;
+  background: var(--ssi-yellow);
+  border-left: 6px solid #111;
+  break-before: page;
+}
+
+.offer-annex-start h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.25rem;
+}
+
 .offer-toc {
   margin: 0 0 1.75rem;
   padding: 1rem 1.1rem;
@@ -989,7 +1085,9 @@ textarea:focus {
   .offer-hw-grid,
   .offer-client-grid,
   .offer-req-grid,
-  .offer-signoff {
+  .offer-signoff,
+  .offer-price-summary,
+  .offer-totals-box {
     grid-template-columns: 1fr;
   }
   .offer-legend { columns: 1; }

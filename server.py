@@ -711,36 +711,114 @@ def compose_offer(payload: ComposeOfferRequest):
         if it_opts.get(it_id) and lic_id in option_texts and lic_id not in selected_addons:
             options.append({"id": lic_id, **option_texts[lic_id]})
 
-    commercial = []
+    commercial: List[Dict[str, Any]] = []
+    pos = 0
+
+    def add_commercial(section: str, line: Dict[str, Any], *, amount_key: str = "total") -> None:
+        nonlocal pos
+        pos += 1
+        amount = line.get(amount_key, line.get("amount", line.get("total")))
+        commercial.append(
+            {
+                "pos": pos,
+                "section": section,
+                "sku": line.get("sku", ""),
+                "name": line.get("name"),
+                "description": line.get("description") or line.get("note") or "",
+                "qty": line.get("qty"),
+                "unitPrice": line.get("unitPrice"),
+                "hours": line.get("hours"),
+                "amount": amount,
+                "currency": line.get("currency"),
+                "category": line.get("category", ""),
+            }
+        )
+
     if license_offer:
+        lic_currency = license_offer.get("totals", {}).get("currency", "EUR")
         for line in license_offer.get("lines", []):
+            add_commercial(
+                "A · Softwarelizenzen (IC)",
+                {**line, "currency": lic_currency},
+                amount_key="total",
+            )
+        lic_totals = license_offer.get("totals") or {}
+        if lic_totals.get("discountAmount"):
+            pos += 1
             commercial.append(
                 {
-                    "section": "Softwarelizenzen (IC)",
-                    "name": line.get("name"),
-                    "description": line.get("description"),
-                    "qty": line.get("qty"),
-                    "amount": line.get("total"),
-                    "currency": license_offer.get("totals", {}).get("currency", "EUR"),
+                    "pos": pos,
+                    "section": "A · Softwarelizenzen (IC)",
+                    "sku": "DISC-SLL",
+                    "name": f"Mengenrabatt SLL ({lic_totals.get('discountPercent', 0)}%)",
+                    "description": license_offer.get("configuration", {}).get("discountLabel", ""),
+                    "qty": 1,
+                    "unitPrice": -float(lic_totals.get("discountAmount") or 0),
+                    "hours": None,
+                    "amount": -float(lic_totals.get("discountAmount") or 0),
+                    "currency": lic_currency,
+                    "category": "discount",
                 }
             )
+
     if it_offer:
+        it_currency = it_offer.get("totals", {}).get("currency", "CHF")
+        hourly = (it_offer.get("configuration") or {}).get("hourlyRate")
         for line in it_offer.get("lines", []):
-            if not (line.get("amount") or line.get("hours")):
-                continue
+            # nur relevante / gewählte Positionen mit Aufwand oder Betrag
             if line.get("category") == "option" and not line.get("selected") and not line.get("amount"):
                 continue
-            commercial.append(
-                {
-                    "section": "IT-Aufwand / Services",
-                    "name": line.get("name"),
-                    "description": line.get("description"),
-                    "qty": line.get("qty"),
-                    "hours": line.get("hours"),
-                    "amount": line.get("amount"),
-                    "currency": it_offer.get("totals", {}).get("currency", "CHF"),
-                }
+            if not (line.get("amount") or line.get("hours") or line.get("qty")):
+                continue
+            if line.get("category") == "travel" and not line.get("amount") and not line.get("qty"):
+                continue
+            section = (
+                "C · Reisekosten"
+                if line.get("category") == "travel"
+                else "B · IT-Aufwand / Services"
             )
+            unit = None
+            if line.get("category") != "travel" and hourly and line.get("hours"):
+                unit = hourly
+            elif line.get("qty") and line.get("amount") and line.get("category") == "travel":
+                qty = float(line.get("qty") or 0)
+                unit = round(float(line.get("amount") or 0) / qty, 2) if qty else None
+            add_commercial(
+                section,
+                {
+                    **line,
+                    "unitPrice": unit,
+                    "currency": it_currency,
+                },
+                amount_key="amount",
+            )
+
+    license_totals = (license_offer or {}).get("totals")
+    it_totals = (it_offer or {}).get("totals")
+    price_summary = {
+        "license": {
+            "label": "Softwarelizenzen IC",
+            "currency": (license_totals or {}).get("currency", "EUR"),
+            "subtotal": (license_totals or {}).get("subtotal"),
+            "discountPercent": (license_totals or {}).get("discountPercent"),
+            "discountAmount": (license_totals or {}).get("discountAmount"),
+            "total": (license_totals or {}).get("net"),
+            "sllCount": (license_totals or {}).get("sllCount"),
+        }
+        if license_totals
+        else None,
+        "it": {
+            "label": "IT-Aufwand / Installation",
+            "currency": (it_totals or {}).get("currency", "CHF"),
+            "workHours": (it_totals or {}).get("workHours"),
+            "workAmount": (it_totals or {}).get("workAmount"),
+            "travelAmount": (it_totals or {}).get("travelAmount"),
+            "total": (it_totals or {}).get("totalAmount"),
+        }
+        if it_totals
+        else None,
+        "note": "Lizenzpreise in EUR (IC Price List); IT-Aufwände in CHF gemäss Installationskalkulation. Alle Beträge exkl. MwSt.",
+    }
 
     created = datetime.now()
     intro_variant = (
@@ -768,7 +846,7 @@ def compose_offer(payload: ComposeOfferRequest):
             ),
         },
         "content": {
-            "documentLabel": template.get("documentLabel", "Anhang zur Software"),
+            "documentLabel": "Angebot / Preisliste",
             "title": template["title"],
             "subtitle": template["subtitle"],
             "intro": template["intro"],
@@ -777,6 +855,7 @@ def compose_offer(payload: ComposeOfferRequest):
             "recommendation": template["recommendation"],
             "footnotes": template.get("footnotes", []),
             "coverImage": template.get("coverImage"),
+            "annexLabel": template.get("documentLabel", "Anhang zur Software"),
             "configurationSummary": {
                 "instanceName": instance_name,
                 "instanceCount": (license_offer or {}).get("configuration", {}).get("instanceCount"),
@@ -800,15 +879,26 @@ def compose_offer(payload: ComposeOfferRequest):
             "itOfferSections": (it_offer or {}).get("offerSections") or [],
         },
         "commercialLines": commercial,
+        "priceSummary": price_summary,
         "totals": {
-            "license": (license_offer or {}).get("totals"),
-            "it": (it_offer or {}).get("totals"),
+            "license": license_totals,
+            "it": it_totals,
         },
         "sources": {
             "licenseOfferNumber": (license_offer or {}).get("meta", {}).get("offerNumber"),
             "itOfferNumber": (it_offer or {}).get("meta", {}).get("offerNumber"),
         },
     }
+    return doc
+
+
+@app.post("/api/offer/compose/save")
+def save_composed_offer(payload: ComposeOfferRequest):
+    """Speichert das zusammengesetzte Angebotsdokument (alle Preise) im Archiv."""
+    doc = compose_offer(payload)
+    offer_id = doc["meta"]["offerNumber"]
+    doc["id"] = offer_id
+    offer_path(offer_id).write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
     return doc
 
 
@@ -848,20 +938,46 @@ def api_list_offers():
             data = json.loads(path.read_text(encoding="utf-8"))
             kind = data.get("kind") or ("it" if str(data.get("id", "")).startswith("IT-") else "license")
             totals = data.get("totals", {})
-            items.append(
-                {
-                    "id": data.get("id") or path.stem,
-                    "kind": kind,
-                    "offerNumber": data.get("meta", {}).get("offerNumber", path.stem),
-                    "company": data.get("customer", {}).get("company", ""),
-                    "projectName": data.get("customer", {}).get("projectName", ""),
-                    "summary": data.get("configuration", {}).get("instanceName")
-                    or f"{data.get('configuration', {}).get('deviceCount', '')} Geräte",
-                    "amount": totals.get("net") if kind == "license" else totals.get("totalAmount"),
-                    "currency": totals.get("currency", "EUR"),
-                    "createdAt": data.get("meta", {}).get("createdAt"),
-                }
+            cfg = data.get("configuration") or data.get("content", {}).get("configurationSummary") or {}
+            summary = cfg.get("instanceName") or (
+                f"{cfg.get('deviceCount', '')} Geräte" if cfg.get("deviceCount") else ""
             )
+            if kind == "offer_document":
+                lic = (totals.get("license") or {}).get("net")
+                it_amt = (totals.get("it") or {}).get("totalAmount")
+                amount_parts = []
+                if lic is not None:
+                    amount_parts.append(f"{lic} EUR")
+                if it_amt is not None:
+                    amount_parts.append(f"{it_amt} CHF")
+                amount_display = " + ".join(amount_parts) if amount_parts else None
+                items.append(
+                    {
+                        "id": data.get("id") or path.stem,
+                        "kind": kind,
+                        "offerNumber": data.get("meta", {}).get("offerNumber", path.stem),
+                        "company": data.get("customer", {}).get("company", ""),
+                        "projectName": data.get("customer", {}).get("projectName", ""),
+                        "summary": summary or "Gesamtangebot",
+                        "amount": amount_display,
+                        "currency": "",
+                        "createdAt": data.get("meta", {}).get("createdAt"),
+                    }
+                )
+            else:
+                items.append(
+                    {
+                        "id": data.get("id") or path.stem,
+                        "kind": kind,
+                        "offerNumber": data.get("meta", {}).get("offerNumber", path.stem),
+                        "company": data.get("customer", {}).get("company", ""),
+                        "projectName": data.get("customer", {}).get("projectName", ""),
+                        "summary": summary,
+                        "amount": totals.get("net") if kind == "license" else totals.get("totalAmount"),
+                        "currency": totals.get("currency", "EUR"),
+                        "createdAt": data.get("meta", {}).get("createdAt"),
+                    }
+                )
         except Exception:
             continue
     return {"offers": items}
@@ -892,14 +1008,53 @@ def api_export_excel(offer_id: str):
     offer = json.loads(path.read_text(encoding="utf-8"))
     wb = Workbook()
     ws = wb.active
-    ws.title = "Kalkulation"
+    ws.title = "Preise"
     kind = offer.get("kind", "license")
     meta = offer["meta"]
     customer = offer["customer"]
-    totals = offer["totals"]
-    cfg = offer["configuration"]
+    totals = offer.get("totals") or {}
+    cfg = offer.get("configuration") or offer.get("content", {}).get("configurationSummary") or {}
 
-    if kind == "it":
+    if kind == "offer_document":
+        summary = offer.get("priceSummary") or {}
+        rows = [
+            ["WAMAS Lift & Store – Gesamtangebot / Preisliste"],
+            ["Nummer", meta.get("offerNumber")],
+            ["Datum", meta.get("documentDate")],
+            ["Kunde", customer.get("company")],
+            ["Projekt", customer.get("projectName")],
+            ["Konfiguration", cfg.get("instanceName")],
+            ["Geräte / Zonen / Öffnungen", f'{cfg.get("deviceCount")} / {cfg.get("zoneCount")} / {cfg.get("openingCount")}'],
+            [],
+            ["Pos", "Bereich", "SKU", "Bezeichnung", "Beschreibung", "Menge", "Einzelpreis", "Stunden", "Betrag", "Währung"],
+        ]
+        for line in offer.get("commercialLines") or []:
+            rows.append(
+                [
+                    line.get("pos"),
+                    line.get("section"),
+                    line.get("sku"),
+                    line.get("name"),
+                    line.get("description"),
+                    line.get("qty"),
+                    line.get("unitPrice"),
+                    line.get("hours"),
+                    line.get("amount"),
+                    line.get("currency"),
+                ]
+            )
+        lic = summary.get("license") or {}
+        it = summary.get("it") or {}
+        rows.extend(
+            [
+                [],
+                ["Zusammenfassung"],
+                ["Softwarelizenzen IC Total", lic.get("total"), lic.get("currency")],
+                ["IT-Aufwand Total", it.get("total"), it.get("currency")],
+                ["Hinweis", summary.get("note")],
+            ]
+        )
+    elif kind == "it":
         rows = [
             ["IT-Kalkulation WAMAS Lift & Store"],
             ["Nummer", meta.get("offerNumber")],
