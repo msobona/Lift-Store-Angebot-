@@ -999,14 +999,21 @@ def api_list_offers():
                 f"{cfg.get('deviceCount', '')} Geräte" if cfg.get("deviceCount") else ""
             )
             if kind == "offer_document":
-                lic = (totals.get("license") or {}).get("net")
+                lic = (totals.get("license") or {}).get("sellNetChf")
+                if lic is None:
+                    lic = (totals.get("license") or {}).get("net")
                 it_amt = (totals.get("it") or {}).get("totalAmount")
                 amount_parts = []
                 if lic is not None:
-                    amount_parts.append(f"{lic} EUR")
+                    amount_parts.append(f"{lic} CHF")
                 if it_amt is not None:
                     amount_parts.append(f"{it_amt} CHF")
-                amount_display = " + ".join(amount_parts) if amount_parts else None
+                grand = data.get("priceSummary", {}).get("grandTotalChf")
+                amount_display = (
+                    f"{grand} CHF"
+                    if grand is not None
+                    else (" + ".join(amount_parts) if amount_parts else None)
+                )
                 items.append(
                     {
                         "id": data.get("id") or path.stem,
