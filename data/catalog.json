@@ -5,10 +5,13 @@
     "tagline": "License Price List (IC prices)",
     "vendor": "SSI SCHÄFER",
     "currency": "EUR",
+    "offerCurrency": "CHF",
     "vatRate": 0.0,
     "validityDays": 30,
-    "priceBasis": "IC Prices, valid for projects sold from 1st January 2024",
-    "disclaimer": "IC Prices laut WAMAS Lift & Store License Price List (gültig für Projekte ab 01.01.2024). Kein verbindliches Endkundenangebot. Funktionsbeschreibungen abgeleitet aus WAMAS Lift & Store 2.8 Manuals (User/Administrator)."
+    "licenseMarginPercent": 28,
+    "eurToChfRate": 0.93,
+    "priceBasis": "IC Prices ab 01.01.2024 · Verkauf = IC + 28% Marge · EUR→CHF 0.93",
+    "disclaimer": "IC Prices laut WAMAS Lift & Store License Price List (gültig für Projekte ab 01.01.2024). Verkaufspreis inkl. 28% Marge, Umrechnung EUR→CHF mit Kurs 0.93. Kein verbindliches Endkundenangebot."
   },
   "functionCatalog": {
     "storage_demands": {

@@ -224,11 +224,29 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     discount = resolve_discount(catalog, sll)
     discount_amount = round(subtotal * (discount["percent"] / 100), 2)
     net = round(subtotal - discount_amount, 2)
-    vat_rate = float(catalog["product"].get("vatRate") or 0)
-    vat = round(net * vat_rate, 2)
-    gross = round(net + vat, 2)
+    product = catalog["product"]
+    margin_percent = float(product.get("licenseMarginPercent") or 0)
+    eur_to_chf = float(product.get("eurToChfRate") or 1)
+    margin_factor = 1.0 + (margin_percent / 100.0)
+    margin_amount_eur = round(net * (margin_percent / 100.0), 2)
+    sell_net_eur = round(net * margin_factor, 2)
+    sell_net_chf = round(sell_net_eur * eur_to_chf, 2)
+    vat_rate = float(product.get("vatRate") or 0)
+    vat = round(sell_net_chf * vat_rate, 2)
+    gross = round(sell_net_chf + vat, 2)
+
+    # Verkaufspreise je Position (IC → +Marge → CHF)
+    for line in lines:
+        ic_unit = float(line.get("unitPrice") or 0)
+        ic_total = float(line.get("total") or 0)
+        line["unitPriceIcEur"] = ic_unit
+        line["totalIcEur"] = ic_total
+        line["unitPrice"] = round(ic_unit * margin_factor * eur_to_chf, 2)
+        line["total"] = round(ic_total * margin_factor * eur_to_chf, 2)
+        line["currency"] = product.get("offerCurrency", "CHF")
+
     created = datetime.now()
-    valid_until = created + timedelta(days=int(catalog["product"]["validityDays"]))
+    valid_until = created + timedelta(days=int(product["validityDays"]))
     included_opening = instance["includedOpeningClients"] * payload.instanceCount
     included_admin = instance["includedAdminClients"] * payload.instanceCount
 
@@ -243,10 +261,11 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         if addon:
             scope.append(f"{addon['name']}: {addon.get('functionalDescription') or addon.get('description', '')}")
     scope.append(f"SLL-Einheiten: {sll} → Rabatt {discount['percent']}% ({discount['label']})")
+    scope.append(f"Marge {margin_percent:.0f}% auf IC · Kurs EUR→CHF {eur_to_chf}")
 
     return {
         "kind": "license",
-        "product": catalog["product"],
+        "product": product,
         "customer": payload.customer.model_dump(),
         "configuration": {
             "instanceId": payload.instanceId,
@@ -267,6 +286,8 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "sllCount": sll,
             "discountPercent": discount["percent"],
             "discountLabel": discount["label"],
+            "licenseMarginPercent": margin_percent,
+            "eurToChfRate": eur_to_chf,
         },
         "scopeOfSupply": scope,
         "lines": lines,
@@ -276,17 +297,24 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "discountPercent": discount["percent"],
             "discountAmount": discount_amount,
             "net": net,
+            "icCurrency": product.get("currency", "EUR"),
+            "marginPercent": margin_percent,
+            "marginAmountEur": margin_amount_eur,
+            "sellNetEur": sell_net_eur,
+            "eurToChfRate": eur_to_chf,
+            "sellNetChf": sell_net_chf,
             "vatRate": vat_rate,
             "vat": vat,
             "gross": gross,
-            "currency": catalog["product"]["currency"],
+            "currency": product.get("offerCurrency", "CHF"),
+            "amount": sell_net_chf,
         },
         "meta": {
             "createdAt": created.isoformat(timespec="seconds"),
             "validUntil": valid_until.date().isoformat(),
             "offerNumber": f"WLS-{created.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
-            "productVersion": catalog["product"].get("version", ""),
-            "priceBasis": catalog["product"].get("priceBasis", ""),
+            "productVersion": product.get("version", ""),
+            "priceBasis": product.get("priceBasis", ""),
         },
     }
 
@@ -735,27 +763,40 @@ def compose_offer(payload: ComposeOfferRequest):
         )
 
     if license_offer:
-        lic_currency = license_offer.get("totals", {}).get("currency", "EUR")
+        lic_totals = license_offer.get("totals") or {}
+        lic_currency = lic_totals.get("currency", "CHF")
+        margin_pct = float(lic_totals.get("marginPercent") or 0)
+        fx = float(lic_totals.get("eurToChfRate") or 1)
+        margin_factor = 1.0 + (margin_pct / 100.0)
         for line in license_offer.get("lines", []):
             add_commercial(
-                "A · Softwarelizenzen (IC)",
-                {**line, "currency": lic_currency},
+                "A · Softwarelizenzen (Verkauf CHF)",
+                {
+                    **line,
+                    "currency": lic_currency,
+                    "description": (
+                        f"{line.get('description') or ''} · IC {line.get('totalIcEur', line.get('total'))} EUR"
+                    ).strip(" ·"),
+                },
                 amount_key="total",
             )
-        lic_totals = license_offer.get("totals") or {}
         if lic_totals.get("discountAmount"):
+            disc_chf = round(float(lic_totals["discountAmount"]) * margin_factor * fx, 2)
             pos += 1
             commercial.append(
                 {
                     "pos": pos,
-                    "section": "A · Softwarelizenzen (IC)",
+                    "section": "A · Softwarelizenzen (Verkauf CHF)",
                     "sku": "DISC-SLL",
                     "name": f"Mengenrabatt SLL ({lic_totals.get('discountPercent', 0)}%)",
-                    "description": license_offer.get("configuration", {}).get("discountLabel", ""),
+                    "description": (
+                        f"{license_offer.get('configuration', {}).get('discountLabel', '')} · "
+                        f"IC −{lic_totals.get('discountAmount')} EUR"
+                    ).strip(),
                     "qty": 1,
-                    "unitPrice": -float(lic_totals.get("discountAmount") or 0),
+                    "unitPrice": -disc_chf,
                     "hours": None,
-                    "amount": -float(lic_totals.get("discountAmount") or 0),
+                    "amount": -disc_chf,
                     "currency": lic_currency,
                     "category": "discount",
                 }
@@ -795,14 +836,26 @@ def compose_offer(payload: ComposeOfferRequest):
 
     license_totals = (license_offer or {}).get("totals")
     it_totals = (it_offer or {}).get("totals")
+    lic_sell_chf = (license_totals or {}).get("sellNetChf")
+    it_total_chf = (it_totals or {}).get("totalAmount")
+    grand_chf = None
+    if lic_sell_chf is not None or it_total_chf is not None:
+        grand_chf = round(float(lic_sell_chf or 0) + float(it_total_chf or 0), 2)
+
     price_summary = {
         "license": {
-            "label": "Softwarelizenzen IC",
-            "currency": (license_totals or {}).get("currency", "EUR"),
+            "label": "Softwarelizenzen Verkauf",
+            "currency": (license_totals or {}).get("currency", "CHF"),
+            "icCurrency": (license_totals or {}).get("icCurrency", "EUR"),
             "subtotal": (license_totals or {}).get("subtotal"),
             "discountPercent": (license_totals or {}).get("discountPercent"),
             "discountAmount": (license_totals or {}).get("discountAmount"),
-            "total": (license_totals or {}).get("net"),
+            "icNet": (license_totals or {}).get("net"),
+            "marginPercent": (license_totals or {}).get("marginPercent"),
+            "marginAmountEur": (license_totals or {}).get("marginAmountEur"),
+            "sellNetEur": (license_totals or {}).get("sellNetEur"),
+            "eurToChfRate": (license_totals or {}).get("eurToChfRate"),
+            "total": lic_sell_chf,
             "sllCount": (license_totals or {}).get("sllCount"),
         }
         if license_totals
@@ -813,11 +866,15 @@ def compose_offer(payload: ComposeOfferRequest):
             "workHours": (it_totals or {}).get("workHours"),
             "workAmount": (it_totals or {}).get("workAmount"),
             "travelAmount": (it_totals or {}).get("travelAmount"),
-            "total": (it_totals or {}).get("totalAmount"),
+            "total": it_total_chf,
         }
         if it_totals
         else None,
-        "note": "Lizenzpreise in EUR (IC Price List); IT-Aufwände in CHF gemäss Installationskalkulation. Alle Beträge exkl. MwSt.",
+        "grandTotalChf": grand_chf,
+        "note": (
+            "Lizenzen: IC-Preise EUR + 28% Marge, umgerechnet mit Kurs EUR→CHF 0.93. "
+            "IT-Aufwände in CHF gemäss Installationskalkulation. Alle Beträge exkl. MwSt."
+        ),
     }
 
     created = datetime.now()
@@ -972,8 +1029,12 @@ def api_list_offers():
                         "company": data.get("customer", {}).get("company", ""),
                         "projectName": data.get("customer", {}).get("projectName", ""),
                         "summary": summary,
-                        "amount": totals.get("net") if kind == "license" else totals.get("totalAmount"),
-                        "currency": totals.get("currency", "EUR"),
+                        "amount": (
+                            totals.get("sellNetChf")
+                            if kind == "license"
+                            else totals.get("totalAmount")
+                        ),
+                        "currency": totals.get("currency", "CHF" if kind == "license" else "EUR"),
                         "createdAt": data.get("meta", {}).get("createdAt"),
                     }
                 )
@@ -1048,8 +1109,13 @@ def api_export_excel(offer_id: str):
             [
                 [],
                 ["Zusammenfassung"],
-                ["Softwarelizenzen IC Total", lic.get("total"), lic.get("currency")],
+                ["IC Total EUR", lic.get("icNet"), lic.get("icCurrency")],
+                ["Marge %", lic.get("marginPercent")],
+                ["Verkauf EUR", lic.get("sellNetEur")],
+                ["Kurs EUR→CHF", lic.get("eurToChfRate")],
+                ["Softwarelizenzen Verkauf CHF", lic.get("total"), lic.get("currency")],
                 ["IT-Aufwand Total", it.get("total"), it.get("currency")],
+                ["Gesamttotal CHF", summary.get("grandTotalChf"), "CHF"],
                 ["Hinweis", summary.get("note")],
             ]
         )
@@ -1092,8 +1158,10 @@ def api_export_excel(offer_id: str):
             ["Kunde", customer.get("company")],
             ["Instance", cfg.get("instanceName")],
             ["SLL", totals.get("sllCount")],
+            ["Marge %", totals.get("marginPercent")],
+            ["Kurs EUR→CHF", totals.get("eurToChfRate")],
             [],
-            ["SKU", "Bezeichnung", "Menge", "Einzelpreis", "Summe", "SLL"],
+            ["SKU", "Bezeichnung", "Menge", "IC EUR", "Verkauf CHF", "SLL"],
         ]
         for line in offer["lines"]:
             rows.append(
@@ -1101,7 +1169,7 @@ def api_export_excel(offer_id: str):
                     line.get("sku"),
                     line.get("name"),
                     line.get("qty"),
-                    line.get("unitPrice"),
+                    line.get("totalIcEur"),
                     line.get("total"),
                     line.get("sllUnits", 0),
                 ]
@@ -1109,9 +1177,12 @@ def api_export_excel(offer_id: str):
         rows.extend(
             [
                 [],
-                ["Zwischensumme", totals.get("subtotal")],
-                ["Rabatt", totals.get("discountAmount")],
-                ["IC Total", totals.get("net")],
+                ["IC Zwischensumme EUR", totals.get("subtotal")],
+                ["IC Rabatt EUR", totals.get("discountAmount")],
+                ["IC Total EUR", totals.get("net")],
+                ["Marge EUR", totals.get("marginAmountEur")],
+                ["Verkauf EUR", totals.get("sellNetEur")],
+                ["Verkauf CHF", totals.get("sellNetChf")],
             ]
         )
 

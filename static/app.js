@@ -200,9 +200,9 @@
     if (licSum?.total != null) {
       commercialRows.push(`
         <tr class="subtotal">
-          <td colspan="5">A · Softwarelizenzen IC Total${licSum.sllCount != null ? ` (SLL ${licSum.sllCount})` : ""}</td>
-          <td class="num">${money(licSum.total, licSum.currency || "EUR")}</td>
-          <td class="num">${escapeHtml(licSum.currency || "EUR")}</td>
+          <td colspan="5">A · Softwarelizenzen Verkauf${licSum.sllCount != null ? ` (SLL ${licSum.sllCount})` : ""} · Marge ${licSum.marginPercent ?? 28}%</td>
+          <td class="num">${money(licSum.total, licSum.currency || "CHF")}</td>
+          <td class="num">${escapeHtml(licSum.currency || "CHF")}</td>
         </tr>`);
     }
     if (itSum?.total != null) {
@@ -214,15 +214,17 @@
         </tr>`);
     }
 
+    const grand = summary.grandTotalChf;
     const priceCards = `
       <div class="offer-price-summary">
         ${licSum ? `
           <div class="offer-price-card">
-            <span>Softwarelizenzen (IC)</span>
-            <strong>${money(licSum.total, licSum.currency || "EUR")}</strong>
+            <span>Softwarelizenzen Verkauf</span>
+            <strong>${money(licSum.total, licSum.currency || "CHF")}</strong>
             <small>
-              Zwischensumme ${money(licSum.subtotal, licSum.currency || "EUR")}
-              ${licSum.discountAmount ? ` · Rabatt ${licSum.discountPercent}% (− ${money(licSum.discountAmount, licSum.currency || "EUR")})` : ""}
+              IC ${money(licSum.icNet, licSum.icCurrency || "EUR")}
+              + Marge ${licSum.marginPercent ?? 28}%
+              · Kurs EUR→CHF ${licSum.eurToChfRate ?? 0.93}
             </small>
           </div>` : ""}
         ${itSum ? `
@@ -234,9 +236,9 @@
               · Reise ${money(itSum.travelAmount, itSum.currency || "CHF")}
             </small>
           </div>` : ""}
-        <div class="offer-price-card offer-price-card-note">
-          <span>Währungen</span>
-          <strong>EUR + CHF</strong>
+        <div class="offer-price-card">
+          <span>Gesamttotal CHF</span>
+          <strong>${grand != null ? money(grand, "CHF") : "—"}</strong>
           <small>${escapeHtml(summary.note || "Alle Beträge exkl. MwSt.")}</small>
         </div>
       </div>`;
@@ -363,8 +365,9 @@
             <tbody>${commercialRows.join("") || `<tr><td colspan="7">Keine Positionen kalkuliert.</td></tr>`}</tbody>
           </table>
           <div class="offer-totals-box">
-            ${licSum ? `<div><span>Softwarelizenzen IC</span><strong>${money(licSum.total, licSum.currency || "EUR")}</strong></div>` : ""}
+            ${licSum ? `<div><span>Softwarelizenzen Verkauf</span><strong>${money(licSum.total, licSum.currency || "CHF")}</strong></div>` : ""}
             ${itSum ? `<div><span>IT-Aufwand inkl. Reise</span><strong>${money(itSum.total, itSum.currency || "CHF")}</strong></div>` : ""}
+            ${grand != null ? `<div class="offer-totals-grand"><span>Gesamttotal exkl. MwSt</span><strong>${money(grand, "CHF")}</strong></div>` : ""}
           </div>
           <p class="offer-note">${escapeHtml(summary.note || "")}</p>
         </section>
@@ -622,25 +625,30 @@
 
   function renderLicensePreview(offer) {
     state.licenseOffer = offer;
-    const c = offer.totals.currency || "EUR";
+    const t = offer.totals;
+    const ic = t.icCurrency || "EUR";
+    const sell = t.currency || "CHF";
     document.getElementById("licenseOfferNo").textContent = offer.meta.offerNumber;
-    document.getElementById("licenseGross").textContent = money(offer.totals.net, c);
+    document.getElementById("licenseGross").textContent = money(t.sellNetChf ?? t.amount ?? t.net, sell);
     document.getElementById("sllBadge").textContent =
-      `SLL: ${offer.totals.sllCount} · Rabatt ${offer.totals.discountPercent}%`;
+      `SLL: ${t.sllCount} · Rabatt ${t.discountPercent}% · Marge ${t.marginPercent ?? 28}% · Kurs ${t.eurToChfRate ?? 0.93}`;
     document.getElementById("licenseMeta").innerHTML = `
       <div><strong>${offer.customer.company}</strong>${offer.customer.projectName ? ` · ${offer.customer.projectName}` : ""}</div>
       <div>${offer.configuration.instanceCount}× ${offer.configuration.instanceName}</div>
       <div>${offer.meta.priceBasis || ""}</div>`;
     document.getElementById("licenseLines").innerHTML = offer.lines.map((line) => `
       <tr>
-        <td>${line.name}<div class="muted">${line.description || ""}</div></td>
+        <td>${line.name}<div class="muted">${line.description || ""}${line.totalIcEur != null ? ` · IC ${money(line.totalIcEur, ic)}` : ""}</div></td>
         <td>${line.qty}</td>
-        <td>${money(line.total, c)}</td>
+        <td>${money(line.total, sell)}</td>
       </tr>`).join("");
     document.getElementById("licenseTotals").innerHTML = `
-      <div class="row"><span>Zwischensumme</span><span>${money(offer.totals.subtotal, c)}</span></div>
-      <div class="row"><span>Mengenrabatt</span><span>− ${money(offer.totals.discountAmount, c)}</span></div>
-      <div class="row strong"><span>IC Total</span><span>${money(offer.totals.net, c)}</span></div>`;
+      <div class="row"><span>IC Zwischensumme</span><span>${money(t.subtotal, ic)}</span></div>
+      <div class="row"><span>IC Mengenrabatt</span><span>− ${money(t.discountAmount, ic)}</span></div>
+      <div class="row"><span>IC Total</span><span>${money(t.net, ic)}</span></div>
+      <div class="row"><span>Marge ${t.marginPercent ?? 28}%</span><span>+ ${money(t.marginAmountEur, ic)}</span></div>
+      <div class="row"><span>Verkauf EUR</span><span>${money(t.sellNetEur, ic)}</span></div>
+      <div class="row strong"><span>Verkauf CHF (× ${t.eurToChfRate ?? 0.93})</span><span>${money(t.sellNetChf, sell)}</span></div>`;
     document.getElementById("licenseScope").innerHTML =
       (offer.scopeOfSupply || []).map((s) => `<li>${s}</li>`).join("");
     document.getElementById("licenseDisclaimer").textContent = offer.product.disclaimer;

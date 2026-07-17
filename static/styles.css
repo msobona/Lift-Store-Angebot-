@@ -817,6 +817,12 @@ textarea:focus {
   font-weight: 700;
 }
 
+.offer-totals-box .offer-totals-grand {
+  grid-column: 1 / -1;
+  background: #111;
+  color: #fff;
+}
+
 .offer-totals-box strong {
   font-size: 1.15rem;
 }
