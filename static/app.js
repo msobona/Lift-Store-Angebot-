@@ -171,6 +171,7 @@
       document.getElementById("btnPrintOffer").disabled = false;
       document.getElementById("btnSaveOfferDoc").disabled = false;
       document.getElementById("btnExcelOfferDoc").disabled = !state.savedOfferId;
+      document.getElementById("btnWordOfferDoc").disabled = !state.savedOfferId;
       switchView("offer");
       if (notify || previousId) {
         const rev = previousId ? `\n(Neu erzeugt aus ${previousId})` : "";
@@ -344,11 +345,21 @@
       document.getElementById("btnPrintOffer").disabled = false;
       document.getElementById("btnSaveOfferDoc").disabled = false;
       document.getElementById("btnExcelOfferDoc").disabled = !!state.savedOfferId;
+      document.getElementById("btnWordOfferDoc").disabled = !!state.savedOfferId;
       switchView("offer");
       return;
     }
     // Einzelkalkulation → in Formular laden und Vorschau zeigen
     await openArchiveForEdit(id);
+  }
+
+  function downloadOfferDocx() {
+    const id = state.savedOfferId || state.offerDocument?.id || state.offerDocument?.meta?.offerNumber;
+    if (!id) {
+      alert("Bitte das Angebot zuerst erzeugen/speichern.");
+      return;
+    }
+    window.location.href = `/api/offers/${encodeURIComponent(id)}/docx`;
   }
 
   function renderOfferDocument(doc) {
@@ -1096,6 +1107,7 @@
         <div class="archive-actions">
           <button type="button" class="btn primary" data-action="edit">Bearbeiten</button>
           ${o.kind === "offer_document" ? '<button type="button" class="btn" data-action="view">Anzeigen</button>' : ""}
+          ${o.kind === "offer_document" ? '<button type="button" class="btn" data-action="docx">Word</button>' : ""}
           <button type="button" class="btn" data-action="excel">Excel</button>
           <button type="button" class="btn danger" data-action="delete">Löschen</button>
         </div>
@@ -1203,6 +1215,9 @@
         if (btn.dataset.action === "view") {
           await openArchivePreview(id);
         }
+        if (btn.dataset.action === "docx") {
+          window.location.href = `/api/offers/${encodeURIComponent(id)}/docx`;
+        }
         if (btn.dataset.action === "excel") {
           window.location.href = `/api/offers/${encodeURIComponent(id)}/excel`;
         }
@@ -1218,6 +1233,7 @@
 
     document.getElementById("btnComposeOffer").addEventListener("click", () => composeOfferDocument({ save: true }));
     document.getElementById("btnSaveOfferDoc").addEventListener("click", () => composeOfferDocument({ save: true, notify: true }));
+    document.getElementById("btnWordOfferDoc").addEventListener("click", downloadOfferDocx);
     document.getElementById("btnExcelOfferDoc").addEventListener("click", () => {
       const id = state.savedOfferId || state.offerDocument?.id || state.offerDocument?.meta?.offerNumber;
       if (!id) {

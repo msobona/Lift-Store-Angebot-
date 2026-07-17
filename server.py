@@ -17,6 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from openpyxl import Workbook
 from pydantic import BaseModel, Field
 
+from docx_export import build_offer_docx
+
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 DATA_DIR = BASE_DIR / "data"
@@ -1228,6 +1230,33 @@ def api_export_excel(offer_id: str):
     return StreamingResponse(
         stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/offers/{offer_id}/docx")
+def api_export_docx(offer_id: str):
+    """Word-Export: Angebotsseiten + originaler Software-Anhang (DOCX-Vorlage)."""
+    path = offer_path(offer_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Angebot nicht gefunden")
+    offer = json.loads(path.read_text(encoding="utf-8"))
+    if offer.get("kind") != "offer_document":
+        raise HTTPException(
+            status_code=400,
+            detail="Word-Export nur für Gesamtangebote. Bitte zuerst „Angebot erzeugen“.",
+        )
+    try:
+        data = build_offer_docx(offer)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Word-Export fehlgeschlagen: {exc}") from exc
+
+    filename = f"{offer.get('meta', {}).get('offerNumber', offer_id)}.docx"
+    return StreamingResponse(
+        io.BytesIO(data),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
