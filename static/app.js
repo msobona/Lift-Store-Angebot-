@@ -186,7 +186,9 @@
 
   async function recalcLicense() {
     const payload = collectLicensePayload();
-    if (!payload.customer.company) return;
+    if (!payload.customer.company) {
+      payload.customer.company = "Entwurf";
+    }
     try {
       const offer = await api("/api/offers/calculate", { method: "POST", body: JSON.stringify(payload) });
       state.savedLicenseId = null;
@@ -277,9 +279,15 @@
       <div><strong>${offer.customer.company}</strong>${offer.customer.projectName ? ` · ${offer.customer.projectName}` : ""}</div>
       <div>${offer.configuration.deviceCount} Geräte · ${offer.configuration.zoneCount} Zone(n) · ${offer.configuration.openingCount} Öffnung(en)</div>
       <div>Stundensatz ${money(offer.configuration.hourlyRate, c)} · ${offer.configuration.realizationPeriod || "–"}</div>`;
-    document.getElementById("itLines").innerHTML = offer.lines
-      .filter((l) => (l.hours || l.amount) && (l.category !== "option" || l.selected || l.amount))
-      .map((line) => `
+
+    const visibleLines = offer.lines.filter((l) => {
+      if (l.category === "option") return Boolean(l.selected) && (Number(l.hours) > 0 || Number(l.amount) > 0 || l.note);
+      if (l.category === "travel") return Number(l.amount) > 0 || Number(l.hours) > 0;
+      if (l.category === "custom") return Number(l.hours) > 0 || Number(l.amount) > 0;
+      return Number(l.hours) > 0 || Number(l.amount) > 0 || ["IT-DEVICES", "IT-ZONES", "IT-OPENINGS"].includes(l.sku);
+    });
+
+    document.getElementById("itLines").innerHTML = visibleLines.map((line) => `
         <tr>
           <td>${line.name}<div class="muted">${line.description || ""}${line.note ? ` · ${line.note}` : ""}</div></td>
           <td>${line.hours || 0}</td>
@@ -290,6 +298,7 @@
       <div class="row"><span>Reisekosten</span><span>${money(offer.totals.travelAmount, c)}</span></div>
       <div class="row strong"><span>Total exkl. MwSt</span><span>${money(offer.totals.totalAmount, c)}</span></div>`;
     document.getElementById("itScope").innerHTML = (offer.offerSections || [])
+      .filter((s) => Number(s.amount) > 0 || (s.bullets || []).length)
       .map((s) => `<li><strong>${s.title}</strong> · ${money(s.amount, c)}<div class="muted">${(s.bullets || []).join(" · ")}</div></li>`)
       .join("");
     document.getElementById("itDisclaimer").textContent = offer.product.disclaimer;
@@ -299,7 +308,10 @@
 
   async function recalcIt() {
     const payload = collectItPayload();
-    if (!payload.customer.company) return;
+    // Live-Vorschau auch ohne Firmenname; Speichern verlangt weiterhin Firma.
+    if (!payload.customer.company) {
+      payload.customer.company = "Entwurf";
+    }
     try {
       const offer = await api("/api/it/calculate", { method: "POST", body: JSON.stringify(payload) });
       state.savedItId = null;
@@ -349,17 +361,20 @@
     });
     licenseForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const payload = collectLicensePayload();
+      if (!payload.customer.company) {
+        alert("Bitte Firma angeben.");
+        return;
+      }
       try {
-        const offer = await api("/api/offers", { method: "POST", body: JSON.stringify(collectLicensePayload()) });
+        const offer = await api("/api/offers", { method: "POST", body: JSON.stringify(payload) });
         state.savedLicenseId = offer.id;
         renderLicensePreview(offer);
         alert(`Gespeichert: ${offer.meta.offerNumber}`);
       } catch (err) { alert(err.message); }
     });
-    ["instanceCount", "extraOpeningClients", "extraAdminClients", "mobileTerminalClients",
-      "thirdPartyVlmTypes", "testInstances", "upgradeYears", "company"].forEach((name) => {
-      licenseForm[name]?.addEventListener("change", recalcLicense);
-    });
+    licenseForm.addEventListener("input", () => recalcLicense());
+    licenseForm.addEventListener("change", () => recalcLicense());
 
     document.getElementById("btnItRecalc").addEventListener("click", recalcIt);
     document.getElementById("btnItPrint").addEventListener("click", () => window.print());
@@ -368,16 +383,37 @@
     });
     itForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const payload = collectItPayload();
+      if (!payload.customer.company) {
+        alert("Bitte Firma angeben.");
+        return;
+      }
       try {
-        const offer = await api("/api/it/offers", { method: "POST", body: JSON.stringify(collectItPayload()) });
+        const offer = await api("/api/it/offers", { method: "POST", body: JSON.stringify(payload) });
         state.savedItId = offer.id;
         renderItPreview(offer);
         alert(`Gespeichert: ${offer.meta.offerNumber}`);
       } catch (err) { alert(err.message); }
     });
-    ["deviceCount", "zoneCount", "openingCount", "trips", "travelHoursPerTrip", "kmPerTrip",
-      "overnightCount", "mealCount", "company"].forEach((name) => {
-      itForm[name]?.addEventListener("change", recalcIt);
+
+    // Live-Update bei jeder Eingabe/Änderung (nicht erst beim Verlassen des Felds)
+    itForm.addEventListener("input", (event) => {
+      const t = event.target;
+      if (!t || !t.name) return;
+      if (t.name.startsWith("ext") || [
+        "deviceCount", "zoneCount", "openingCount", "trips", "travelHoursPerTrip",
+        "kmPerTrip", "overnightCount", "mealCount", "company", "projectName",
+        "realizationPeriod", "preparedBy", "notes",
+      ].includes(t.name)) {
+        recalcIt();
+      }
+    });
+    itForm.addEventListener("change", (event) => {
+      const t = event.target;
+      if (!t) return;
+      if (t.name === "itOption" || t.type === "checkbox" || t.tagName === "SELECT") {
+        recalcIt();
+      }
     });
 
     archiveList.addEventListener("click", async (event) => {
@@ -411,6 +447,9 @@
       `Stammdaten: Stundensatz ${money(r.hourlyRate, "CHF")} · km ${money(r.kmRate, "CHF")} · Verpflegung ${money(r.mealRate, "CHF")} · Übernachtung ${money(r.overnightRate, "CHF")}`;
     document.getElementById("itDisclaimer").textContent = state.itCatalog.meta.disclaimer;
     bindEvents();
+    // Initiale Live-Vorschau (auch ohne Firmenname)
+    recalcLicense();
+    recalcIt();
   }
 
   init().catch((err) => {
