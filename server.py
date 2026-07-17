@@ -189,6 +189,29 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
 
     created = datetime.now()
     valid_until = created + timedelta(days=int(catalog["product"]["validityDays"]))
+    scope_templates = catalog.get("scopeTemplates", {})
+    scope_lines: List[str] = list(scope_templates.get("common", []))
+    for fid in sorted(chosen):
+        scope_lines.extend(scope_templates.get(fid, []))
+    # de-duplicate while preserving order
+    seen = set()
+    scope = []
+    for line in scope_lines:
+        if line not in seen:
+            seen.add(line)
+            scope.append(line)
+
+    feature_details = [
+        {
+            "id": fid,
+            "name": features[fid]["name"],
+            "description": features[fid]["description"],
+            "manualRefs": features[fid].get("manualRefs", []),
+            "includedInPackage": fid in included,
+        }
+        for fid in sorted(chosen)
+        if fid in features
+    ]
 
     return {
         "product": catalog["product"],
@@ -208,6 +231,8 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "notes": payload.notes,
             "preparedBy": payload.preparedBy,
         },
+        "featureDetails": feature_details,
+        "scopeOfSupply": scope,
         "lines": lines,
         "totals": {
             "softwareSubtotal": software_subtotal,
@@ -224,6 +249,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "createdAt": created.isoformat(timespec="seconds"),
             "validUntil": valid_until.date().isoformat(),
             "offerNumber": f"WLS-{created.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
+            "productVersion": catalog["product"].get("version", ""),
         },
     }
 

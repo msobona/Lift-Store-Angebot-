@@ -141,9 +141,10 @@
     document.getElementById("previewGross").textContent = money(offer.totals.gross, currency);
 
     const customer = offer.customer;
+    const version = offer.product.version || offer.meta.productVersion || "";
     document.getElementById("previewMeta").innerHTML = `
       <div><strong>${customer.company || "—"}</strong>${customer.projectName ? ` · ${customer.projectName}` : ""}</div>
-      <div>Paket ${offer.configuration.packageName} · ${offer.configuration.liftCount} Lift(e)</div>
+      <div>WAMAS Lift &amp; Store ${version} · Paket ${offer.configuration.packageName} · ${offer.configuration.liftCount} Lift(e)</div>
       <div>Gültig bis ${offer.meta.validUntil}${offer.configuration.preparedBy ? ` · ${offer.configuration.preparedBy}` : ""}</div>
     `;
 
@@ -168,6 +169,11 @@
       <div class="row"><span>MwSt. (${Math.round(offer.totals.vatRate * 100)}%)</span><span>${money(offer.totals.vat, currency)}</span></div>
       <div class="row strong"><span>Brutto</span><span>${money(offer.totals.gross, currency)}</span></div>
     `;
+
+    const scope = offer.scopeOfSupply || [];
+    document.getElementById("previewScope").innerHTML = scope.length
+      ? scope.map((line) => `<li>${line}</li>`).join("")
+      : "<li>Kein zusätzlicher Leistungstext.</li>";
 
     document.getElementById("previewDisclaimer").textContent = offer.product.disclaimer;
 

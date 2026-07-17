@@ -6,9 +6,13 @@ Web-Anwendung zur Erstellung von Software-Angeboten für **WAMAS Lift & Store** 
 
 - Konfiguration von Paketen (Starter / Professional / Enterprise)
 - Lift-Lizenzen, Module und Services
+- Leistungsumfang basierend auf WAMAS Lift & Store **2.8** Manuals
 - Live-Preisberechnung inkl. Rabatt und MwSt.
 - Speichern und Archivieren von Angeboten
 - Excel-Export und Druck-/PDF-Vorschau
+
+Quellen: `../docs/manuals/2.8/` (User, Administrator, Interface WLS–ERP)  
+Kurzüberblick: [`data/scope_from_manuals.md`](./data/scope_from_manuals.md)
 
 > Die hinterlegten Preise sind **Richtwerte zu Demonstrationszwecken** und kein verbindliches SSI-SCHÄFER-Angebot.
 

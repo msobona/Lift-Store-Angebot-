@@ -26,10 +26,11 @@
   <main>
     <section id="view-configurator" class="view active">
       <div class="hero">
-        <p class="hero-kicker">Angebot Generator</p>
+        <p class="hero-kicker">Angebot Generator · Version 2.8</p>
         <h1 class="hero-brand">WAMAS Lift &amp; Store</h1>
         <p class="hero-lead">
-          Konfigurieren Sie Softwarepaket, Lift-Lizenzen und Module – und erzeugen Sie in Minuten ein druckfertiges Angebot.
+          Konfigurieren Sie Softwarepaket, Lift-Lizenzen und Module auf Basis der offiziellen Manuals –
+          und erzeugen Sie in Minuten ein druckfertiges Angebot inkl. Leistungsumfang.
         </p>
         <div class="hero-actions">
           <button type="button" class="btn primary" id="btnScrollConfig">Konfiguration starten</button>
@@ -141,6 +142,10 @@
             </table>
           </div>
           <div class="preview-totals" id="previewTotals"></div>
+          <div class="preview-scope">
+            <h3>Leistungsumfang</h3>
+            <ul id="previewScope"></ul>
+          </div>
           <p class="disclaimer" id="previewDisclaimer"></p>
           <div class="preview-actions">
             <button type="button" class="btn ghost" id="btnExportExcel" disabled>Excel exportieren</button>

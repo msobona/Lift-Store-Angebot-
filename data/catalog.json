@@ -1,144 +1,308 @@
 {
   "product": {
     "name": "WAMAS Lift & Store",
-    "tagline": "Softwarelösung für einen oder mehrere Lagerlifte",
+    "version": "2.8",
+    "tagline": "Softwarelösung für einen oder mehrere Vertical Lift Modules (SSI LOGIMAT®)",
     "vendor": "SSI SCHÄFER",
     "currency": "EUR",
     "vatRate": 0.19,
     "validityDays": 30,
-    "disclaimer": "Alle Preise sind Richtwerte zu Demonstrationszwecken und stellen kein verbindliches Angebot von SSI SCHÄFER dar."
+    "sources": [
+      "WAMAS.LS_2.8_man.user_V01.0_enUS.pdf",
+      "WAMAS.LS_2.8_man.administrator_V01.0_enUS.pdf",
+      "WAMAS.LS_2.8_man.interface.wls.erp_V01.0_enUS.pdf"
+    ],
+    "disclaimer": "Alle Preise sind Richtwerte zu Demonstrationszwecken und stellen kein verbindliches Angebot von SSI SCHÄFER dar. Funktionsumfang basiert auf den WAMAS Lift & Store 2.8 Manuals (User, Administrator, Interface WLS–ERP)."
   },
+  "clients": [
+    {
+      "id": "touch",
+      "name": "Touch Client",
+      "description": "Bedienung am Lift: Einlagerung, Kommissionierung, Inventur, Tablaroperationen, RFID-Login."
+    },
+    {
+      "id": "desktop",
+      "name": "Desktop Client",
+      "description": "Administration, Stammdaten, Auftragsverwaltung, Schnittstellen, Reports und Systemmonitoring."
+    },
+    {
+      "id": "mobile",
+      "name": "Mobile Terminal",
+      "description": "Mobile Prozesse im Lager: Einlagern, Kommissionieren, Inventur, Bestandsverteilung, Scanner-Eingabe."
+    }
+  ],
   "basePackages": [
     {
       "id": "starter",
       "name": "Starter",
-      "description": "Einstieg für einen Lagerlift mit Artikel- und Auftragsverwaltung.",
+      "description": "Standalone-Betrieb für einen SSI LOGIMAT mit Touch- und Desktop-Client, Artikel-/Auftragsprozessen und Tablarverwaltung.",
       "basePrice": 12500,
       "includedLiftLicenses": 1,
-      "features": ["item_mgmt", "order_mgmt", "touch_ui", "fifo_lifo"]
+      "features": [
+        "touch_client",
+        "desktop_client",
+        "item_master",
+        "tray_box_mgmt",
+        "manual_processes",
+        "order_processes",
+        "label_printing",
+        "user_mgmt_basic"
+      ]
     },
     {
       "id": "professional",
       "name": "Professional",
-      "description": "Für wachsende Anlagen mit mehreren Liften, Chargen und Peripherie.",
+      "description": "Mehrere Lifte/Zonen, Mobile Terminal, SIA (Charge/MHD), Nachschub, Peripherie und erweiterte Benutzerrechte.",
       "basePrice": 24500,
       "includedLiftLicenses": 3,
-      "features": ["item_mgmt", "order_mgmt", "touch_ui", "fifo_lifo", "batch_expiry", "user_mgmt", "peripherals", "reports"]
+      "features": [
+        "touch_client",
+        "desktop_client",
+        "mobile_terminal",
+        "item_master",
+        "tray_box_mgmt",
+        "manual_processes",
+        "order_processes",
+        "label_printing",
+        "user_mgmt_basic",
+        "stock_identifying_attributes",
+        "zones_replenishment",
+        "picking_trolleys",
+        "peripherals_logi",
+        "excel_import",
+        "notifications_reports",
+        "scales"
+      ]
     },
     {
       "id": "enterprise",
       "name": "Enterprise",
-      "description": "Volle Ausbaustufe inkl. ERP-Anbindung, Pick/Put-to-Light und Premium-Support.",
+      "description": "Volle Ausbaustufe inkl. ERP-/WCS-Systempartner-Schnittstelle, MFS/SOC, Peak-Period-Lizenzoption und Implementierungsscope.",
       "basePrice": 42000,
       "includedLiftLicenses": 8,
-      "features": ["item_mgmt", "order_mgmt", "touch_ui", "fifo_lifo", "batch_expiry", "user_mgmt", "peripherals", "reports", "erp_interface", "pick_put_light", "high_value_security", "premium_support"]
+      "features": [
+        "touch_client",
+        "desktop_client",
+        "mobile_terminal",
+        "item_master",
+        "tray_box_mgmt",
+        "manual_processes",
+        "order_processes",
+        "label_printing",
+        "user_mgmt_basic",
+        "stock_identifying_attributes",
+        "zones_replenishment",
+        "picking_trolleys",
+        "peripherals_logi",
+        "excel_import",
+        "notifications_reports",
+        "scales",
+        "erp_interface",
+        "wcs_interface",
+        "mfs_soc",
+        "storage_strategies_abc",
+        "peak_period_license",
+        "premium_support"
+      ]
     }
   ],
   "features": [
     {
-      "id": "item_mgmt",
-      "name": "Artikelverwaltung",
-      "description": "Stammdaten, Tablar- und Behälterverwaltung inkl. Artikelbilder.",
+      "id": "touch_client",
+      "name": "Touch Client",
+      "description": "Geführte UI am Lift inkl. Login, Tray Operations, Prozessfarben und konfigurierbarem UI-Layout (Storage/Picking/Inventory/Consolidation).",
       "price": 0,
-      "category": "core"
+      "category": "clients",
+      "manualRefs": ["User Manual Kap. 2, 5, 6"]
     },
     {
-      "id": "order_mgmt",
-      "name": "Auftragsverwaltung",
-      "description": "Kommissionierung und Nachschub mit geführter Touchscreen-Bedienung.",
+      "id": "desktop_client",
+      "name": "Desktop Client",
+      "description": "Vollständige Desktop-Oberfläche für Stammdaten, Aufträge, Administration und Monitoring.",
       "price": 0,
-      "category": "core"
+      "category": "clients",
+      "manualRefs": ["User Manual Kap. 3", "Administrator Manual Kap. 3"]
     },
     {
-      "id": "touch_ui",
-      "name": "Touchscreen-Führung",
-      "description": "Bedienerführung am Lift zur Fehlervermeidung und höheren Pickleistung.",
-      "price": 0,
-      "category": "core"
-    },
-    {
-      "id": "fifo_lifo",
-      "name": "FIFO / LIFO Strategien",
-      "description": "Einlagerungsstrategien für strukturierte Bestandsführung.",
-      "price": 1500,
-      "category": "process"
-    },
-    {
-      "id": "batch_expiry",
-      "name": "Chargen- & Verfallsdatum",
-      "description": "Verwaltung von Chargen und Mindesthaltbarkeitsdaten.",
-      "price": 2800,
-      "category": "process"
-    },
-    {
-      "id": "user_mgmt",
-      "name": "Benutzerverwaltung",
-      "description": "Rollen, Rechte und Nachvollziehbarkeit von Benutzeraktionen.",
-      "price": 1800,
-      "category": "security"
-    },
-    {
-      "id": "high_value_security",
-      "name": "High-Value Security",
-      "description": "Erweiterte Absicherung für hochwertige Artikel.",
+      "id": "mobile_terminal",
+      "name": "Mobile Terminal",
+      "description": "Mobile Client-UI für Einlagerung, Kommissionierung, Inventur und Bestandsinformation per Scanner/Touch.",
       "price": 3200,
-      "category": "security"
+      "category": "clients",
+      "manualRefs": ["User Manual Kap. 4, 6.3"]
     },
     {
-      "id": "peripherals",
-      "name": "Peripherie-Anbindung",
-      "description": "Scanner, RFID-Leser, Tastaturen und Etikettendrucker.",
+      "id": "item_master",
+      "name": "Artikelstammdaten",
+      "description": "Artikel, Verpackungsversionen, Aliase, Artikelbilder, Mengeneinheiten und WLS-spezifische Artikelattribute.",
+      "price": 0,
+      "category": "masterdata",
+      "manualRefs": ["Administrator Manual 3.6.3–3.6.5", "User Manual 5.1"]
+    },
+    {
+      "id": "tray_box_mgmt",
+      "name": "Tablar- & Behälterverwaltung",
+      "description": "Tray Templates, Box Types, Item-to-Box-Zuordnung, Separatoren sowie Install/Uninstall von Tablaren.",
+      "price": 0,
+      "category": "masterdata",
+      "manualRefs": ["User Manual 5.2, 5.6, 6.5, 6.6", "Administrator Manual 3.1.5–3.1.8"]
+    },
+    {
+      "id": "manual_processes",
+      "name": "Manuelle Touch-Prozesse",
+      "description": "Tablar anfordern/zurückgeben, Einlagern, Kommissionieren, Konsolidieren, Inventur und Transfer zwischen Access Openings.",
+      "price": 0,
+      "category": "processes",
+      "manualRefs": ["User Manual 6.1"]
+    },
+    {
+      "id": "order_processes",
+      "name": "Auftragsbasierte Prozesse",
+      "description": "Storage-/Picking-/Inventory-/Replenishment-Demands inkl. Release, Activate, Split, Suspend und Finalize.",
+      "price": 0,
+      "category": "processes",
+      "manualRefs": ["User Manual 6.2, 6.4"]
+    },
+    {
+      "id": "stock_identifying_attributes",
+      "name": "Bestandskennzeichen (SIA)",
+      "description": "Verwaltung und Prüfung von Charge, MHD (BBD) und Produktionsdatum für Einlagerung, Bestand und Warenausgang.",
+      "price": 2800,
+      "category": "processes",
+      "manualRefs": ["Administrator Manual 3.1.3 / 3.6.3.3", "User Manual 5.1.5"]
+    },
+    {
+      "id": "zones_replenishment",
+      "name": "Zonen & Nachschub",
+      "description": "WAMAS Lift & Store Zones, Transfer Locations, Destination Locations und Replenishment-Konfigurationen zwischen Zonen/Liften.",
+      "price": 3500,
+      "category": "processes",
+      "manualRefs": ["Administrator Manual 3.1.10–3.1.15"]
+    },
+    {
+      "id": "picking_trolleys",
+      "name": "Kommissionierwagen",
+      "description": "Picking Trolleys anlegen, Demands zuweisen, nachfüllen und abschließen.",
+      "price": 1800,
+      "category": "processes",
+      "manualRefs": ["User Manual 5.5", "Administrator Manual 3.1.18"]
+    },
+    {
+      "id": "storage_strategies_abc",
+      "name": "Einlagerstrategien & ABC",
+      "description": "Storage Reservation Strategies und ABC-Wertberechnung für optimierte Einlagerung.",
       "price": 2400,
-      "category": "integration"
+      "category": "processes",
+      "manualRefs": ["Administrator Manual 3.1.10.3, 3.1.17, 3.6.11"]
     },
     {
-      "id": "pick_put_light",
-      "name": "Pick by Light / Put to Light",
-      "description": "Visuelle Unterstützung für Kommissionierung und Einlagerung.",
-      "price": 4500,
-      "category": "integration"
+      "id": "user_mgmt_basic",
+      "name": "Benutzerverwaltung",
+      "description": "Benutzer, Logins, Rollen, Permission Profiles (Desktop/Mobile/Touch), Sessions, Audit Log und User Locks.",
+      "price": 1800,
+      "category": "security",
+      "manualRefs": ["Administrator Manual 3.3"]
+    },
+    {
+      "id": "peripherals_logi",
+      "name": "LOGIMAT-Peripherie & RFID",
+      "description": "Anbindung LogiPointer, LogiTilt, LogiDrive, LogiLight sowie RFID-Login am Touch Client.",
+      "price": 2400,
+      "category": "integration",
+      "manualRefs": ["Administrator Manual 3.1.1", "User Manual 2.1.3"]
+    },
+    {
+      "id": "scales",
+      "name": "Waagen an Access Openings",
+      "description": "Zuordnung und Nutzung von Scales an Access Openings für gewichtsgestützte Prozesse.",
+      "price": 1200,
+      "category": "integration",
+      "manualRefs": ["User Manual 5.7 / 6.4.13", "Administrator Manual 3.12.8"]
+    },
+    {
+      "id": "label_printing",
+      "name": "Dokumente & Etiketten",
+      "description": "Druck von Artikel-, LU- und Lagerplatzetiketten sowie Lieferscheinen; Printer Management und Archiv-Reprint.",
+      "price": 1600,
+      "category": "documents",
+      "manualRefs": ["User Manual 6.8", "Administrator Manual 3.7–3.8"]
+    },
+    {
+      "id": "excel_import",
+      "name": "Excel-Import",
+      "description": "Import von Artikelstammdaten sowie Storage-/Picking-/Inventory-Demands aus Excel.",
+      "price": 1500,
+      "category": "integration",
+      "manualRefs": ["Administrator Manual 3.5.6"]
+    },
+    {
+      "id": "notifications_reports",
+      "name": "Meldungen & Reports",
+      "description": "System Message Notifications, Stock Threshold Notifications und Stock Availability Report.",
+      "price": 1600,
+      "category": "analytics",
+      "manualRefs": ["Administrator Manual 3.10, LM122"]
     },
     {
       "id": "erp_interface",
-      "name": "ERP-Schnittstelle",
-      "description": "Anbindung an übergeordnete ERP-/WMS-Systeme (z. B. SAP).",
+      "name": "ERP System Partner Interface",
+      "description": "WLS↔ERP über File/Socket/Table/JMS/REST; Formate CSV, Fixed-Length, XML, JSON. Stammdaten, Storage/Picking/Inventory Demands, Stock Report/Adjustment.",
       "price": 8500,
-      "category": "integration"
+      "category": "integration",
+      "manualRefs": ["Interface Manual WLS–ERP"]
     },
     {
-      "id": "reports",
-      "name": "Reports & Statistiken",
-      "description": "Leistungs- und Bestandskennzahlen für Betrieb und Optimierung.",
-      "price": 1600,
-      "category": "analytics"
+      "id": "wcs_interface",
+      "name": "WCS System Partner Interface",
+      "description": "Anbindung WAMAS als WMS an ein WCS inkl. Storage Locations, Requests und Posting Keys.",
+      "price": 6500,
+      "category": "integration",
+      "manualRefs": ["Administrator Manual 3.5.3"]
+    },
+    {
+      "id": "mfs_soc",
+      "name": "MFS / SOC Kommunikation",
+      "description": "Material Flow System, Device Controllers und SOC Communication Service/Channels zur Lift-/PLC-Kommunikation.",
+      "price": 4800,
+      "category": "integration",
+      "manualRefs": ["Administrator Manual 3.9"]
+    },
+    {
+      "id": "peak_period_license",
+      "name": "Peak Period License Option",
+      "description": "Optionale zeitlich begrenzte Zusatzlizenzen für Spitzenphasen (WAMAS Peak Period License).",
+      "price": 2500,
+      "category": "licensing",
+      "manualRefs": ["Administrator Manual 3.11.1.3"]
     },
     {
       "id": "premium_support",
       "name": "Premium Support (12 Monate)",
       "description": "Erweiterter Support inkl. Update-Fenster und priorisierter Reaktionszeit.",
       "price": 4800,
-      "category": "service"
+      "category": "service",
+      "manualRefs": []
     }
   ],
   "addons": [
     {
       "id": "extra_lift_license",
-      "name": "Zusätzliche Lift-Lizenz",
-      "description": "Lizenz für jeden weiteren Vertical Lift Module.",
+      "name": "Zusätzliche Lift-/Geräte-Lizenz",
+      "description": "Lizenz und Konfiguration für jeden weiteren SSI LOGIMAT / Vertical Lift Module.",
       "unitPrice": 3500,
       "unit": "Lift"
     },
     {
       "id": "implementation",
       "name": "Implementierung & Inbetriebnahme",
-      "description": "Projektierung, Installation und Go-Live Begleitung.",
+      "description": "Lizenzaktivierung, Geräte-/Zonenkonfiguration, Client-Setup, Go-Live-Begleitung gemäß Admin-Manual.",
       "unitPrice": 6500,
       "unit": "Pauschale"
     },
     {
       "id": "training",
       "name": "Schulungspaket",
-      "description": "Key-User- und Bediener-Schulung vor Ort oder remote.",
+      "description": "Key-User-Schulung Touch/Desktop/Mobile sowie Administrator-Einführung.",
       "unitPrice": 2200,
       "unit": "Tag"
     },
@@ -156,5 +320,26 @@
     { "id": "partner", "name": "Partner-Rabatt", "percent": 5 },
     { "id": "volume", "name": "Mengenrabatt", "percent": 8 },
     { "id": "campaign", "name": "Aktionsrabatt", "percent": 12 }
-  ]
+  ],
+  "scopeTemplates": {
+    "common": [
+      "Software WAMAS Lift & Store Version 2.8 inkl. digital signierter Lizenzdatei (Import über LM061 / SE072).",
+      "Clients gemäß Paket: Touch Client und Desktop Client; optional Mobile Terminal.",
+      "Geräteanbindung SSI LOGIMAT inkl. Access Openings, Storage Locations und Tablarverwaltung.",
+      "Prozesse: manuelle Tray Operations sowie auftragsbasierte Storage-/Picking-/Inventory-Demands.",
+      "Dokumentation gemäß mitgelieferter Manuals (User, Administrator; bei ERP zusätzlich Interface Manual)."
+    ],
+    "erp_interface": [
+      "System-Partner-Schnittstelle WLS↔ERP (inSPM/outSPM) mit konfigurierbaren Receivern/Sendern.",
+      "Unterstützte Transportwege: File, Socket, Table, JMS, REST.",
+      "Unterstützte Formate: CSV, Fixed-Length, XML, JSON.",
+      "Typische Nachrichtenobjekte: Client-/Item-Master, Storage Demands, Picking Demands, Inventory Demands, Stock Report, Stock Adjustment."
+    ],
+    "peripherals_logi": [
+      "Optionale LOGIMAT-Funktionen: LogiPointer, LogiTilt, LogiDrive, LogiLight sowie RFID-Login am Touch Client."
+    ],
+    "user_mgmt_basic": [
+      "Benutzer, Rollen und Application Permission Profiles für Desktop-, Mobile- und Touch-Zugriff inkl. Audit-Log."
+    ]
+  }
 }

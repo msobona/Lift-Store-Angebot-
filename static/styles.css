@@ -495,6 +495,26 @@ textarea:focus {
   font-size: 1rem;
 }
 
+.preview-scope {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+
+.preview-scope h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.92rem;
+}
+
+.preview-scope ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
 .disclaimer {
   margin: 0.9rem 0 0;
   font-size: 0.75rem;
