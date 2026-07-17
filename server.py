@@ -743,6 +743,11 @@ def compose_offer(payload: ComposeOfferRequest):
             )
 
     created = datetime.now()
+    intro_variant = (
+        template.get("introOrderHandling")
+        if has_order_handling
+        else template.get("introStandalone")
+    )
     doc = {
         "kind": "offer_document",
         "meta": {
@@ -751,18 +756,27 @@ def compose_offer(payload: ComposeOfferRequest):
             "validUntil": (created + timedelta(days=30)).date().isoformat(),
             "preparedBy": prepared_by,
             "templateSource": "Anhang zu Software_v2.6.X.docx",
+            "documentDate": created.strftime("%d.%m.%Y"),
         },
         "customer": customer,
         "branding": {
             "product": "WAMAS Lift & Store",
             "vendor": "SSI SCHÄFER",
             "version": "2.8",
+            "softwareVersionLabel": template.get(
+                "softwareVersionLabel", "WAMAS® Lift & Store Software Version 2.8"
+            ),
         },
         "content": {
+            "documentLabel": template.get("documentLabel", "Anhang zur Software"),
             "title": template["title"],
             "subtitle": template["subtitle"],
             "intro": template["intro"],
+            "introVariant": intro_variant or "",
+            "standardLead": template.get("standardLead", ""),
             "recommendation": template["recommendation"],
+            "footnotes": template.get("footnotes", []),
+            "coverImage": template.get("coverImage"),
             "configurationSummary": {
                 "instanceName": instance_name,
                 "instanceCount": (license_offer or {}).get("configuration", {}).get("instanceCount"),
@@ -772,9 +786,15 @@ def compose_offer(payload: ComposeOfferRequest):
                 "hasOrderHandling": has_order_handling,
             },
             "standardFunctions": standard,
+            "machineOptionsLead": template.get("machineOptionsLead", ""),
             "selectedOptions": options,
+            "hardwareOptions": template.get("hardwareOptions", []),
             "clients": template["clients"],
+            "architecture": template.get("architecture", {}),
+            "requirements": template.get("requirements", {}),
+            "acceptance": template.get("acceptance", ""),
             "responsibilities": template["responsibilities"],
+            "documentsLead": template.get("documentsLead", ""),
             "documents": template["documents"],
             "closing": template["closing"],
             "itOfferSections": (it_offer or {}).get("offerSections") or [],

@@ -151,6 +151,8 @@
     const cfg = doc.content.configurationSummary || {};
     const licenseTotals = doc.totals.license;
     const itTotals = doc.totals.it;
+    const arch = doc.content.architecture || {};
+    const req = doc.content.requirements || {};
 
     const commercialRows = [];
     let lastSection = "";
@@ -161,7 +163,7 @@
       }
       commercialRows.push(`
         <tr>
-          <td>${escapeHtml(line.name)}<div class="muted">${escapeHtml(line.description || "")}</div></td>
+          <td>${escapeHtml(line.name)}${line.description ? `<div class="muted">${escapeHtml(line.description)}</div>` : ""}</td>
           <td class="num">${escapeHtml(line.qty ?? "")}</td>
           <td class="num">${line.hours != null ? escapeHtml(line.hours) : ""}</td>
           <td class="num">${money(line.amount, line.currency || "EUR")}</td>
@@ -183,14 +185,35 @@
     }
 
     const standardHtml = (doc.content.standardFunctions || [])
-      .map((fn) => `<div class="offer-card"><strong>${escapeHtml(fn.title)}</strong><span>${escapeHtml(fn.text)}</span></div>`)
+      .map((fn, idx) => `
+        <div class="offer-fn">
+          <div class="offer-fn-num">1.1.${idx + 1}</div>
+          <div>
+            <h4>${escapeHtml(fn.title)}</h4>
+            <p>${escapeHtml(fn.text)}</p>
+          </div>
+        </div>`)
       .join("");
 
-    const optionsHtml = (doc.content.selectedOptions || []).length
-      ? (doc.content.selectedOptions || [])
-        .map((opt) => `<li><strong>${escapeHtml(opt.title)}</strong> – ${escapeHtml(opt.text)}</li>`)
-        .join("")
-      : "<li>Keine optionalen Module gewählt.</li>";
+    const selectedOpts = doc.content.selectedOptions || [];
+    const optionsHtml = selectedOpts.length
+      ? selectedOpts.map((opt) => `
+          <div class="offer-fn">
+            <div class="offer-fn-mark">✓</div>
+            <div>
+              <h4>${escapeHtml(opt.title)}</h4>
+              <p>${escapeHtml(opt.text)}</p>
+            </div>
+          </div>`).join("")
+      : `<p class="offer-empty-note">Keine optionalen Softwaremodule gewählt.</p>`;
+
+    const hardwareHtml = (doc.content.hardwareOptions || [])
+      .map((opt) => `
+        <div class="offer-hw-item">
+          <strong>${escapeHtml(opt.title)}</strong>
+          <span>${escapeHtml(opt.text)}</span>
+        </div>`)
+      .join("");
 
     const respHtml = (doc.content.responsibilities || [])
       .map((r) => `
@@ -201,63 +224,90 @@
         </tr>`)
       .join("");
 
+    const listItems = (items) =>
+      (items || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("");
+
+    const cfgBits = [
+      cfg.instanceName
+        ? `${escapeHtml(cfg.instanceName)}${cfg.instanceCount ? ` (${cfg.instanceCount}×)` : ""}`
+        : "",
+      cfg.deviceCount ? `${cfg.deviceCount} Geräte` : "",
+      cfg.zoneCount ? `${cfg.zoneCount} Zone(n)` : "",
+      cfg.openingCount ? `${cfg.openingCount} Öffnung(en)` : "",
+      cfg.hasOrderHandling ? "Order Handling" : "Standalone",
+    ].filter(Boolean).join(" · ");
+
     root.innerHTML = `
       <div class="offer-sheet">
-        <div class="offer-doc-header">
-          <img src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
-          <div class="ssi-badge"><img src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" /></div>
-        </div>
-
-        <div class="offer-doc-titlebar">
-          <h1>${escapeHtml(doc.content.title)}</h1>
-          <p>${escapeHtml(doc.content.subtitle)} · Version ${escapeHtml(doc.branding.version)}</p>
-        </div>
-
-        <div class="offer-meta-grid">
-          <div><strong>Angebotsnummer</strong>${escapeHtml(doc.meta.offerNumber)}</div>
-          <div><strong>Datum / Gültig bis</strong>${escapeHtml(doc.meta.createdAt?.slice(0, 10) || "")} / ${escapeHtml(doc.meta.validUntil || "")}</div>
-          <div><strong>Kunde</strong>${escapeHtml(c.company || "—")}</div>
-          <div><strong>Projekt</strong>${escapeHtml(c.projectName || "—")}</div>
-          <div><strong>Ansprechpartner</strong>${escapeHtml(c.contact || "—")}</div>
-          <div><strong>Erstellt von</strong>${escapeHtml(doc.meta.preparedBy || "—")}</div>
-          <div><strong>Konfiguration</strong>
-            ${cfg.instanceName ? escapeHtml(cfg.instanceName) + (cfg.instanceCount ? ` (${cfg.instanceCount}×)` : "") : "—"}
-            ${cfg.deviceCount ? ` · ${cfg.deviceCount} Geräte` : ""}
-            ${cfg.openingCount ? ` · ${cfg.openingCount} Öffnungen` : ""}
+        <header class="offer-cover">
+          <div class="offer-cover-top">
+            <img class="offer-logo-wamas" src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
+            <img class="offer-logo-ssi" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
           </div>
-          <div><strong>Quellen</strong>
-            ${escapeHtml(doc.sources.licenseOfferNumber || "Lizenz live")}
-            ${doc.sources.itOfferNumber ? " · " + escapeHtml(doc.sources.itOfferNumber) : " · IT live"}
+          <div class="offer-cover-band">
+            <p class="offer-doc-label">${escapeHtml(doc.content.documentLabel || "Anhang zur Software")}</p>
+            <h1>${escapeHtml(doc.content.title)}</h1>
+            <p class="offer-cover-sub">${escapeHtml(doc.content.subtitle)}</p>
           </div>
-        </div>
-
-        <section class="offer-section">
-          <h2>1. Umfang WAMAS Lift &amp; Store</h2>
-          <p>${escapeHtml(doc.content.intro)}</p>
-          <p>${escapeHtml(doc.content.recommendation)}</p>
-        </section>
-
-        <section class="offer-section">
-          <h2>2. Standard-Funktionen / Prozesse</h2>
-          <div class="offer-dual-col">${standardHtml}</div>
-        </section>
-
-        <section class="offer-section">
-          <h2>3. Gewählte Optionen</h2>
-          <ul>${optionsHtml}</ul>
-        </section>
-
-        <section class="offer-section">
-          <h2>4. Bedienoberflächen</h2>
-          <div class="offer-dual-col">
-            <div class="offer-card"><strong>Touch Client</strong><span>${escapeHtml(doc.content.clients.touch)}</span></div>
-            <div class="offer-card"><strong>Admin Client</strong><span>${escapeHtml(doc.content.clients.admin)}</span></div>
-            <div class="offer-card"><strong>Mobile Terminal</strong><span>${escapeHtml(doc.content.clients.mobile)}</span></div>
+          ${doc.content.coverImage ? `
+            <div class="offer-cover-hero" style="background-image:url('${escapeHtml(doc.content.coverImage)}')"></div>
+          ` : ""}
+          <div class="offer-cover-meta">
+            <div>
+              <span>Version</span>
+              <strong>${escapeHtml(doc.branding.softwareVersionLabel || ("Version " + doc.branding.version))}</strong>
+            </div>
+            <div>
+              <span>Datum</span>
+              <strong>${escapeHtml(doc.meta.documentDate || "")}</strong>
+            </div>
+            <div>
+              <span>Angebotsnummer</span>
+              <strong>${escapeHtml(doc.meta.offerNumber)}</strong>
+            </div>
+            <div>
+              <span>Gültig bis</span>
+              <strong>${escapeHtml(doc.meta.validUntil || "")}</strong>
+            </div>
           </div>
-        </section>
+          <div class="offer-party-grid">
+            <div class="offer-party">
+              <h3>Kunde / Projekt</h3>
+              <p><strong>${escapeHtml(c.company || "—")}</strong></p>
+              <p>${escapeHtml(c.projectName || "—")}</p>
+              <p>${escapeHtml(c.contact || "")}${c.email ? ` · ${escapeHtml(c.email)}` : ""}</p>
+              <p class="muted">${c.address ? escapeHtml(c.address) : ""}</p>
+            </div>
+            <div class="offer-party">
+              <h3>SSI SCHÄFER</h3>
+              <p><strong>Erstellt von</strong><br>${escapeHtml(doc.meta.preparedBy || "—")}</p>
+              <p><strong>Konfiguration</strong><br>${cfgBits || "—"}</p>
+              <p class="muted">Vorlage: ${escapeHtml(doc.meta.templateSource)}</p>
+            </div>
+          </div>
+        </header>
 
-        <section class="offer-section">
-          <h2>5. Kommerzielle Positionen</h2>
+        <nav class="offer-toc" aria-label="Inhaltsverzeichnis">
+          <h2>Inhaltsverzeichnis</h2>
+          <ol>
+            <li><a href="#sec-commercial">Kommerzielle Positionen</a></li>
+            <li><a href="#sec-scope">Umfang WAMAS Lift &amp; Store</a>
+              <ol>
+                <li><a href="#sec-functions">Standard-Funktionen / Prozesse</a></li>
+                <li><a href="#sec-options">Mögliche Optionen</a></li>
+                <li><a href="#sec-clients">Bedienoberflächen</a></li>
+              </ol>
+            </li>
+            <li><a href="#sec-architecture">Standard-Systemarchitektur</a></li>
+            <li><a href="#sec-requirements">Anforderungen</a></li>
+            <li><a href="#sec-responsibilities">Zuständigkeiten</a></li>
+            <li><a href="#sec-documents">Begleitende Dokumente</a></li>
+          </ol>
+        </nav>
+
+        <section class="offer-section" id="sec-commercial">
+          <h2>0. Kommerzielle Positionen</h2>
+          <p>Zusammenfassung aus IC License Price List und Installationskalkulation für dieses Projekt.</p>
           <table class="offer-price-table">
             <thead>
               <tr>
@@ -267,16 +317,91 @@
                 <th>Betrag</th>
               </tr>
             </thead>
-            <tbody>${commercialRows.join("")}</tbody>
+            <tbody>${commercialRows.join("") || `<tr><td colspan="4">Keine Positionen kalkuliert.</td></tr>`}</tbody>
           </table>
-          <p class="muted" style="margin-top:0.55rem">
+          <p class="offer-note">
             IC-Lizenzpreise in EUR; IT-Aufwände gemäss Installationskalkulation in CHF.
-            ${licenseTotals ? `SLL-Rabatt: ${licenseTotals.discountPercent}% (− ${money(licenseTotals.discountAmount, licenseTotals.currency || "EUR")}).` : ""}
+            ${licenseTotals ? ` SLL-Rabatt: ${licenseTotals.discountPercent}% (− ${money(licenseTotals.discountAmount, licenseTotals.currency || "EUR")}).` : ""}
           </p>
         </section>
 
-        <section class="offer-section">
-          <h2>6. Zuständigkeiten</h2>
+        <section class="offer-section" id="sec-scope">
+          <h2>1. Umfang WAMAS Lift &amp; Store</h2>
+          <p>${escapeHtml(doc.content.intro)}</p>
+          ${doc.content.introVariant ? `<p><strong>${escapeHtml(doc.content.introVariant)}</strong></p>` : ""}
+        </section>
+
+        <section class="offer-section" id="sec-functions">
+          <h2>1.1 Standard-Funktionen / Prozesse</h2>
+          <p>${escapeHtml(doc.content.standardLead || "")}</p>
+          <p>${escapeHtml(doc.content.recommendation)}</p>
+          <div class="offer-footnotes">
+            ${(doc.content.footnotes || []).map((f) => `<div>${escapeHtml(f)}</div>`).join("")}
+          </div>
+          <div class="offer-fn-list">${standardHtml}</div>
+        </section>
+
+        <section class="offer-section" id="sec-options">
+          <h2>1.2 Mögliche Optionen für WAMAS® Lift &amp; Store</h2>
+          <p>${escapeHtml(doc.content.machineOptionsLead || "")}</p>
+          <h3>Gewählte Software-Optionen</h3>
+          <div class="offer-fn-list">${optionsHtml}</div>
+          <h3>1.2.1 Hardware-Optionen vom WAMAS® Lift &amp; Store</h3>
+          <div class="offer-hw-grid">${hardwareHtml}</div>
+        </section>
+
+        <section class="offer-section" id="sec-clients">
+          <h2>1.3 Bedienoberfläche Bediener und Admin Client</h2>
+          <div class="offer-client-grid">
+            <div class="offer-client">
+              <h4>Touch Client</h4>
+              <p>${escapeHtml(doc.content.clients.touch)}</p>
+            </div>
+            <div class="offer-client">
+              <h4>Admin Client</h4>
+              <p>${escapeHtml(doc.content.clients.admin)}</p>
+            </div>
+            <div class="offer-client">
+              <h4>Mobile Terminal</h4>
+              <p>${escapeHtml(doc.content.clients.mobile)}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="offer-section" id="sec-architecture">
+          <h2>2. ${escapeHtml(arch.title || "Standard-Systemarchitektur")}</h2>
+          <p>${escapeHtml(arch.text || "")}</p>
+          ${arch.image ? `<figure class="offer-figure"><img src="${escapeHtml(arch.image)}" alt="Systemarchitektur WAMAS Lift & Store" /></figure>` : ""}
+          <ul class="offer-legend">
+            ${(arch.legend || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("")}
+          </ul>
+        </section>
+
+        <section class="offer-section" id="sec-requirements">
+          <h2>3. ${escapeHtml(req.title || "Anforderungen")}</h2>
+          <p>${escapeHtml(req.note || "")}</p>
+          <div class="offer-req-grid">
+            <div>
+              <h3>3.1 Server</h3>
+              <ul>${listItems(req.server)}</ul>
+            </div>
+            <div>
+              <h3>3.3 Desktop / Admin Client</h3>
+              <ul>${listItems(req.desktop)}</ul>
+            </div>
+            <div>
+              <h3>3.4 Touch Client / IPC</h3>
+              <ul>${listItems(req.touch)}</ul>
+            </div>
+          </div>
+          ${req.networkHighlight ? `<p class="offer-note"><strong>3.6 Netzwerk:</strong> ${escapeHtml(req.networkHighlight)}</p>` : ""}
+        </section>
+
+        <section class="offer-section" id="sec-responsibilities">
+          <h2>4. Zuständigkeiten</h2>
+          <h3>4.1 Endabnahme</h3>
+          <p>${escapeHtml(doc.content.acceptance || "")}</p>
+          <h3>4.2 Zuständigkeitsmatrix</h3>
           <table class="offer-resp">
             <thead>
               <tr><th>Aufgabe</th><th>SSI</th><th>Kunde</th></tr>
@@ -285,18 +410,34 @@
           </table>
         </section>
 
-        <section class="offer-section">
-          <h2>7. Begleitende Dokumente</h2>
-          <ul>
+        <section class="offer-section" id="sec-documents">
+          <h2>5. Begleitende Dokumente</h2>
+          <p>${escapeHtml(doc.content.documentsLead || "")}</p>
+          <ul class="offer-doc-list">
             ${(doc.content.documents || []).map((d) => `<li>${escapeHtml(d)}</li>`).join("")}
           </ul>
           <p>${escapeHtml(doc.content.closing)}</p>
         </section>
 
+        <section class="offer-signoff">
+          <div>
+            <p>Ort / Datum</p>
+            <div class="offer-sign-line"></div>
+          </div>
+          <div>
+            <p>Unterschrift Kunde</p>
+            <div class="offer-sign-line"></div>
+          </div>
+          <div>
+            <p>Unterschrift SSI SCHÄFER</p>
+            <div class="offer-sign-line"></div>
+          </div>
+        </section>
+
         <div class="offer-footer">
           <div>
             <img src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
-            <div>Vorlage: ${escapeHtml(doc.meta.templateSource)}</div>
+            <div>${escapeHtml(doc.meta.offerNumber)} · ${escapeHtml(doc.meta.documentDate || "")}</div>
           </div>
           <div class="ssi-badge"><img src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" /></div>
         </div>

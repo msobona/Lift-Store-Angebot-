@@ -1,84 +1,143 @@
 {
-  "title": "Angebot WAMAS Lift & Store",
-  "subtitle": "Softwarelösung für Vertical Lift Modules (SSI LOGIMAT®)",
-  "intro": "Die Softwarelösung WAMAS Lift & Store passt sich Ihren Bedürfnissen an. Der Einsatz ist als Standalone-Lösung oder angebunden an ein übergeordnetes System (HOST/ERP) möglich.",
-  "recommendation": "Wir empfehlen ein IT-Beratungsgespräch mit einem Softwareexperten, damit Umfänge und projektspezifische Anforderungen sauber abgestimmt werden.",
+  "documentLabel": "Anhang zur Software",
+  "title": "Angebot WAMAS® Lift & Store",
+  "subtitle": "SSI SCHÄFER · Softwarelösung für Vertical Lift Modules (SSI LOGIMAT®)",
+  "softwareVersionLabel": "WAMAS® Lift & Store Software Version 2.8",
+  "intro": "Die Softwarelösung WAMAS Lift & Store passt sich Ihren Bedürfnissen an. Daher gibt es verschiedene Möglichkeiten, die Software einzusetzen – entweder als Standalone-Lösung oder angebunden an ein übergeordnetes ERP-System.",
+  "introOrderHandling": "SSI SCHÄFER bietet Ihnen in diesem Angebot die Lösung WAMAS Lift & Store mit Order Handling an.",
+  "introStandalone": "SSI SCHÄFER bietet Ihnen in diesem Angebot die Lösung WAMAS Lift & Store als Standalone-/Basisvariante an.",
+  "standardLead": "Nachfolgend sind die entsprechenden Standardbausteine der Software kurz beschrieben.",
+  "recommendation": "Wir empfehlen ein entsprechendes IT-Beratungsgespräch mit einem unserer Softwareexperten, damit die Umfänge und speziellen Anforderungen im vorliegenden Projekt entsprechend bedacht werden.",
+  "footnotes": [
+    "* enthalten bei Anbindung an ein übergeordnetes System, sonst nur verfügbar bei manueller Anlage von Aufträgen im Admin Client (Auftragsmodus)",
+    "** nur enthalten bei Anbindung an ein übergeordnetes System"
+  ],
   "standardFunctions": [
     {
       "id": "user_mgmt",
       "title": "Benutzerverwaltung",
-      "text": "Anlegen und Verwalten einer unlimitierten Anzahl von Benutzern inkl. benutzerspezifischer Einstellungen (Sprache, Auto-Logout, Zugriffsberechtigungen)."
+      "text": "Anlegen und Verwalten einer unlimitierten Anzahl von Benutzern und Hinterlegen von benutzerspezifischen Einstellungen (z. B. Sprache, Automatischer Log-Out bei Inaktivität, Zugriffsberechtigungen für Dialoge im Admin Client)."
     },
     {
       "id": "multi_client",
       "title": "Mandantenfähigkeit",
-      "text": "Verwaltung mehrerer Mandanten/Klienten, um Artikelbestände systemisch unterscheiden zu können."
+      "text": "Verwaltung von mehreren Mandanten / Klienten innerhalb von WAMAS® LOGIMAT, um z. B. Artikelbestände systemisch unterscheiden zu können."
     },
     {
       "id": "item_mgmt",
       "title": "Umfangreiches Artikelmanagement",
-      "text": "Artikelverwaltung nach Kriterien wie Produktionsdatum, Charge und Mindesthaltbarkeitsdatum."
+      "text": "Verwaltung von Artikeln nach unterschiedlichen Kriterien, die die Ein-/Auslagerung beeinflussen: Produktionsdatum, Charge, Mindesthaltbarkeitsdatum."
     },
     {
       "id": "item_images",
       "title": "Artikelbilder",
-      "text": "Artikelbilder zur Verifizierung bei Ein-/Auslagerung am Touch Client."
+      "text": "Zur Verifizierung bei der Ein-/Auslagerung können Artikelbilder hinterlegt werden, die dem Mitarbeiter am Touch Client angezeigt werden. Durch Antippen des Bildes lässt sich dieses vergrössern. Bilder können mittels Touch- sowie Admin Client hinzugefügt werden."
     },
     {
       "id": "tray_layout",
       "title": "Tablarlayoutverwaltung",
-      "text": "Behälterplatzierung per Drag & Drop; Layouts als Vorlage speicherbar."
+      "text": "Die Behälter können systemisch auf dem Tablar platziert werden. Per „Drag and Drop“ kann der Mitarbeiter sein Tablarlayout gestalten. Tablarlayouts können als Vorlage abgespeichert und auf andere Tablare übertragen werden."
     },
     {
       "id": "box_create",
-      "title": "Behälteranlage",
-      "text": "Erstellen von Behältern im Admin Client und Touch Client."
+      "title": "Erstellen von Behältern im Admin Client und im Touch Client",
+      "text": "Sowohl im Admin Client als auch im Touch Client können neue Behälter angelegt werden. Diese können anschliessend im Tablarlayout-Editor verwendet werden."
     },
     {
       "id": "multi_item_box",
-      "title": "Mehrere Artikel in einer Box",
-      "text": "Unterschiedliche Artikel (Charge, Seriennummer etc.) in einem Behälter; farbliche Hervorhebung am Touch Client."
+      "title": "Einlagerung von unterschiedlichen Artikeln in eine Box",
+      "text": "In einem Behälter können mehrere unterschiedliche Artikel (Charge, Seriennummer etc.) eingelagert werden. Dem Mitarbeiter wird dies durch farbliche Hervorhebung am Touch Client angezeigt."
     },
     {
       "id": "manual_ops",
       "title": "Manuelle Ein-/Auslagerungen",
-      "text": "Manuelle Prozesse am Touch Client ohne Aufträge."
+      "text": "Durchführung von manuellen Ein- bzw. Auslagerungen am Touch Client (ohne Aufträge)."
     },
     {
       "id": "strategies",
-      "title": "Lagerstrategien",
-      "text": "Unterstützte Strategien u. a. Redundanz, platzoptimiert und tablaroptimiert (teilweise abhängig von HOST-Anbindung)."
+      "title": "Lagerstrategien bei Ein-/Auslagerung*",
+      "text": "Unterstützte Strategien: Redundanz (gleichmässige Verteilung auf mehrere Lifte), platzoptimiert (zuerst angebrochene Lagerplätze) und tablaroptimiert (Tablarauslastung / weniger Fahrbefehle).",
+      "marker": "*"
     },
     {
       "id": "smartsearch",
       "title": "Intelligente Suche (Smartsearch)",
-      "text": "Platzhalter- und Freitextsuche am Touch Client."
+      "text": "Am Touch Client kann der Mitarbeiter in der Suchmaske durch Platzhalter filtern (Freitext, Präfix*, *Suffix, *Mitte*)."
     },
     {
       "id": "serial",
-      "title": "Seriennummernerfassung",
-      "text": "Seriennummernerfassung bei der Kommissionierung."
+      "title": "Seriennummernerfassung bei der Kommissionierung",
+      "text": "Bei der Kommissionierung von Artikeln ist die Erfassung von Seriennummern möglich."
+    },
+    {
+      "id": "buffer",
+      "title": "Pufferung von kommissionierten Aufträgen*",
+      "text": "Fertig kommissionierte Ware, die noch nicht für den Versand benötigt wird, kann im WAMAS Lift & Store eingelagert werden (Ziel-Ladeeinheit von WAMAS Lift & Store verwaltet).",
+      "marker": "*"
+    },
+    {
+      "id": "batch_orders",
+      "title": "Stapelauftragsbearbeitung",
+      "text": "Im manuellen Betrieb können mehrere Auslagerungen in eine Warteschlange aufgenommen und nacheinander abgearbeitet werden."
     },
     {
       "id": "inventory",
-      "title": "Inventurbearbeitung",
-      "text": "Stichtagsinventur, permanente Inventur sowie spontane Inventur am Touch Client."
+      "title": "Inventurbearbeitung*",
+      "text": "Unterstützt Stichtagsinventur, permanente Inventur (inkl. Nulldurchgang) sowie spontane Inventur am Touch Client ohne Inventurauftrag.",
+      "marker": "*"
     },
     {
       "id": "printing",
       "title": "Druckfunktionen",
-      "text": "Lieferscheine, Artikeletiketten und Etiketten für Ladeeinheiten (manuell oder automatisch)."
+      "text": "Druck von Lieferscheinen, Artikeletiketten und Etiketten für Ladeeinheiten – automatisch oder manuell gestartet."
+    },
+    {
+      "id": "horizontal_opt",
+      "title": "Horizontale Optimierung*",
+      "text": "Ein Mitarbeiter arbeitet an zwei oder mehr Lagerliften; die Kommissionierreihenfolge wird so optimiert, dass Wartezeiten gering bleiben. Piktogramme leiten zur aktiven Bedienöffnung.",
+      "marker": "*"
+    },
+    {
+      "id": "dynamic_zones",
+      "title": "Dynamische Kommissionierzonen*",
+      "text": "Bildung dynamischer Kommissionierzonen: Der Mitarbeiter wählt die Lagerlifte einer Zone; dadurch ist er angemeldet und kein weiterer Mitarbeiter kann sich an diesen Liften anmelden.",
+      "marker": "*"
+    },
+    {
+      "id": "prio",
+      "title": "Auftragspriorisierung**",
+      "text": "Aufträge können unterschiedlich priorisiert werden. Die Priorität je Auftrag wird über die HOST-Schnittstelle mitgeteilt.",
+      "marker": "**",
+      "requiresOrderHandling": true
+    },
+    {
+      "id": "express",
+      "title": "Expressaufträge*",
+      "text": "Expressaufträge (höchste Priorität oder manuelle Tablaranforderungen) werden prioritär behandelt; laufende Aufträge werden beim nächsten Tablarwechsel unterbrochen und danach fortgesetzt.",
+      "marker": "*"
+    },
+    {
+      "id": "transfer_orders",
+      "title": "Übertragung von aktiven Aufträgen*",
+      "text": "Offene Aufträge eines Benutzers können an einen anderen Benutzer übertragen und von diesem weiterbearbeitet werden.",
+      "marker": "*"
+    },
+    {
+      "id": "item_import",
+      "title": "Schnittstelle für den initialen Artikelimport",
+      "text": "Artikelstammdaten werden per CSV-Datei bereitgestellt und von WAMAS Lift & Store importiert."
     },
     {
       "id": "host_interface",
-      "title": "Standardschnittstelle zu einem HOST-System",
-      "text": "Übermittlung von Aufträgen (Einlagerung, Kommissionierung, Inventur) und Artikelstammdaten vom HOST/ERP.",
+      "title": "Standardschnittstelle zu einem HOST-System**",
+      "text": "Übermittlung von Aufträgen (Einlagerung, Kommissionierung, Inventur) und Artikelstammdaten vom HOST/ERP; Rückmeldung u. a. von Bestandsinformationen an das HOST-System.",
+      "marker": "**",
       "requiresOrderHandling": true
     },
     {
       "id": "third_party_devices",
       "title": "Integration von Drittgeräten",
-      "text": "Einbindung u. a. von Barcode-Scanner, Etikettendrucker und RFID-Kartenlesegerät."
+      "text": "Einbindung u. a. von Barcode-Scanner, Etikettendrucker und RFID-Kartenlesegerät. Auf Anfrage erhalten Sie die Liste „Unterstützte Hardware“."
     },
     {
       "id": "remote",
@@ -86,14 +145,15 @@
       "text": "TeamViewer-Integration für Remote-Zugriff, z. B. im Servicefall."
     }
   ],
+  "machineOptionsLead": "WAMAS Lift & Store deckt folgende Maschinenoptionen im Funktionsumfang ab:",
   "optionTexts": {
     "advanced_security": {
-      "title": "Advanced Security",
+      "title": "Advanced Security*",
       "text": "Kontrollierter Zugriff auf einzelne Tablare und Artikel durch Vergabe von Benutzerrechten."
     },
     "tray_weight_control": {
       "title": "Tray Weight Control",
-      "text": "Visuelle Überwachung der Tablarbeladung durch Summieren der Artikelgewichte gemäss Stammdaten."
+      "text": "Visuelle Überwachung der Tablarbeladung durch Summieren der Artikelgewichte lt. Artikel-Stammdaten."
     },
     "rfid_login": {
       "title": "RFID Login",
@@ -122,16 +182,65 @@
     "advanced_permission": {
       "title": "Advanced Permission",
       "text": "Feingranulare Rechte- und Rollensteuerung für Desktop, Mobile und Touch."
+    },
+    "logilight": {
+      "title": "LOGILIGHT Control",
+      "text": "Automatische Beleuchtung der aktiven Bedienöffnung."
     }
   },
+  "hardwareOptions": [
+    { "title": "LogiBar", "text": "Freigabelichtschranke unter der Zugriffsöffnung." },
+    { "title": "LogiPointer", "text": "Kennzeichnung des Lagerorts durch ein Laserpointer-System." },
+    { "title": "LogiPull", "text": "Manueller Tablarauszug für Entnahme/Einlagerung z. B. per Kran – besonders bei schweren und unhandlichen Gütern." },
+    { "title": "LogiTilt", "text": "Neigungsvorrichtung des Tablars zur ergonomischen Entnahme der Güter." },
+    { "title": "LogiWork", "text": "Höhenverstellbare Tablarausgabe für individuelle Arbeitshöhe." }
+  ],
   "clients": {
-    "touch": "Touch Client für Bediener: Tablarbewegungen, Ein-/Aus-/Umlagern, Inventur, Artikelerfassung, Behältermanagement, Bestandsprüfung.",
-    "admin": "Admin Client: Stammdaten, Systemprozesse, HOST-Anbindung. Keine Maschinenbedienung aus Sicherheitsgründen.",
+    "touch": "Touch Client für Bediener: Tablarbewegungen, Ein-/Aus-/Umlagern, Inventur, Artikelerfassung, Behältermanagement, Maschinenbestände prüfen.",
+    "admin": "Admin Client: Stammdaten, Systemprozesse, HOST-Anbindung. Aus Sicherheitsgründen keine Maschinenbedienung – der Bediener muss am Lift stehen.",
     "mobile": "Mobile Terminal: mobile Lagerprozesse per Scanner/Touch."
   },
+  "architecture": {
+    "title": "Standard-Systemarchitektur",
+    "text": "Der WAMAS Lift & Store Server (A) ist im Kundennetzwerk integriert und verwaltet alle Daten zentral. Der WAMAS Lift & Store (C) und dessen Komponenten werden über ein internes Netzwerk verwaltet und sind mittels Firewall (B) mit dem Kundennetzwerk verbunden. Der auf dem IPC installierte Touch Client (D) und die Maschinensteuerung (E) ermöglichen die Lagerverwaltung. Für Stammdaten, Einstellungen und Auswertungen wird der Admin Client (F) auf einem Kundenrechner installiert.",
+    "legend": [
+      "(A) WAMAS Lift & Store Server",
+      "(B) Firewall",
+      "(C) WAMAS Lift & Store / LOGIMAT",
+      "(D) Touch Client / Control Panel",
+      "(E) Maschinensteuerung",
+      "(F) Admin Client"
+    ],
+    "image": "/static/assets/annex/architecture.png"
+  },
+  "requirements": {
+    "title": "Anforderungen (Auszug)",
+    "note": "Vollständige Systemanforderungen gemäss System-Requirements-Manual. Nachfolgend die wichtigsten Mindestanforderungen aus dem Software-Anhang.",
+    "server": [
+      "CPU: 4 physical cores ≥ 2.3 GHz",
+      "RAM: 24 GB",
+      "Disk: 100 GB HDD, 500 IOPS (2 SSD in Raid 1); VMware wird unterstützt",
+      "OS: MS Windows Server 2019 / 2022 (+ Java SE 1.8)",
+      "DB: Oracle 11g/12c/18c/19c oder SQL Server 2017/2019 / Express 2022"
+    ],
+    "desktop": [
+      "Intel Core i7 (11th Gen) ≥ 2,8 GHz Quad Core",
+      "8 GB RAM, 64-Bit OS",
+      "6 GB HDD für WAMAS",
+      "Auflösung ≥ 1920×1080",
+      "Windows 10/11 64 Bit (+ Java SE 1.8)"
+    ],
+    "touch": [
+      "Pro Öffnung mindestens ein IPC (min. 12\")",
+      "Windows 10 IoT / Windows 7 Embedded Standard",
+      "Kundenseitiger Touch-PC möglich gemäss Desktop-Mindestanforderungen"
+    ],
+    "networkHighlight": "Empfohlen: Server ↔ Touch Client / Admin Client 100 Mbit/s – 1 ms; Server ↔ DBMS / WCS 1 Gbit/s – <1 ms."
+  },
+  "acceptance": "Abnahme und Übergabe der Software an die Endkundschaft haben direkt nach Abschluss der Softwareschulung durch die Landesgesellschaft zu erfolgen. Dazu wird sowohl von den involvierten SSI-SCHÄFER-IT-Consultants als auch von den Verantwortlichen der Endkundschaft das Abnahmeprotokoll ausgefüllt und unterschrieben. Offene Punkte werden nach Absprache, maximal aber innerhalb von 6 Monaten ab Abnahmeprotokoll-Datum erledigt. Dieser Zeitraum wird für nicht von SSI SCHÄFER verursachte Verspätungen nicht verlängert.",
   "responsibilities": [
     { "task": "Projektkoordination vor Ort (Termine, Kosten, Projektumfang)", "ssi": false, "customer": true },
-    { "task": "Anpassung des ERP an die Standardschnittstelle von WAMAS Lift & Store", "ssi": false, "customer": true },
+    { "task": "Anpassung des ERP an die Standardschnittstelle von WAMAS® Lift & Store", "ssi": false, "customer": true },
     { "task": "Beratung und Testen der Schnittstelle (Consulting)", "ssi": true, "customer": false },
     { "task": "Bereitstellung der Arbeitsumgebung gemäss Systemanforderungen", "ssi": false, "customer": true },
     { "task": "Server-Hardware / virtueller Server", "ssi": false, "customer": true },
@@ -144,11 +253,13 @@
     { "task": "Installation/Inbetriebnahme zusätzlicher Hardware", "ssi": false, "customer": true },
     { "task": "Dokumentation", "ssi": true, "customer": false }
   ],
+  "documentsLead": "Basis und Grundlage dieses Dokumentes bilden die nachfolgenden Dokumente:",
   "documents": [
     "Administrator Manual WAMAS Lift & Store 2.8",
     "User Manual WAMAS Lift & Store 2.8",
     "Interface Manual WLS–ERP 2.8",
     "System Requirements / Supported Hardware (projektspezifisch)"
   ],
-  "closing": "Die angeführten Dokumente werden spätestens im Zuge der Auftragsbearbeitung zur Verfügung gestellt. Alle Preise verstehen sich, sofern nicht anders angegeben, exkl. MwSt."
+  "closing": "Die angeführten Dokumente werden spätestens im Zuge der Auftragsbearbeitung zur Verfügung gestellt. Alle Preise verstehen sich, sofern nicht anders angegeben, exkl. MwSt.",
+  "coverImage": "/static/assets/annex/cover-hero.jpeg"
 }
