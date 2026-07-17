@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "title": "IT-Kalkulation WAMAS Lift & Store",
+    "source": "Kalkulation WAMAS Installation.xlsm",
+    "version": "1.3",
+    "currency": "CHF",
+    "disclaimer": "IT-Aufwände sind Richtwerte auf Basis der internen Kalkulationsvorlage. Effektive Stunden können abweichen und werden nach Aufwand verrechnet."
+  },
+  "rates": {
+    "hourlyRate": 210,
+    "kmRate": 1.4,
+    "mealRate": 30,
+    "overnightRate": 150
+  },
+  "effort": {
+    "baseHours": 32,
+    "secondDevicePercent": 12.5,
+    "additionalDevicePercent": 12.5,
+    "additionalZonePercent": 12.5,
+    "additionalOpeningPercent": 6.25,
+    "orderHandlingHours": 40,
+    "externalStorageHours": 12,
+    "thirdPartyPanelHours": 4,
+    "rfidBaseHours": 3,
+    "rfidPerExtraOpeningHours": 1,
+    "scannerBaseHours": 4,
+    "scannerPerExtraOpeningHours": 0.5,
+    "itemMasterInterfaceHours": 8,
+    "pickLabelHours": 8,
+    "testSystemHours": 10,
+    "advancedSecurityHours": 8
+  },
+  "options": [
+    {
+      "id": "orderHandling",
+      "name": "Order Handling",
+      "description": "Schnittstelle zu ERP-System (Richtwert). Kickoff, Prozess-/Stammdaten-Definition, Schnittstellenschulung, Pflichtenheft, Tests, Parametrierung.",
+      "offerBullets": [
+        "Kickoff Meeting mit Auftraggeber und Systempartner",
+        "Definition der Prozess- und Stammdatenanforderungen",
+        "Schulung Standard-Schnittstelle und Telegrammstruktur",
+        "Erstellung des Pflichtenhefts",
+        "Testen der Schnittstelle",
+        "Parametrierung der Software"
+      ]
+    },
+    {
+      "id": "externalStorage",
+      "name": "Externe Lagerplätze",
+      "description": "Verwaltung von Lagerplätzen ausserhalb des LOGIMAT inkl. IBN Mobile Client. Hardware (Handheld) durch Kunden.",
+      "offerBullets": ["Einrichtung Externe Lagerplätze", "IBN Mobile Client"]
+    },
+    {
+      "id": "thirdPartyPanel",
+      "name": "Fremdes Bedienpanel",
+      "description": "Bedienpanel wird nicht durch SSI SCHÄFER geliefert. Client-Installation inbegriffen; Windows/Netzwerk/Montage durch Kunden.",
+      "offerBullets": ["Installation des Clients am kundenseitigen Bedienpanel"]
+    },
+    {
+      "id": "rfid",
+      "name": "RFID",
+      "description": "Einrichtung RFID-Login / RFID-Leser. Hardware durch Kunden.",
+      "offerBullets": ["Einrichtung RFID-Leser", "Konfiguration"]
+    },
+    {
+      "id": "scanner",
+      "name": "Scanner",
+      "description": "Scanner inkl. Kundenschulung Artikelstammerweiterung. Hardware durch Kunden.",
+      "offerBullets": ["Einrichtung Scanner", "Konfiguration"]
+    },
+    {
+      "id": "itemMasterInterface",
+      "name": "Schnittstelle Artikelstamm",
+      "description": "Artikelstamm via Schnittstelle ohne Order Handling.",
+      "offerBullets": ["Einrichtung Schnittstelle", "Schulung"]
+    },
+    {
+      "id": "pickLabel",
+      "name": "Picketikette",
+      "description": "Einrichtung und Konfiguration Picketikette und Drucker. Hardware/Druckserver durch Kunden.",
+      "offerBullets": ["Einrichtung Picketikette", "Konfiguration Drucker"]
+    },
+    {
+      "id": "testSystem",
+      "name": "Testsystem",
+      "description": "Testsystem mit AntSim – nur zusammen mit Order Handling.",
+      "requires": ["orderHandling"],
+      "offerBullets": ["Einrichtung Testsystem", "Schulung"]
+    },
+    {
+      "id": "advancedSecurity",
+      "name": "Advanced Security",
+      "description": "Konzeption und Schulung Advanced Security.",
+      "offerBullets": ["Konzeption", "Schulung"]
+    }
+  ],
+  "baseScopeBullets": [
+    "Installation der Software",
+    "Parameterierung der Software",
+    "IBN der Software",
+    "Kundenschulung",
+    "Dokumentation"
+  ]
+}

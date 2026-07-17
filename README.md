@@ -1,18 +1,11 @@
-# WAMAS Lift & Store – License Calculator
+# WAMAS Lift & Store – SSI SCHÄFER Kalkulator
 
-IC-Preis-Kalkulator für **WAMAS Lift & Store** Lizenzen.
+Zwei Module in einer App:
 
-Preisbasis: *IC Prices, valid for projects sold from 1st January 2024.*
+1. **Lizenzkalkulator** – IC License Price List (Basic/Advanced, Add-ons, Clients, SLL-Rabatt)
+2. **IT-Aufwand** – analog `Kalkulation WAMAS Installation.xlsm` (Geräte/Zonen/Öffnungen, Optionen, Reisekosten)
 
-## Lizenzmodell
-
-| Bereich | Inhalt |
-|---------|--------|
-| Instances | Basic (€ 2.200) / Advanced (€ 3.700) – jeweils inkl. 1 Opening + 1 Admin Client |
-| Add-ons | Security, Velocity, Tray Weight, RFID, Permission, Printing (€ 350); Put2Light (€ 500); External Storage / Picking Trolley (€ 1.000, Advanced) |
-| Clients | Additional Opening (€ 600), Admin (€ 1.000), Mobile Terminal (€ 600, Advanced), 3rd Party VLM (€ 1.000) |
-| Misc | Test Instance (€ 1.300), Upgrade Fee (€ 300/Jahr) |
-| Mengenrabatt | 5–10 SLL → 5%, 11–19 SLL → 15%, ≥20 SLL → 25% |
+Design angelehnt an SSI SCHÄFER Manuals / Anhang (Gelb `#FFED00`, Schwarz, Weiß, WAMAS-/SSI-Logo).
 
 ## Start
 
@@ -24,13 +17,10 @@ pip install -r requirements.txt
 python server.py
 ```
 
-→ [http://127.0.0.1:8100](http://127.0.0.1:8100)
+→ http://127.0.0.1:8100
 
-## API
+## Quellen
 
-| Methode | Pfad | Beschreibung |
-|---------|------|--------------|
-| GET | `/api/catalog` | IC Price List |
-| POST | `/api/offers/calculate` | Kalkulation |
-| POST | `/api/offers` | Speichern |
-| GET | `/api/offers/{id}/excel` | Excel-Export |
+- `../docs/manuals/2.8/` Manuals, Anhang Word, Excel IT-Kalkulation
+- `data/catalog.json` IC-Lizenzen
+- `data/it_catalog.json` IT-Stammdaten/Aufwände

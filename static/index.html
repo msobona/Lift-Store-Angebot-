@@ -3,186 +3,267 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WAMAS Lift & Store – License Calculator</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
-  <div class="atmosphere" aria-hidden="true"></div>
-
   <header class="topbar">
-    <div class="brand-mark">
-      <span class="brand-word">WAMAS</span>
-      <span class="brand-sub">Lift &amp; Store · IC License Calc</span>
+    <div class="brand-lockup">
+      <img src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
+      <div class="brand-text">
+        <strong>WAMAS Lift &amp; Store</strong>
+        <span>Angebot &amp; IT-Kalkulator</span>
+      </div>
     </div>
     <nav class="top-nav">
-      <button type="button" class="nav-link active" data-view="configurator">Kalkulator</button>
-      <button type="button" class="nav-link" data-view="archive">Gespeicherte Angebote</button>
+      <button type="button" class="nav-link active" data-view="license">Lizenzkalkulator</button>
+      <button type="button" class="nav-link" data-view="it">IT-Aufwand</button>
+      <button type="button" class="nav-link" data-view="archive">Archiv</button>
     </nav>
+    <div class="ssi-badge">
+      <img src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
+    </div>
   </header>
 
   <main>
-    <section id="view-configurator" class="view active">
-      <div class="hero">
-        <p class="hero-kicker">License Price List · IC Prices ab 01.01.2024</p>
-        <h1 class="hero-brand">WAMAS Lift &amp; Store</h1>
-        <p class="hero-lead">
-          Basic- oder Advanced-Instance wählen, Add-ons und Clients konfigurieren –
-          SLL-Mengenrabatt wird automatisch berechnet.
-        </p>
-        <div class="hero-actions">
-          <button type="button" class="btn primary" id="btnScrollConfig">Kalkulation starten</button>
-          <button type="button" class="btn ghost" id="btnPrintPreview">Vorschau drucken</button>
+    <!-- LICENSE -->
+    <section id="view-license" class="view active">
+      <div class="hero-banner">
+        <div class="hero-yellow">
+          <div>
+            <h1>License Calculator</h1>
+            <p>WAMAS Lift &amp; Store · IC Prices ab 01.01.2024</p>
+          </div>
+          <div class="hero-logos">
+            <img src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
+          </div>
+        </div>
+        <div class="hero-body">
+          <p>
+            Basic- oder Advanced-Instance wählen, Add-ons und Clients konfigurieren.
+            SLL-Mengenrabatt wird automatisch berechnet. Funktionsbeschreibungen basieren auf den Manuals 2.8.
+          </p>
+          <button type="button" class="btn primary" id="btnScrollLicense">Konfiguration starten</button>
         </div>
       </div>
 
-      <div id="configPanel" class="workspace">
-        <form id="offerForm" class="config-form" autocomplete="off">
-          <section class="block" id="blockCustomer">
+      <div id="licensePanel" class="workspace">
+        <form id="licenseForm" class="config-form" autocomplete="off">
+          <section class="block">
             <h2>Kunde &amp; Projekt</h2>
-            <p class="block-lead">Kopfdaten für die Kalkulation.</p>
+            <p class="block-lead">Kopfdaten für die Lizenzkalkulation.</p>
             <div class="grid-2">
-              <label>Firma *
-                <input name="company" required placeholder="Muster GmbH" />
-              </label>
-              <label>Projektname
-                <input name="projectName" placeholder="LOGIMAT Halle 3" />
-              </label>
-              <label>Ansprechpartner
-                <input name="contact" placeholder="Max Mustermann" />
-              </label>
-              <label>E-Mail
-                <input name="email" type="email" placeholder="max@muster.de" />
-              </label>
-              <label>Telefon
-                <input name="phone" placeholder="+49 …" />
-              </label>
-              <label>Erstellt von
-                <input name="preparedBy" placeholder="Ihr Name" />
-              </label>
-              <label class="span-2">Adresse
-                <input name="address" placeholder="Straße, PLZ Ort" />
-              </label>
+              <label>Firma *<input name="company" required placeholder="Muster GmbH" /></label>
+              <label>Projektname<input name="projectName" placeholder="LOGIMAT Halle 3" /></label>
+              <label>Ansprechpartner<input name="contact" /></label>
+              <label>E-Mail<input name="email" type="email" /></label>
+              <label>Erstellt von<input name="preparedBy" /></label>
+              <label class="span-2">Adresse<input name="address" /></label>
             </div>
           </section>
 
           <section class="block">
             <h2>Instance</h2>
             <p class="block-lead">Jede Instance enthält 1 Opening Client und 1 Admin Client.</p>
-            <div id="instanceOptions" class="option-list" role="radiogroup" aria-label="Instances"></div>
+            <div id="instanceOptions" class="option-list"></div>
             <div class="grid-2" style="margin-top:1rem">
-              <label>Anzahl Instances
-                <input name="instanceCount" type="number" min="1" max="50" value="1" />
-              </label>
+              <label>Anzahl Instances<input name="instanceCount" type="number" min="1" max="50" value="1" /></label>
             </div>
             <ul id="includedFunctions" class="included-list"></ul>
           </section>
 
           <section class="block">
             <h2>Add-on Licenses</h2>
-            <p class="block-lead">One-time fee je Instance. Verfügbarkeit hängt von Basic/Advanced ab.</p>
+            <p class="block-lead">One-time fee je Instance.</p>
             <div id="addonOptions" class="feature-list"></div>
           </section>
 
           <section class="block">
             <h2>Client Licenses</h2>
-            <p class="block-lead">Zusätzliche Clients über die inklusive Opening/Admin hinaus.</p>
             <div id="clientHints" class="client-hints"></div>
             <div class="grid-2">
-              <label>Additional Opening Clients
-                <input name="extraOpeningClients" type="number" min="0" max="200" value="0" />
-              </label>
-              <label>Additional Admin Clients
-                <input name="extraAdminClients" type="number" min="0" max="200" value="0" />
-              </label>
-              <label>Mobile Terminal Clients <span class="hint">(nur Advanced)</span>
-                <input name="mobileTerminalClients" type="number" min="0" max="200" value="0" />
-              </label>
-              <label>Connected 3rd Party VLM Types
-                <input name="thirdPartyVlmTypes" type="number" min="0" max="50" value="0" />
-              </label>
-            </div>
-          </section>
-
-          <section class="block">
-            <h2>Sonstiges</h2>
-            <div class="grid-2">
-              <label>Test Instances
-                <input name="testInstances" type="number" min="0" max="20" value="0" />
-              </label>
-              <label>Upgrade Fee (Jahre nach Warranty)
-                <input name="upgradeYears" type="number" min="0" max="20" value="0" />
-              </label>
+              <label>Additional Opening Clients<input name="extraOpeningClients" type="number" min="0" max="200" value="0" /></label>
+              <label>Additional Admin Clients<input name="extraAdminClients" type="number" min="0" max="200" value="0" /></label>
+              <label>Mobile Terminal Clients <span class="hint">(Advanced)</span><input name="mobileTerminalClients" type="number" min="0" max="200" value="0" /></label>
+              <label>3rd Party VLM Types<input name="thirdPartyVlmTypes" type="number" min="0" max="50" value="0" /></label>
+              <label>Test Instances<input name="testInstances" type="number" min="0" max="20" value="0" /></label>
+              <label>Upgrade Fee (Jahre)<input name="upgradeYears" type="number" min="0" max="20" value="0" /></label>
             </div>
             <p class="block-lead" id="sllHint" style="margin-top:1rem"></p>
-          </section>
-
-          <section class="block">
-            <h2>Notizen</h2>
-            <label class="full">
-              <textarea name="notes" rows="3" placeholder="Annahmen, Projektkontext …"></textarea>
-            </label>
+            <label class="full">Notizen<textarea name="notes" rows="2"></textarea></label>
             <div class="form-actions">
-              <button type="button" class="btn ghost" id="btnRecalc">Neu berechnen</button>
-              <button type="submit" class="btn primary" id="btnSave">Kalkulation speichern</button>
+              <button type="button" class="btn" id="btnLicenseRecalc">Neu berechnen</button>
+              <button type="submit" class="btn primary">Lizenzkalkulation speichern</button>
             </div>
           </section>
         </form>
 
-        <aside class="preview" id="previewPane" aria-live="polite">
+        <aside class="preview" id="licensePreview">
           <div class="preview-head">
             <div>
               <p class="preview-kicker">IC Kalkulation</p>
-              <h2 id="previewOfferNo">—</h2>
+              <h2 id="licenseOfferNo">—</h2>
             </div>
             <div class="preview-total">
               <span>IC Total</span>
-              <strong id="previewGross">–</strong>
+              <strong id="licenseGross">–</strong>
             </div>
           </div>
-
-          <div class="preview-meta" id="previewMeta"></div>
-          <div class="sll-badge" id="sllBadge">SLL: –</div>
-          <div class="preview-table-wrap">
-            <table class="preview-table">
-              <thead>
-                <tr>
-                  <th>Position</th>
-                  <th>Menge</th>
-                  <th>Summe</th>
-                </tr>
-              </thead>
-              <tbody id="previewLines"></tbody>
-            </table>
-          </div>
-          <div class="preview-totals" id="previewTotals"></div>
-          <div class="preview-scope">
-            <h3>Konfiguration</h3>
-            <ul id="previewScope"></ul>
-          </div>
-          <p class="disclaimer" id="previewDisclaimer"></p>
-          <div class="preview-actions">
-            <button type="button" class="btn ghost" id="btnExportExcel" disabled>Excel exportieren</button>
-            <button type="button" class="btn primary" id="btnPrint" disabled>Drucken / PDF</button>
+          <div class="preview-body">
+            <div class="preview-meta" id="licenseMeta"></div>
+            <div class="sll-badge" id="sllBadge">SLL: –</div>
+            <div class="preview-table-wrap">
+              <table class="preview-table">
+                <thead><tr><th>Position</th><th>Menge</th><th>Summe</th></tr></thead>
+                <tbody id="licenseLines"></tbody>
+              </table>
+            </div>
+            <div class="preview-totals" id="licenseTotals"></div>
+            <div class="preview-scope"><h3>Leistungsumfang</h3><ul id="licenseScope"></ul></div>
+            <p class="disclaimer" id="licenseDisclaimer"></p>
+            <div class="preview-actions">
+              <button type="button" class="btn" id="btnLicenseExcel" disabled>Excel</button>
+              <button type="button" class="btn primary" id="btnLicensePrint" disabled>Drucken</button>
+            </div>
           </div>
         </aside>
       </div>
     </section>
 
+    <!-- IT EFFORT -->
+    <section id="view-it" class="view">
+      <div class="hero-banner">
+        <div class="hero-yellow">
+          <div>
+            <h1>IT-Kalkulation</h1>
+            <p>WAMAS Lift &amp; Store Installation · Aufwand &amp; Reisekosten</p>
+          </div>
+          <div class="hero-logos">
+            <img src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
+          </div>
+        </div>
+        <div class="hero-body">
+          <p>
+            Kalkulation analog zur Vorlage „Kalkulation WAMAS Installation.xlsm“:
+            Geräte/Zonen/Öffnungen, Optionen, projektspezifische Erweiterungen und Reisekosten.
+          </p>
+          <button type="button" class="btn primary" id="btnScrollIt">IT-Kalkulation starten</button>
+        </div>
+      </div>
+
+      <div id="itPanel" class="workspace">
+        <form id="itForm" class="config-form" autocomplete="off">
+          <section class="block">
+            <h2>Kunde &amp; Projekt</h2>
+            <div class="grid-2">
+              <label>Firma *<input name="company" required placeholder="Muster GmbH" /></label>
+              <label>Projektname<input name="projectName" /></label>
+              <label>Realisierungszeitraum<input name="realizationPeriod" placeholder="Q3 2026" /></label>
+              <label>Erstellt von<input name="preparedBy" /></label>
+            </div>
+          </section>
+
+          <section class="block">
+            <h2>Logimat / Anlage</h2>
+            <table class="calc-table">
+              <thead>
+                <tr><th>Funktion</th><th>Info</th><th>Menge</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Anzahl Geräte</td>
+                  <td>Geräte, die installiert werden sollen</td>
+                  <td><input name="deviceCount" type="number" min="1" max="100" value="1" /></td>
+                </tr>
+                <tr>
+                  <td>Anzahl Zonen</td>
+                  <td>Zonen mit LOGIMAT</td>
+                  <td><input name="zoneCount" type="number" min="1" max="100" value="1" /></td>
+                </tr>
+                <tr>
+                  <td>Anzahl Öffnungen</td>
+                  <td>Gesamtanzahl Bedienöffnungen</td>
+                  <td><input name="openingCount" type="number" min="1" max="200" value="1" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="block">
+            <h2>Optionen</h2>
+            <div id="itOptions" class="feature-list"></div>
+          </section>
+
+          <section class="block">
+            <h2>Projektspezifische Erweiterungen</h2>
+            <div class="grid-2" id="itExtensions"></div>
+          </section>
+
+          <section class="block">
+            <h2>Reisekosten</h2>
+            <div class="grid-2">
+              <label>Fahrten (Roundtrips)<input name="trips" type="number" min="0" max="200" value="0" /></label>
+              <label>Fahrzeit Roundtrip [h]<input name="travelHoursPerTrip" type="number" min="0" max="48" step="0.25" value="0" /></label>
+              <label>Kilometer Roundtrip<input name="kmPerTrip" type="number" min="0" max="5000" value="0" /></label>
+              <label>Übernachtungen<input name="overnightCount" type="number" min="0" max="200" value="0" /></label>
+              <label>Verpflegungen<input name="mealCount" type="number" min="0" max="500" value="0" /></label>
+            </div>
+            <p class="block-lead" id="itRatesHint" style="margin-top:1rem"></p>
+            <label class="full">Notizen<textarea name="notes" rows="2"></textarea></label>
+            <div class="form-actions">
+              <button type="button" class="btn" id="btnItRecalc">Neu berechnen</button>
+              <button type="submit" class="btn primary">IT-Kalkulation speichern</button>
+            </div>
+          </section>
+        </form>
+
+        <aside class="preview" id="itPreview">
+          <div class="preview-head">
+            <div>
+              <p class="preview-kicker">IT Aufwand</p>
+              <h2 id="itOfferNo">—</h2>
+            </div>
+            <div class="preview-total">
+              <span>Total exkl. MwSt</span>
+              <strong id="itGross">–</strong>
+            </div>
+          </div>
+          <div class="preview-body">
+            <div class="preview-meta" id="itMeta"></div>
+            <div class="preview-table-wrap">
+              <table class="preview-table">
+                <thead><tr><th>Position</th><th>h</th><th>Betrag</th></tr></thead>
+                <tbody id="itLines"></tbody>
+              </table>
+            </div>
+            <div class="preview-totals" id="itTotals"></div>
+            <div class="preview-scope"><h3>Angebotstexte</h3><ul id="itScope"></ul></div>
+            <p class="disclaimer" id="itDisclaimer"></p>
+            <div class="preview-actions">
+              <button type="button" class="btn" id="btnItExcel" disabled>Excel</button>
+              <button type="button" class="btn primary" id="btnItPrint" disabled>Drucken</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ARCHIVE -->
     <section id="view-archive" class="view">
       <div class="archive-head">
-        <h2>Gespeicherte Kalkulationen</h2>
-        <p>Öffnen, exportieren oder löschen.</p>
+        <h2>Archiv</h2>
+        <p>Gespeicherte Lizenz- und IT-Kalkulationen.</p>
       </div>
       <div id="archiveList" class="archive-list"></div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>WAMAS Lift &amp; Store License Calculator</span>
-    <span>IC Prices · ab 01.01.2024</span>
+    <div class="footer-brand">
+      <img src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
+      <span>WAMAS Lift &amp; Store · SSI SCHÄFER</span>
+    </div>
+    <span>IC License Prices · IT-Aufwand gemäss Installationskalkulation</span>
   </footer>
 
   <script src="/static/app.js"></script>
