@@ -734,7 +734,7 @@ textarea:focus {
 .offer-price-card-note small { color: var(--ssi-muted); }
 
 .offer-section-prices {
-  break-before: page;
+  margin-top: 1.25rem;
 }
 
 .offer-price-table-full th:first-child,
@@ -774,7 +774,6 @@ textarea:focus {
   padding: 1rem 1.1rem;
   background: var(--ssi-yellow);
   border-left: 6px solid #111;
-  break-before: page;
 }
 
 .offer-annex-start h2 {
@@ -788,7 +787,6 @@ textarea:focus {
   background: linear-gradient(180deg, #fffef2 0%, #fff 100%);
   border: 1px solid var(--ssi-line);
   border-left: 6px solid var(--ssi-yellow);
-  break-after: page;
 }
 
 .offer-toc h2 {
@@ -1127,9 +1125,24 @@ textarea:focus {
     padding: 8mm 10mm;
   }
 
-  .offer-cover { break-after: page; }
-  .offer-section { break-inside: avoid; }
-  .offer-fn { break-inside: avoid; }
-  .offer-figure { break-inside: avoid; }
+  .offer-cover,
+  .offer-toc,
+  .offer-section-prices,
+  .offer-annex-start,
+  .offer-section {
+    break-before: auto;
+    break-after: auto;
+    page-break-before: auto;
+    page-break-after: auto;
+  }
+
+  .offer-fn,
+  .offer-figure,
+  .offer-price-card,
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   a { text-decoration: none !important; border: 0 !important; }
 }
