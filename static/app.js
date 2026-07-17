@@ -22,12 +22,27 @@
     advanced_security: "advancedSecurity",
   };
 
-  const money = (value, currency = "EUR") =>
+  const money = (value, currency = "CHF") =>
     new Intl.NumberFormat("de-CH", {
       style: "currency",
       currency,
       maximumFractionDigits: 2,
     }).format(Number(value || 0));
+
+  function licensePricing() {
+    const p = state.licenseCatalog?.product || {};
+    return {
+      marginPercent: Number(p.licenseMarginPercent ?? 28),
+      eurToChfRate: Number(p.eurToChfRate ?? 0.93),
+      sellCurrency: p.offerCurrency || "CHF",
+      icCurrency: p.currency || "EUR",
+    };
+  }
+
+  function icEurToSellChf(eurAmount) {
+    const { marginPercent, eurToChfRate } = licensePricing();
+    return Math.round(Number(eurAmount || 0) * (1 + marginPercent / 100) * eurToChfRate * 100) / 100;
+  }
 
   async function api(path, options = {}) {
     const res = await fetch(path, {
@@ -561,7 +576,7 @@
           <p>${inst.description}</p>
           <p class="muted">${inst.functionalSummary || ""}</p>
         </div>
-        <div class="price">${money(inst.price, "EUR")}</div>`;
+        <div class="price">${money(icEurToSellChf(inst.price), "CHF")}<small class="muted">IC ${money(inst.price, "EUR")}</small></div>`;
       label.querySelector("input").addEventListener("change", () => {
         root.querySelectorAll(".option").forEach((el) => el.classList.remove("selected"));
         label.classList.add("selected");
@@ -600,7 +615,7 @@
         <div>
           <strong>${addon.name}</strong>
           <span>${addon.functionalDescription || addon.description || ""}</span>
-          <span>${available ? money(addon.price, "EUR") : "Nur Advanced"}</span>
+          <span>${available ? `${money(icEurToSellChf(addon.price), "CHF")} · IC ${money(addon.price, "EUR")}` : "Nur Advanced"}</span>
         </div>`;
       if (available) el.querySelector("input").addEventListener("change", () => recalcLicense());
       root.appendChild(el);
@@ -617,7 +632,7 @@
         return `<div class="hint-card${locked ? " locked" : ""}">
           <strong>${c.name}</strong>
           <span>${c.functionalDescription || c.description}</span>
-          <span>${money(c.price, "EUR")}${locked ? " · nur Advanced" : ""}</span>
+          <span>${money(icEurToSellChf(c.price), "CHF")} · IC ${money(c.price, "EUR")}${locked ? " · nur Advanced" : ""}</span>
         </div>`;
       })
       .join("");
@@ -625,30 +640,47 @@
 
   function renderLicensePreview(offer) {
     state.licenseOffer = offer;
-    const t = offer.totals;
-    const ic = t.icCurrency || "EUR";
-    const sell = t.currency || "CHF";
+    const t = offer.totals || {};
+    const pricing = licensePricing();
+    const ic = t.icCurrency || pricing.icCurrency;
+    const sell = "CHF";
+    const marginPercent = t.marginPercent ?? pricing.marginPercent;
+    const fx = t.eurToChfRate ?? pricing.eurToChfRate;
+    const sellChf = t.sellNetChf != null
+      ? Number(t.sellNetChf)
+      : icEurToSellChf(t.net);
+    const sellEur = t.sellNetEur != null
+      ? Number(t.sellNetEur)
+      : Math.round(Number(t.net || 0) * (1 + marginPercent / 100) * 100) / 100;
+    const marginEur = t.marginAmountEur != null
+      ? Number(t.marginAmountEur)
+      : Math.round((sellEur - Number(t.net || 0)) * 100) / 100;
+
     document.getElementById("licenseOfferNo").textContent = offer.meta.offerNumber;
-    document.getElementById("licenseGross").textContent = money(t.sellNetChf ?? t.amount ?? t.net, sell);
+    document.getElementById("licenseGross").textContent = money(sellChf, sell);
     document.getElementById("sllBadge").textContent =
-      `SLL: ${t.sllCount} · Rabatt ${t.discountPercent}% · Marge ${t.marginPercent ?? 28}% · Kurs ${t.eurToChfRate ?? 0.93}`;
+      `SLL: ${t.sllCount} · Rabatt ${t.discountPercent}% · Marge ${marginPercent}% · Kurs ${fx}`;
     document.getElementById("licenseMeta").innerHTML = `
       <div><strong>${offer.customer.company}</strong>${offer.customer.projectName ? ` · ${offer.customer.projectName}` : ""}</div>
       <div>${offer.configuration.instanceCount}× ${offer.configuration.instanceName}</div>
-      <div>${offer.meta.priceBasis || ""}</div>`;
-    document.getElementById("licenseLines").innerHTML = offer.lines.map((line) => `
+      <div>Verkaufspreise CHF (IC + ${marginPercent}% Marge, Kurs ${fx})</div>`;
+    document.getElementById("licenseLines").innerHTML = offer.lines.map((line) => {
+      const icTotal = line.totalIcEur != null ? Number(line.totalIcEur) : null;
+      const chfTotal = line.currency === "CHF" && line.totalIcEur != null
+        ? Number(line.total)
+        : icEurToSellChf(icTotal != null ? icTotal : line.total);
+      return `
       <tr>
-        <td>${line.name}<div class="muted">${line.description || ""}${line.totalIcEur != null ? ` · IC ${money(line.totalIcEur, ic)}` : ""}</div></td>
+        <td>${line.name}<div class="muted">${line.description || ""}${icTotal != null ? ` · IC ${money(icTotal, ic)}` : ""}</div></td>
         <td>${line.qty}</td>
-        <td>${money(line.total, sell)}</td>
-      </tr>`).join("");
+        <td>${money(chfTotal, sell)}</td>
+      </tr>`;
+    }).join("");
     document.getElementById("licenseTotals").innerHTML = `
-      <div class="row"><span>IC Zwischensumme</span><span>${money(t.subtotal, ic)}</span></div>
-      <div class="row"><span>IC Mengenrabatt</span><span>− ${money(t.discountAmount, ic)}</span></div>
       <div class="row"><span>IC Total</span><span>${money(t.net, ic)}</span></div>
-      <div class="row"><span>Marge ${t.marginPercent ?? 28}%</span><span>+ ${money(t.marginAmountEur, ic)}</span></div>
-      <div class="row"><span>Verkauf EUR</span><span>${money(t.sellNetEur, ic)}</span></div>
-      <div class="row strong"><span>Verkauf CHF (× ${t.eurToChfRate ?? 0.93})</span><span>${money(t.sellNetChf, sell)}</span></div>`;
+      <div class="row"><span>Marge ${marginPercent}%</span><span>+ ${money(marginEur, ic)}</span></div>
+      <div class="row"><span>Verkauf EUR</span><span>${money(sellEur, ic)}</span></div>
+      <div class="row strong"><span>Verkauf CHF (× ${fx})</span><span>${money(sellChf, sell)}</span></div>`;
     document.getElementById("licenseScope").innerHTML =
       (offer.scopeOfSupply || []).map((s) => `<li>${s}</li>`).join("");
     document.getElementById("licenseDisclaimer").textContent = offer.product.disclaimer;
