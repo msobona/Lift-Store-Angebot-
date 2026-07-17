@@ -100,5 +100,16 @@
     "IBN der Software",
     "Kundenschulung",
     "Dokumentation"
-  ]
+  ],
+  "licenseSync": {
+    "customerFields": ["company", "projectName", "preparedBy"],
+    "optionMap": {
+      "external_storage": "externalStorage",
+      "rfid_login": "rfid",
+      "printing_support": "pickLabel",
+      "advanced_security": "advancedSecurity"
+    },
+    "advancedInstanceEnables": ["orderHandling"],
+    "notes": "Kunde/Projekt und passende Lizenz-Add-ons werden aus dem Lizenzkalkulator in die IT-Kalkulation übernommen."
+  }
 }

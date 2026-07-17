@@ -12,6 +12,14 @@
   const itForm = document.getElementById("itForm");
   const archiveList = document.getElementById("archiveList");
 
+  // Lizenz-Add-ons → IT-Optionen (Excel-Kalkulation)
+  const LICENSE_TO_IT_OPTIONS = {
+    external_storage: "externalStorage",
+    rfid_login: "rfid",
+    printing_support: "pickLabel",
+    advanced_security: "advancedSecurity",
+  };
+
   const money = (value, currency = "EUR") =>
     new Intl.NumberFormat("de-CH", {
       style: "currency",
@@ -37,7 +45,55 @@
     return res;
   }
 
+  function syncCustomerProject(fromForm, toForm) {
+    ["company", "projectName", "preparedBy"].forEach((field) => {
+      if (fromForm[field] && toForm[field]) {
+        toForm[field].value = fromForm[field].value;
+      }
+    });
+  }
+
+  function applyLicenseSelectionToIt() {
+    // Kunde / Projekt / Ersteller
+    syncCustomerProject(licenseForm, itForm);
+
+    // Mengen aus Lizenz ableiten
+    const instances = Math.max(1, Number(licenseForm.instanceCount?.value || 1));
+    const extraOpenings = Math.max(0, Number(licenseForm.extraOpeningClients?.value || 0));
+    itForm.deviceCount.value = instances;
+    itForm.openingCount.value = Math.max(instances, instances + extraOpenings);
+    if (!Number(itForm.zoneCount.value)) itForm.zoneCount.value = 1;
+
+    // Add-ons → IT-Optionen
+    const selectedAddons = new Set(
+      [...licenseForm.querySelectorAll('input[name="addon"]:checked')].map((el) => el.value)
+    );
+    Object.entries(LICENSE_TO_IT_OPTIONS).forEach(([licenseId, itId]) => {
+      const checkbox = itForm.querySelector(`input[name="itOption"][value="${itId}"]`);
+      if (checkbox) checkbox.checked = selectedAddons.has(licenseId);
+    });
+
+    // Advanced Instance enthält Order Handling → IT Order Handling vorsehen
+    const orderHandling = itForm.querySelector('input[name="itOption"][value="orderHandling"]');
+    if (orderHandling && selectedInstanceId() === "advanced") {
+      orderHandling.checked = true;
+    }
+
+    // Mobile Terminal Clients > 0 oft zusammen mit Externen Lagerplätzen
+    if (Number(licenseForm.mobileTerminalClients?.value || 0) > 0) {
+      const ext = itForm.querySelector('input[name="itOption"][value="externalStorage"]');
+      if (ext) ext.checked = true;
+    }
+  }
+
   function switchView(name) {
+    if (name === "it") {
+      applyLicenseSelectionToIt();
+      recalcIt();
+    }
+    if (name === "license") {
+      syncCustomerProject(itForm, licenseForm);
+    }
     document.querySelectorAll(".view").forEach((el) => el.classList.remove("active"));
     document.querySelectorAll(".nav-link").forEach((el) => {
       el.classList.toggle("active", el.dataset.view === name);
@@ -373,8 +429,20 @@
         alert(`Gespeichert: ${offer.meta.offerNumber}`);
       } catch (err) { alert(err.message); }
     });
-    licenseForm.addEventListener("input", () => recalcLicense());
-    licenseForm.addEventListener("change", () => recalcLicense());
+    licenseForm.addEventListener("input", () => {
+      syncCustomerProject(licenseForm, itForm);
+      recalcLicense();
+    });
+    licenseForm.addEventListener("change", () => {
+      // Bei Lizenzänderungen IT-Vorschläge mitziehen (inkl. External Storage → IT)
+      applyLicenseSelectionToIt();
+      syncCustomerProject(licenseForm, itForm);
+      recalcLicense();
+      // Falls IT-Tab aktiv ist, sofort neu rechnen
+      if (document.getElementById("view-it").classList.contains("active")) {
+        recalcIt();
+      }
+    });
 
     document.getElementById("btnItRecalc").addEventListener("click", recalcIt);
     document.getElementById("btnItPrint").addEventListener("click", () => window.print());
@@ -400,6 +468,9 @@
     itForm.addEventListener("input", (event) => {
       const t = event.target;
       if (!t || !t.name) return;
+      if (["company", "projectName", "preparedBy"].includes(t.name)) {
+        syncCustomerProject(itForm, licenseForm);
+      }
       if (t.name.startsWith("ext") || [
         "deviceCount", "zoneCount", "openingCount", "trips", "travelHoursPerTrip",
         "kmPerTrip", "overnightCount", "mealCount", "company", "projectName",
