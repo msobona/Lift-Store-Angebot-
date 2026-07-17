@@ -87,6 +87,16 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail="Unbekannte Instance")
 
     instance = instances[payload.instanceId]
+    function_catalog = catalog.get("functionCatalog", {})
+    included_functions = [
+        {
+            "id": fid,
+            "name": function_catalog.get(fid, {}).get("name", fid),
+            "description": function_catalog.get(fid, {}).get("description", ""),
+            "manualRefs": function_catalog.get(fid, {}).get("manualRefs", []),
+        }
+        for fid in instance.get("includedFunctionIds", [])
+    ]
     lines: List[Dict[str, Any]] = []
     sll = 0
 
@@ -95,7 +105,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         {
             "sku": f"INST-{instance['id'].upper()}",
             "name": instance["name"],
-            "description": instance["description"],
+            "description": instance.get("functionalSummary") or instance["description"],
             "qty": payload.instanceCount,
             "unitPrice": instance["price"],
             "total": instance_total,
@@ -121,12 +131,15 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             {
                 "sku": f"ADD-{addon_id.upper()}",
                 "name": addon["name"],
-                "description": f"Add-on License (one-time, je Instance)",
+                "description": addon.get("functionalDescription")
+                or addon.get("description")
+                or "Add-on License (one-time, je Instance)",
                 "qty": qty,
                 "unitPrice": addon["price"],
                 "total": total,
                 "category": "addon",
                 "sllUnits": units,
+                "manualRefs": addon.get("manualRefs", []),
             }
         )
         sll += units
@@ -152,12 +165,13 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             {
                 "sku": f"CLI-{cid.upper()}",
                 "name": client["name"],
-                "description": client["description"],
+                "description": client.get("functionalDescription") or client["description"],
                 "qty": qty,
                 "unitPrice": client["price"],
                 "total": total,
                 "category": "client",
                 "sllUnits": units,
+                "manualRefs": client.get("manualRefs", []),
             }
         )
         sll += units
@@ -170,7 +184,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             {
                 "sku": "MISC-TEST",
                 "name": test["name"],
-                "description": test["description"],
+                "description": test.get("functionalDescription") or test["description"],
                 "qty": payload.testInstances,
                 "unitPrice": test["price"],
                 "total": total,
@@ -187,7 +201,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             {
                 "sku": "MISC-UPGRADE",
                 "name": upgrade["name"],
-                "description": upgrade["description"],
+                "description": upgrade.get("functionalDescription") or upgrade["description"],
                 "qty": payload.upgradeYears,
                 "unitPrice": upgrade["price"],
                 "total": total,
@@ -214,23 +228,45 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     scope = [
         f"{payload.instanceCount}× {instance['name']} (IC)",
         f"Inklusive Clients: {included_opening} Opening, {included_admin} Admin",
-        "Enthaltene Funktionen: " + ", ".join(instance["includedFunctions"]),
     ]
-    if payload.selectedAddons:
-        names = [addons[a]["name"] for a in payload.selectedAddons if a in addons]
-        scope.append("Add-ons: " + ", ".join(names))
+    for fn in included_functions:
+        scope.append(f"{fn['name']}: {fn['description']}")
+    for addon_id in payload.selectedAddons:
+        addon = addons.get(addon_id)
+        if not addon:
+            continue
+        text = addon.get("functionalDescription") or addon.get("description") or addon["name"]
+        scope.append(f"{addon['name']}: {text}")
     if payload.extraOpeningClients:
-        scope.append(f"Zusätzliche Opening Clients: {payload.extraOpeningClients}")
+        scope.append(
+            f"Additional Opening Clients ({payload.extraOpeningClients}): "
+            f"{clients['extra_opening'].get('functionalDescription', '')}"
+        )
     if payload.extraAdminClients:
-        scope.append(f"Zusätzliche Admin Clients: {payload.extraAdminClients}")
+        scope.append(
+            f"Additional Admin Clients ({payload.extraAdminClients}): "
+            f"{clients['extra_admin'].get('functionalDescription', '')}"
+        )
     if payload.mobileTerminalClients:
-        scope.append(f"Mobile Terminal Clients: {payload.mobileTerminalClients}")
+        scope.append(
+            f"Mobile Terminal Clients ({payload.mobileTerminalClients}): "
+            f"{clients['mobile_terminal'].get('functionalDescription', '')}"
+        )
     if payload.thirdPartyVlmTypes:
-        scope.append(f"3rd Party VLM Types: {payload.thirdPartyVlmTypes}")
+        scope.append(
+            f"3rd Party VLM Types ({payload.thirdPartyVlmTypes}): "
+            f"{clients['third_party_vlm'].get('functionalDescription', '')}"
+        )
     if payload.testInstances:
-        scope.append(f"Test Instances: {payload.testInstances}")
+        scope.append(
+            f"Test Instances ({payload.testInstances}): "
+            f"{misc['test_instance'].get('functionalDescription', '')}"
+        )
     if payload.upgradeYears:
-        scope.append(f"Upgrade Fee: {payload.upgradeYears} Jahr(e)")
+        scope.append(
+            f"Upgrade Fee ({payload.upgradeYears} Jahr(e)): "
+            f"{misc['upgrade_fee'].get('functionalDescription', '')}"
+        )
     scope.append(f"SLL-Einheiten: {sll} → Rabatt {discount['percent']}% ({discount['label']})")
 
     return {
@@ -249,7 +285,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "upgradeYears": payload.upgradeYears,
             "includedOpeningClients": included_opening,
             "includedAdminClients": included_admin,
-            "includedFunctions": instance["includedFunctions"],
+            "includedFunctions": included_functions,
             "notes": payload.notes,
             "preparedBy": payload.preparedBy,
             "sllCount": sll,

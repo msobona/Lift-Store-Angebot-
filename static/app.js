@@ -71,6 +71,11 @@
     };
   }
 
+  function functionDetails(ids = []) {
+    const catalog = state.catalog.functionCatalog || {};
+    return ids.map((id) => catalog[id]).filter(Boolean);
+  }
+
   function renderInstances() {
     instanceOptions.innerHTML = "";
     state.catalog.instances.forEach((inst, index) => {
@@ -81,6 +86,7 @@
         <div>
           <h3>${inst.name}</h3>
           <p>${inst.description}</p>
+          <p class="muted">${inst.functionalSummary || ""}</p>
           <p class="muted">inkl. ${inst.includedOpeningClients} Opening + ${inst.includedAdminClients} Admin Client</p>
         </div>
         <div class="price">${money(inst.price)}</div>
@@ -100,8 +106,15 @@
 
   function renderIncluded() {
     const inst = currentInstance();
-    includedFunctions.innerHTML = (inst?.includedFunctions || [])
-      .map((f) => `<li>${f}</li>`)
+    const details = functionDetails(inst?.includedFunctionIds || []);
+    includedFunctions.innerHTML = details
+      .map(
+        (f) => `
+        <li>
+          <strong>${f.name}</strong>
+          <span>${f.description}</span>
+        </li>`
+      )
       .join("");
   }
 
@@ -121,8 +134,8 @@
           ${available ? "" : "disabled"} />
         <div>
           <strong>${addon.name}</strong>
-          <span>${available ? "Add-on License (one-time / Instance)" : "Nur für Advanced Instance"}</span>
-          <span>${money(addon.price)}</span>
+          <span>${addon.functionalDescription || addon.description || ""}</span>
+          <span>${available ? money(addon.price) : "Nur für Advanced Instance"}</span>
         </div>
       `;
       if (available) {
@@ -136,6 +149,19 @@
     const advanced = selectedInstanceId() === "advanced";
     form.mobileTerminalClients.disabled = !advanced;
     if (!advanced) form.mobileTerminalClients.value = 0;
+    const hints = document.getElementById("clientHints");
+    if (!hints) return;
+    hints.innerHTML = (state.catalog.clientLicenses || [])
+      .map((c) => {
+        const locked = c.availableFor && !c.availableFor.includes(selectedInstanceId());
+        return `
+          <div class="hint-card${locked ? " locked" : ""}">
+            <strong>${c.name}</strong>
+            <span>${c.functionalDescription || c.description}</span>
+            <span>${money(c.price)}${locked ? " · nur Advanced" : ""}</span>
+          </div>`;
+      })
+      .join("");
   }
 
   function renderSllHint() {
@@ -165,6 +191,7 @@
         <tr>
           <td>
             ${line.name}
+            <div class="muted">${line.description || ""}</div>
             <div class="muted">${money(line.unitPrice, currency)} · SLL ${line.sllUnits || 0}</div>
           </td>
           <td>${line.qty}</td>

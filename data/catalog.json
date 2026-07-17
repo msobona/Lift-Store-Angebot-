@@ -8,7 +8,49 @@
     "vatRate": 0.0,
     "validityDays": 30,
     "priceBasis": "IC Prices, valid for projects sold from 1st January 2024",
-    "disclaimer": "IC Prices laut WAMAS Lift & Store License Price List (gültig für Projekte ab 01.01.2024). Kein verbindliches Endkundenangebot."
+    "disclaimer": "IC Prices laut WAMAS Lift & Store License Price List (gültig für Projekte ab 01.01.2024). Kein verbindliches Endkundenangebot. Funktionsbeschreibungen abgeleitet aus WAMAS Lift & Store 2.8 Manuals (User/Administrator)."
+  },
+  "functionCatalog": {
+    "storage_demands": {
+      "name": "Storage Demands",
+      "description": "Auftragsbasierte Einlagerung: Storage Demands anlegen, freigeben, aktivieren und am Touch Client / Desktop abarbeiten.",
+      "manualRefs": ["User Manual 6.2.1, 6.2.5.1"]
+    },
+    "picking_demands": {
+      "name": "Picking Demands",
+      "description": "Auftragsbasierte Kommissionierung: Picking Demands erstellen, freigeben, aktivieren, splitten und finalisieren.",
+      "manualRefs": ["User Manual 6.2.2, 6.2.5.2, 6.4"]
+    },
+    "manual_transport": {
+      "name": "Manual Transport",
+      "description": "Manuelle Tablaroperationen am Touch: Tray anfordern/zurückgeben, an anderes Access Opening senden, Einlagern/Kommissionieren ohne Auftrag.",
+      "manualRefs": ["User Manual 6.1"]
+    },
+    "large_item_support": {
+      "name": "Large Item Support",
+      "description": "Unterstützung großer Artikel (direkt auf dem Tablar, ohne Box). Large Items sind für External Storage und Mobile Terminal eingeschränkt.",
+      "manualRefs": ["User Manual 5.1 / 6.1.4.1"]
+    },
+    "restore_goods_after_picking": {
+      "name": "Restore Goods After Picking",
+      "description": "Rücklagerung / Markierung externer Loading Units zur Wiedereinlagerung nach Kommissionierung (Restorage).",
+      "manualRefs": ["User Manual 6.7.1.3"]
+    },
+    "light_control": {
+      "name": "Light Control",
+      "description": "Ansteuerung der Lift-Beleuchtung (LogiLight), inkl. Lighting Mode und Auto-Off-Parametern am Access Opening.",
+      "manualRefs": ["Administrator Manual 3.1.1"]
+    },
+    "order_templates": {
+      "name": "Order Templates",
+      "description": "Demand Templates für Storage-/Picking-Demands inkl. Zeilen- und External-Reference-Vorlagen zur schnellen Auftragserzeugung.",
+      "manualRefs": ["User Manual 5.3"]
+    },
+    "order_handling": {
+      "name": "Order Handling",
+      "description": "Erweiterte Auftragssteuerung: Release/Activate, Split, Suspend/Resume, Takeover, Mengenkorrektur und organisatorisches Finalisieren.",
+      "manualRefs": ["User Manual 6.2, 6.4"]
+    }
   },
   "instances": [
     {
@@ -17,15 +59,16 @@
       "price": 2200,
       "includedOpeningClients": 1,
       "includedAdminClients": 1,
-      "includedFunctions": [
-        "Storage Demands",
-        "Picking Demands",
-        "Manual Transport",
-        "Large Item Support",
-        "Restore Goods After Picking",
-        "Light Control"
+      "includedFunctionIds": [
+        "storage_demands",
+        "picking_demands",
+        "manual_transport",
+        "large_item_support",
+        "restore_goods_after_picking",
+        "light_control"
       ],
-      "description": "Basisinstanz inkl. 1 Opening Client und 1 Admin Client."
+      "description": "Basisinstanz für SSI LOGIMAT-Betrieb mit Storage-/Picking-Demands, manuellen Transporten und Light Control. Inkl. 1 Opening Client und 1 Admin Client.",
+      "functionalSummary": "Geeignet für Standalone-Betrieb mit geführten Touch-Prozessen und Desktop-Administration ohne Order Templates und ohne erweiterte Order-Handling-Funktionen."
     },
     {
       "id": "advanced",
@@ -33,17 +76,18 @@
       "price": 3700,
       "includedOpeningClients": 1,
       "includedAdminClients": 1,
-      "includedFunctions": [
-        "Storage Demands",
-        "Picking Demands",
-        "Manual Transport",
-        "Large Item Support",
-        "Restore Goods After Picking",
-        "Light Control",
-        "Order Templates",
-        "Order Handling"
+      "includedFunctionIds": [
+        "storage_demands",
+        "picking_demands",
+        "manual_transport",
+        "large_item_support",
+        "restore_goods_after_picking",
+        "light_control",
+        "order_templates",
+        "order_handling"
       ],
-      "description": "Advanced-Instanz inkl. Order Templates/Handling sowie 1 Opening Client und 1 Admin Client."
+      "description": "Advanced-Instanz inkl. Order Templates und Order Handling sowie 1 Opening Client und 1 Admin Client. Voraussetzung für Mobile Terminal, Put2Light, External Storage und Picking Trolley.",
+      "functionalSummary": "Für Anlagen mit wiederkehrenden Auftragsmustern, erweiterter Auftragssteuerung und optionalen Advanced-Add-ons."
     }
   ],
   "addons": [
@@ -52,63 +96,90 @@
       "name": "Advanced Security",
       "price": 350,
       "availableFor": ["basic", "advanced"],
-      "sllUnits": 1
+      "sllUnits": 1,
+      "description": "Erweiterte Sicherheitsfunktionen rund um Benutzerzugriff und Nachvollziehbarkeit.",
+      "functionalDescription": "Ergänzt die Benutzerverwaltung um strengere Absicherung: User Locks, Session-Monitoring, Login-Protokoll und Audit Log für nachvollziehbare Änderungen und Zugriffe.",
+      "manualRefs": ["Administrator Manual 3.3.8–3.3.10"]
     },
     {
       "id": "velocity_management",
       "name": "Velocity Management",
       "price": 350,
       "availableFor": ["basic", "advanced"],
-      "sllUnits": 1
+      "sllUnits": 1,
+      "description": "Geschwindigkeits- und Bewegungsparameter für Artikel/Tablare.",
+      "functionalDescription": "Verwaltung von Velocity-Parametern (z. B. max. horizontale/vertikale Geschwindigkeit) und unterstützende ABC-/Einlagerstrategien zur Optimierung von Bewegungen und Lagerplatzwahl.",
+      "manualRefs": ["User Manual 5.1 (WLS Item)", "Administrator Manual 3.1.10.3, 3.1.17"]
     },
     {
       "id": "tray_weight_control",
       "name": "Tray Weight Control",
       "price": 350,
       "availableFor": ["basic", "advanced"],
-      "sllUnits": 1
+      "sllUnits": 1,
+      "description": "Gewichtskontrolle von Tablaren über angebundene Waagen.",
+      "functionalDescription": "Zuordnung von Scales an Access Openings, Anzeige/Prüfung des Tray Weights und Nutzung von Scale Operations zur Mengen-/Gewichtserfassung.",
+      "manualRefs": ["User Manual 5.7, 6.4.13", "Administrator Manual 3.12.8"]
     },
     {
       "id": "rfid_login",
       "name": "RFID Login",
       "price": 350,
       "availableFor": ["basic", "advanced"],
-      "sllUnits": 1
+      "sllUnits": 1,
+      "description": "Anmeldung am Touch Client per RFID.",
+      "functionalDescription": "Login am Touch Client über RFID-Reader und Security Token statt manueller Benutzereingabe – schneller Schichtwechsel und weniger Fehleingaben.",
+      "manualRefs": ["User Manual 2.1.3"]
     },
     {
       "id": "advanced_permission",
       "name": "Advanced Permission",
       "price": 350,
       "availableFor": ["basic", "advanced"],
-      "sllUnits": 1
+      "sllUnits": 1,
+      "description": "Feingranulare Rechte- und Rollensteuerung.",
+      "functionalDescription": "Application Permission Profiles mit getrennten Zugriffsrechten für Desktop, Mobile, Touch und Perspectives sowie Rollen-/Area-Profile für differenzierte Benutzerrechte.",
+      "manualRefs": ["Administrator Manual 3.3.3–3.3.6"]
     },
     {
       "id": "printing_support",
       "name": "Printing Support",
       "price": 350,
       "availableFor": ["basic", "advanced"],
-      "sllUnits": 1
+      "sllUnits": 1,
+      "description": "Dokumenten- und Etikettendruck.",
+      "functionalDescription": "Druck von Artikel-, LU- und Lagerplatzetiketten sowie Lieferscheinen; Printer Management, Document Types/Layouts und Reprint aus dem Archiv.",
+      "manualRefs": ["User Manual 6.8", "Administrator Manual 3.7–3.8"]
     },
     {
       "id": "put2light",
       "name": "Put 2 Light Support",
       "price": 500,
       "availableFor": ["advanced"],
-      "sllUnits": 1
+      "sllUnits": 1,
+      "description": "Visuelle Unterstützung beim Einlagern/Bereitstellen (Put-to-Light).",
+      "functionalDescription": "Put-to-Light-Unterstützung zur geführten Einlagerung/Zuordnung – reduziert Fehlgriffe und beschleunigt Put-Prozesse an der Access Opening / Zielposition.",
+      "manualRefs": ["Administrator Manual 3.1.1 (Light options)", "Product feature Put 2 Light"]
     },
     {
       "id": "external_storage",
       "name": "External Storage Locations",
       "price": 1000,
       "availableFor": ["advanced"],
-      "sllUnits": 1
+      "sllUnits": 1,
+      "description": "Verwaltung externer Lagerplätze außerhalb des Lifts.",
+      "functionalDescription": "External Storage Locations/Groups pflegen, Bestände von/zu externen Plätzen bewegen, Import von Stock Objects und Nutzung in Replenishment-/Mobile-Prozessen.",
+      "manualRefs": ["Administrator Manual 3.1.14–3.1.15", "User Manual 4 / 6.3"]
     },
     {
       "id": "picking_trolley",
       "name": "Picking Trolley Support",
       "price": 1000,
       "availableFor": ["advanced"],
-      "sllUnits": 1
+      "sllUnits": 1,
+      "description": "Kommissionierwagen-Prozesse.",
+      "functionalDescription": "Picking Trolleys anlegen, Picking Demands zuweisen, Loading Units nachfüllen, Benutzer zuordnen und Trolleys finalisieren – für batch-/wagenbasierte Kommissionierung.",
+      "manualRefs": ["User Manual 5.5", "Administrator Manual 3.1.18"]
     }
   ],
   "clientLicenses": [
@@ -118,7 +189,9 @@
       "price": 600,
       "availableFor": ["basic", "advanced"],
       "sllUnitsPerQty": 1,
-      "description": "Zusätzlicher Opening Client (über die 1 inklusive hinaus)."
+      "description": "Zusätzlicher Opening Client (über die 1 inklusive hinaus).",
+      "functionalDescription": "Weiterer Touch-Client an einer Access Opening für parallele Bedienung (Einlagerung, Kommissionierung, Inventur, Tray Operations).",
+      "manualRefs": ["User Manual Kap. 2, 6"]
     },
     {
       "id": "extra_admin",
@@ -126,7 +199,9 @@
       "price": 1000,
       "availableFor": ["basic", "advanced"],
       "sllUnitsPerQty": 1,
-      "description": "Zusätzlicher Admin Client (über die 1 inklusive hinaus)."
+      "description": "Zusätzlicher Admin Client (über die 1 inklusive hinaus).",
+      "functionalDescription": "Weiterer Desktop-Client für Stammdaten, Auftragsadministration, Monitoring, Schnittstellen und Systemkonfiguration.",
+      "manualRefs": ["User Manual Kap. 3", "Administrator Manual Kap. 3"]
     },
     {
       "id": "mobile_terminal",
@@ -134,7 +209,9 @@
       "price": 600,
       "availableFor": ["advanced"],
       "sllUnitsPerQty": 1,
-      "description": "Lizenz pro Mobile Terminal Client."
+      "description": "Lizenz pro Mobile Terminal Client.",
+      "functionalDescription": "Mobiler Client für Prozesse im Lager: Einlagern, Kommissionieren, Inventur, Bestandsverteilung und Infodialoge per Scanner/Touch/Keypad.",
+      "manualRefs": ["User Manual Kap. 4, 6.3"]
     },
     {
       "id": "third_party_vlm",
@@ -142,7 +219,9 @@
       "price": 1000,
       "availableFor": ["basic", "advanced"],
       "sllUnitsPerQty": 1,
-      "description": "Lizenz pro angebundenem Fremd-VLM-Typ."
+      "description": "Lizenz pro angebundenem Fremd-VLM-Typ.",
+      "functionalDescription": "Anbindung eines Vertical Lift Module-Typs eines Drittanbieters an WAMAS Lift & Store (neben SSI LOGIMAT) inkl. Geräte-/Kommunikationskonfiguration.",
+      "manualRefs": ["Administrator Manual 3.1.1 / 3.9"]
     }
   ],
   "misc": [
@@ -152,7 +231,8 @@
       "price": 1300,
       "unit": "Instance",
       "sllUnitsPerQty": 1,
-      "description": "Testinstanz (Basic oder Advanced)."
+      "description": "Testinstanz (Basic oder Advanced).",
+      "functionalDescription": "Separate Instanz für Test, Schulung oder Abnahme – ohne Produktivbetrieb zu beeinträchtigen."
     },
     {
       "id": "upgrade_fee",
@@ -161,7 +241,8 @@
       "unit": "Jahr",
       "sllUnitsPerQty": 0,
       "recurring": true,
-      "description": "Upgrade Fee pro Jahr, beginnend nach Ablauf der Warranty."
+      "description": "Upgrade Fee pro Jahr, beginnend nach Ablauf der Warranty.",
+      "functionalDescription": "Jährliche Gebühr für Software-Upgrades nach Ende der Warranty-Periode."
     }
   ],
   "quantityDiscounts": [
@@ -170,5 +251,5 @@
     { "minSll": 11, "maxSll": 19, "percent": 15, "label": "11–20 SLL → 15%" },
     { "minSll": 20, "maxSll": null, "percent": 25, "label": "20+ SLL → 25%" }
   ],
-  "sllDefinition": "SLL = Summe aller Lizenzeinheiten: 1× Instance + gewählte Add-ons + Client-Lizenzen (Menge) + Test Instances. Upgrade Fee zählt nicht als SLL."
+  "sllDefinition": "SLL = Summe aller Lizenzeinheiten: Instance-Anzahl + gewählte Add-ons (× Instances) + Client-Lizenzen (Menge) + Test Instances. Upgrade Fee zählt nicht als SLL."
 }
