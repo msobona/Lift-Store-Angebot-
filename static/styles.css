@@ -289,7 +289,19 @@ textarea:focus {
 .option input { width: auto; margin-top: 0.2rem; background: #fff; }
 .option h3 { margin: 0 0 0.2rem; font-size: 1rem; }
 .option p { margin: 0; color: var(--ssi-muted); font-size: 0.88rem; font-weight: 400; }
-.option .price { font-weight: 800; white-space: nowrap; }
+.option .price {
+  font-weight: 800;
+  white-space: nowrap;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-end;
+}
+.option .price small {
+  font-weight: 600;
+  font-size: 0.72rem;
+}
 
 .feature-list,
 .included-list,
