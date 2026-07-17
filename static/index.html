@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WAMAS Lift & Store – Angebot Generator</title>
+  <title>WAMAS Lift & Store – License Calculator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
@@ -15,10 +15,10 @@
   <header class="topbar">
     <div class="brand-mark">
       <span class="brand-word">WAMAS</span>
-      <span class="brand-sub">Lift &amp; Store</span>
+      <span class="brand-sub">Lift &amp; Store · IC License Calc</span>
     </div>
     <nav class="top-nav">
-      <button type="button" class="nav-link active" data-view="configurator">Konfigurator</button>
+      <button type="button" class="nav-link active" data-view="configurator">Kalkulator</button>
       <button type="button" class="nav-link" data-view="archive">Gespeicherte Angebote</button>
     </nav>
   </header>
@@ -26,14 +26,14 @@
   <main>
     <section id="view-configurator" class="view active">
       <div class="hero">
-        <p class="hero-kicker">Angebot Generator · Version 2.8</p>
+        <p class="hero-kicker">License Price List · IC Prices ab 01.01.2024</p>
         <h1 class="hero-brand">WAMAS Lift &amp; Store</h1>
         <p class="hero-lead">
-          Konfigurieren Sie Softwarepaket, Lift-Lizenzen und Module auf Basis der offiziellen Manuals –
-          und erzeugen Sie in Minuten ein druckfertiges Angebot inkl. Leistungsumfang.
+          Basic- oder Advanced-Instance wählen, Add-ons und Clients konfigurieren –
+          SLL-Mengenrabatt wird automatisch berechnet.
         </p>
         <div class="hero-actions">
-          <button type="button" class="btn primary" id="btnScrollConfig">Konfiguration starten</button>
+          <button type="button" class="btn primary" id="btnScrollConfig">Kalkulation starten</button>
           <button type="button" class="btn ghost" id="btnPrintPreview">Vorschau drucken</button>
         </div>
       </div>
@@ -42,7 +42,7 @@
         <form id="offerForm" class="config-form" autocomplete="off">
           <section class="block" id="blockCustomer">
             <h2>Kunde &amp; Projekt</h2>
-            <p class="block-lead">Stammdaten für das Angebotskopfblatt.</p>
+            <p class="block-lead">Kopfdaten für die Kalkulation.</p>
             <div class="grid-2">
               <label>Firma *
                 <input name="company" required placeholder="Muster GmbH" />
@@ -69,49 +69,63 @@
           </section>
 
           <section class="block">
-            <h2>Softwarepaket</h2>
-            <p class="block-lead">Wählen Sie die passende Ausbaustufe für die Anlage.</p>
-            <div id="packageOptions" class="option-list" role="radiogroup" aria-label="Pakete"></div>
+            <h2>Instance</h2>
+            <p class="block-lead">Jede Instance enthält 1 Opening Client und 1 Admin Client.</p>
+            <div id="instanceOptions" class="option-list" role="radiogroup" aria-label="Instances"></div>
+            <div class="grid-2" style="margin-top:1rem">
+              <label>Anzahl Instances
+                <input name="instanceCount" type="number" min="1" max="50" value="1" />
+              </label>
+            </div>
+            <ul id="includedFunctions" class="included-list"></ul>
           </section>
 
           <section class="block">
-            <h2>Anlage</h2>
-            <p class="block-lead">Anzahl der Vertical Lift Modules und Services.</p>
+            <h2>Add-on Licenses</h2>
+            <p class="block-lead">One-time fee je Instance. Verfügbarkeit hängt von Basic/Advanced ab.</p>
+            <div id="addonOptions" class="feature-list"></div>
+          </section>
+
+          <section class="block">
+            <h2>Client Licenses</h2>
+            <p class="block-lead">Zusätzliche Clients über die inklusive Opening/Admin hinaus.</p>
             <div class="grid-2">
-              <label>Anzahl Lagerlifte
-                <input name="liftCount" type="number" min="1" max="50" value="1" />
+              <label>Additional Opening Clients
+                <input name="extraOpeningClients" type="number" min="0" max="200" value="0" />
               </label>
-              <label>Schulungstage
-                <input name="trainingDays" type="number" min="0" max="30" value="1" />
+              <label>Additional Admin Clients
+                <input name="extraAdminClients" type="number" min="0" max="200" value="0" />
               </label>
-              <label class="check">
-                <input name="includeImplementation" type="checkbox" checked />
-                Implementierung &amp; Inbetriebnahme
+              <label>Mobile Terminal Clients <span class="hint">(nur Advanced)</span>
+                <input name="mobileTerminalClients" type="number" min="0" max="200" value="0" />
               </label>
-              <label class="check">
-                <input name="includeMaintenance" type="checkbox" checked />
-                Wartungsvertrag (jährlich)
-              </label>
-              <label>Rabatt
-                <select name="discountId" id="discountSelect"></select>
+              <label>Connected 3rd Party VLM Types
+                <input name="thirdPartyVlmTypes" type="number" min="0" max="50" value="0" />
               </label>
             </div>
           </section>
 
           <section class="block">
-            <h2>Module &amp; Funktionen</h2>
-            <p class="block-lead">Paketfunktionen sind vorausgewählt. Ergänzen Sie optionale Module.</p>
-            <div id="featureOptions" class="feature-list"></div>
+            <h2>Sonstiges</h2>
+            <div class="grid-2">
+              <label>Test Instances
+                <input name="testInstances" type="number" min="0" max="20" value="0" />
+              </label>
+              <label>Upgrade Fee (Jahre nach Warranty)
+                <input name="upgradeYears" type="number" min="0" max="20" value="0" />
+              </label>
+            </div>
+            <p class="block-lead" id="sllHint" style="margin-top:1rem"></p>
           </section>
 
           <section class="block">
             <h2>Notizen</h2>
             <label class="full">
-              <textarea name="notes" rows="3" placeholder="Besondere Anforderungen, Liefertermine, Annahmen …"></textarea>
+              <textarea name="notes" rows="3" placeholder="Annahmen, Projektkontext …"></textarea>
             </label>
             <div class="form-actions">
               <button type="button" class="btn ghost" id="btnRecalc">Neu berechnen</button>
-              <button type="submit" class="btn primary" id="btnSave">Angebot speichern</button>
+              <button type="submit" class="btn primary" id="btnSave">Kalkulation speichern</button>
             </div>
           </section>
         </form>
@@ -119,16 +133,17 @@
         <aside class="preview" id="previewPane" aria-live="polite">
           <div class="preview-head">
             <div>
-              <p class="preview-kicker">Angebotsvorschau</p>
+              <p class="preview-kicker">IC Kalkulation</p>
               <h2 id="previewOfferNo">—</h2>
             </div>
             <div class="preview-total">
-              <span>Brutto</span>
+              <span>IC Total</span>
               <strong id="previewGross">–</strong>
             </div>
           </div>
 
           <div class="preview-meta" id="previewMeta"></div>
+          <div class="sll-badge" id="sllBadge">SLL: –</div>
           <div class="preview-table-wrap">
             <table class="preview-table">
               <thead>
@@ -143,7 +158,7 @@
           </div>
           <div class="preview-totals" id="previewTotals"></div>
           <div class="preview-scope">
-            <h3>Leistungsumfang</h3>
+            <h3>Konfiguration</h3>
             <ul id="previewScope"></ul>
           </div>
           <p class="disclaimer" id="previewDisclaimer"></p>
@@ -157,16 +172,16 @@
 
     <section id="view-archive" class="view">
       <div class="archive-head">
-        <h2>Gespeicherte Angebote</h2>
-        <p>Öffnen, exportieren oder löschen Sie zuvor gespeicherte Angebote.</p>
+        <h2>Gespeicherte Kalkulationen</h2>
+        <p>Öffnen, exportieren oder löschen.</p>
       </div>
       <div id="archiveList" class="archive-list"></div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <span>WAMAS Lift &amp; Store Angebot Generator</span>
-    <span>Richtwerte zu Demonstrationszwecken</span>
+    <span>WAMAS Lift &amp; Store License Calculator</span>
+    <span>IC Prices · ab 01.01.2024</span>
   </footer>
 
   <script src="/static/app.js"></script>

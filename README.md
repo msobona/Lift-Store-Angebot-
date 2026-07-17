@@ -1,59 +1,36 @@
-# WAMAS Lift & Store – Angebot Generator
+# WAMAS Lift & Store – License Calculator
 
-Web-Anwendung zur Erstellung von Software-Angeboten für **WAMAS Lift & Store** (SSI SCHÄFER).
+IC-Preis-Kalkulator für **WAMAS Lift & Store** Lizenzen.
 
-## Funktionen
+Preisbasis: *IC Prices, valid for projects sold from 1st January 2024.*
 
-- Konfiguration von Paketen (Starter / Professional / Enterprise)
-- Lift-Lizenzen, Module und Services
-- Leistungsumfang basierend auf WAMAS Lift & Store **2.8** Manuals
-- Live-Preisberechnung inkl. Rabatt und MwSt.
-- Speichern und Archivieren von Angeboten
-- Excel-Export und Druck-/PDF-Vorschau
+## Lizenzmodell
 
-Quellen: `../docs/manuals/2.8/` (User, Administrator, Interface WLS–ERP)  
-Kurzüberblick: [`data/scope_from_manuals.md`](./data/scope_from_manuals.md)
-
-> Die hinterlegten Preise sind **Richtwerte zu Demonstrationszwecken** und kein verbindliches SSI-SCHÄFER-Angebot.
+| Bereich | Inhalt |
+|---------|--------|
+| Instances | Basic (€ 2.200) / Advanced (€ 3.700) – jeweils inkl. 1 Opening + 1 Admin Client |
+| Add-ons | Security, Velocity, Tray Weight, RFID, Permission, Printing (€ 350); Put2Light (€ 500); External Storage / Picking Trolley (€ 1.000, Advanced) |
+| Clients | Additional Opening (€ 600), Admin (€ 1.000), Mobile Terminal (€ 600, Advanced), 3rd Party VLM (€ 1.000) |
+| Misc | Test Instance (€ 1.300), Upgrade Fee (€ 300/Jahr) |
+| Mengenrabatt | 5–10 SLL → 5%, 11–19 SLL → 15%, ≥20 SLL → 25% |
 
 ## Start
 
 ```bash
 cd lift-store-angebot
 python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 python server.py
 ```
 
-Anschließend im Browser öffnen: [http://127.0.0.1:8100](http://127.0.0.1:8100)
+→ [http://127.0.0.1:8100](http://127.0.0.1:8100)
 
-## Projektstruktur
-
-```
-lift-store-angebot/
-├── server.py           # FastAPI Backend
-├── requirements.txt
-├── data/
-│   ├── catalog.json    # Pakete, Module, Preise
-│   └── offers/         # Gespeicherte Angebote (JSON)
-└── static/
-    ├── index.html
-    ├── styles.css
-    └── app.js
-```
-
-## API (Auswahl)
+## API
 
 | Methode | Pfad | Beschreibung |
 |---------|------|--------------|
-| GET | `/api/catalog` | Produktkatalog |
-| POST | `/api/offers/calculate` | Angebot berechnen |
-| POST | `/api/offers` | Angebot speichern |
-| GET | `/api/offers` | Angebotsarchiv |
+| GET | `/api/catalog` | IC Price List |
+| POST | `/api/offers/calculate` | Kalkulation |
+| POST | `/api/offers` | Speichern |
 | GET | `/api/offers/{id}/excel` | Excel-Export |
-
-## Hinweise
-
-- Gespeicherte Angebote liegen lokal unter `data/offers/`.
-- Preise und Module können in `data/catalog.json` angepasst werden.

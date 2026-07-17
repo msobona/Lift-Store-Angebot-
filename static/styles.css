@@ -495,10 +495,47 @@ textarea:focus {
   font-size: 1rem;
 }
 
+.included-list {
+  margin: 1rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  columns: 2;
+  gap: 1rem;
+}
+
+.included-list li {
+  margin-bottom: 0.25rem;
+}
+
+.hint {
+  font-weight: 500;
+  color: var(--accent-warm);
+  font-size: 0.78rem;
+}
+
+.sll-badge {
+  display: inline-flex;
+  margin-bottom: 0.85rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(15, 122, 138, 0.12);
+  color: var(--accent-deep);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .preview-scope {
   margin-top: 1rem;
   padding-top: 0.85rem;
   border-top: 1px solid var(--line);
+}
+
+.option .muted,
+.preview-table .muted {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 400;
 }
 
 .preview-scope h3 {
