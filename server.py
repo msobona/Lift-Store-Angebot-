@@ -23,6 +23,7 @@ DATA_DIR = BASE_DIR / "data"
 OFFERS_DIR = DATA_DIR / "offers"
 CATALOG_FILE = DATA_DIR / "catalog.json"
 IT_CATALOG_FILE = DATA_DIR / "it_catalog.json"
+OFFER_TEMPLATE_FILE = DATA_DIR / "offer_template.json"
 
 OFFERS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -41,6 +42,10 @@ def load_catalog() -> Dict[str, Any]:
 
 def load_it_catalog() -> Dict[str, Any]:
     return json.loads(IT_CATALOG_FILE.read_text(encoding="utf-8"))
+
+
+def load_offer_template() -> Dict[str, Any]:
+    return json.loads(OFFER_TEMPLATE_FILE.read_text(encoding="utf-8"))
 
 
 def offer_path(offer_id: str) -> Path:
@@ -636,6 +641,155 @@ def get_catalog():
 @app.get("/api/it/catalog")
 def get_it_catalog():
     return load_it_catalog()
+
+
+@app.get("/api/offer/template")
+def get_offer_template():
+    return load_offer_template()
+
+
+class ComposeOfferRequest(BaseModel):
+    licenseOfferId: Optional[str] = None
+    itOfferId: Optional[str] = None
+    license: Optional[Dict[str, Any]] = None
+    it: Optional[Dict[str, Any]] = None
+
+
+def _load_saved_offer(offer_id: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not offer_id:
+        return None
+    path = offer_path(offer_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Angebot nicht gefunden: {offer_id}")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.post("/api/offer/compose")
+def compose_offer(payload: ComposeOfferRequest):
+    """Baut ein Angebotsdokument aus Lizenz- und/oder IT-Kalkulation im Stil des Word-Anhangs."""
+    template = load_offer_template()
+    license_offer = payload.license or _load_saved_offer(payload.licenseOfferId)
+    it_offer = payload.it or _load_saved_offer(payload.itOfferId)
+    if not license_offer and not it_offer:
+        raise HTTPException(status_code=400, detail="Lizenz- und/oder IT-Kalkulation erforderlich")
+
+    customer = (license_offer or it_offer).get("customer", {})
+    prepared_by = (
+        (license_offer or {}).get("configuration", {}).get("preparedBy")
+        or (it_offer or {}).get("configuration", {}).get("preparedBy")
+        or ""
+    )
+
+    selected_addons = set((license_offer or {}).get("configuration", {}).get("selectedAddons") or [])
+    instance_name = (license_offer or {}).get("configuration", {}).get("instanceName", "")
+    has_order_handling = (
+        (license_offer or {}).get("configuration", {}).get("instanceId") == "advanced"
+        or bool((it_offer or {}).get("configuration", {}).get("options", {}).get("orderHandling"))
+    )
+
+    standard = []
+    for fn in template["standardFunctions"]:
+        if fn.get("requiresOrderHandling") and not has_order_handling:
+            continue
+        standard.append(fn)
+
+    options = []
+    option_texts = template.get("optionTexts", {})
+    for addon_id in sorted(selected_addons):
+        if addon_id in option_texts:
+            options.append({"id": addon_id, **option_texts[addon_id]})
+
+    # also include IT-selected options not already covered
+    it_opts = (it_offer or {}).get("configuration", {}).get("options") or {}
+    it_to_licenseish = {
+        "externalStorage": "external_storage",
+        "rfid": "rfid_login",
+        "pickLabel": "printing_support",
+        "advancedSecurity": "advanced_security",
+    }
+    for it_id, lic_id in it_to_licenseish.items():
+        if it_opts.get(it_id) and lic_id in option_texts and lic_id not in selected_addons:
+            options.append({"id": lic_id, **option_texts[lic_id]})
+
+    commercial = []
+    if license_offer:
+        for line in license_offer.get("lines", []):
+            commercial.append(
+                {
+                    "section": "Softwarelizenzen (IC)",
+                    "name": line.get("name"),
+                    "description": line.get("description"),
+                    "qty": line.get("qty"),
+                    "amount": line.get("total"),
+                    "currency": license_offer.get("totals", {}).get("currency", "EUR"),
+                }
+            )
+    if it_offer:
+        for line in it_offer.get("lines", []):
+            if not (line.get("amount") or line.get("hours")):
+                continue
+            if line.get("category") == "option" and not line.get("selected") and not line.get("amount"):
+                continue
+            commercial.append(
+                {
+                    "section": "IT-Aufwand / Services",
+                    "name": line.get("name"),
+                    "description": line.get("description"),
+                    "qty": line.get("qty"),
+                    "hours": line.get("hours"),
+                    "amount": line.get("amount"),
+                    "currency": it_offer.get("totals", {}).get("currency", "CHF"),
+                }
+            )
+
+    created = datetime.now()
+    doc = {
+        "kind": "offer_document",
+        "meta": {
+            "offerNumber": f"ANG-{created.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
+            "createdAt": created.isoformat(timespec="seconds"),
+            "validUntil": (created + timedelta(days=30)).date().isoformat(),
+            "preparedBy": prepared_by,
+            "templateSource": "Anhang zu Software_v2.6.X.docx",
+        },
+        "customer": customer,
+        "branding": {
+            "product": "WAMAS Lift & Store",
+            "vendor": "SSI SCHÄFER",
+            "version": "2.8",
+        },
+        "content": {
+            "title": template["title"],
+            "subtitle": template["subtitle"],
+            "intro": template["intro"],
+            "recommendation": template["recommendation"],
+            "configurationSummary": {
+                "instanceName": instance_name,
+                "instanceCount": (license_offer or {}).get("configuration", {}).get("instanceCount"),
+                "deviceCount": (it_offer or {}).get("configuration", {}).get("deviceCount"),
+                "zoneCount": (it_offer or {}).get("configuration", {}).get("zoneCount"),
+                "openingCount": (it_offer or {}).get("configuration", {}).get("openingCount"),
+                "hasOrderHandling": has_order_handling,
+            },
+            "standardFunctions": standard,
+            "selectedOptions": options,
+            "clients": template["clients"],
+            "responsibilities": template["responsibilities"],
+            "documents": template["documents"],
+            "closing": template["closing"],
+            "itOfferSections": (it_offer or {}).get("offerSections") or [],
+        },
+        "commercialLines": commercial,
+        "totals": {
+            "license": (license_offer or {}).get("totals"),
+            "it": (it_offer or {}).get("totals"),
+        },
+        "sources": {
+            "licenseOfferNumber": (license_offer or {}).get("meta", {}).get("offerNumber"),
+            "itOfferNumber": (it_offer or {}).get("meta", {}).get("offerNumber"),
+        },
+    }
+    return doc
 
 
 @app.post("/api/offers/calculate")

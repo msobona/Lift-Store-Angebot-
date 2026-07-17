@@ -572,13 +572,214 @@ textarea:focus {
   .hero-logos { justify-content: flex-start; }
 }
 
+/* ----- Offer document (Word-annex style) ----- */
+.offer-doc {
+  background: #fff;
+  border: 1px solid var(--ssi-line);
+  padding: 0;
+  color: var(--ssi-ink);
+}
+
+.offer-doc .empty-state { padding: 1.25rem; }
+
+.offer-sheet {
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 14mm 16mm 16mm;
+}
+
+.offer-doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 4px solid var(--ssi-yellow);
+}
+
+.offer-doc-header img { height: 40px; width: auto; }
+
+.offer-doc-titlebar {
+  background: var(--ssi-yellow);
+  padding: 0.85rem 1rem;
+  margin: 0 0 1.25rem;
+}
+
+.offer-doc-titlebar h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+
+.offer-doc-titlebar p {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+}
+
+.offer-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.4rem;
+  font-size: 0.92rem;
+}
+
+.offer-meta-grid strong {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ssi-muted);
+  margin-bottom: 0.15rem;
+}
+
+.offer-section {
+  margin: 0 0 1.35rem;
+  break-inside: avoid;
+}
+
+.offer-section h2 {
+  margin: 0 0 0.55rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding-bottom: 0.3rem;
+  border-bottom: 3px solid var(--ssi-yellow);
+  display: inline-block;
+}
+
+.offer-section h3 {
+  margin: 0.85rem 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.offer-section p,
+.offer-section li {
+  font-size: 0.9rem;
+  color: #222;
+  line-height: 1.45;
+}
+
+.offer-section ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.offer-dual-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.offer-card {
+  border: 1px solid var(--ssi-line);
+  padding: 0.7rem 0.8rem;
+  background: #fafafa;
+}
+
+.offer-card strong { display: block; margin-bottom: 0.25rem; }
+
+.offer-price-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  margin-top: 0.4rem;
+}
+
+.offer-price-table th,
+.offer-price-table td {
+  border: 1px solid var(--ssi-line);
+  padding: 0.45rem 0.5rem;
+  vertical-align: top;
+}
+
+.offer-price-table th {
+  background: #efefef;
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.offer-price-table td.num { text-align: right; white-space: nowrap; }
+
+.offer-price-table tr.section-head td {
+  background: var(--ssi-yellow);
+  font-weight: 800;
+}
+
+.offer-price-table tr.total td {
+  background: #111;
+  color: #fff;
+  font-weight: 800;
+}
+
+.offer-resp {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.offer-resp th,
+.offer-resp td {
+  border: 1px solid var(--ssi-line);
+  padding: 0.4rem 0.5rem;
+}
+
+.offer-resp th { background: #efefef; }
+.offer-resp td.center { text-align: center; font-weight: 800; }
+
+.offer-footer {
+  margin-top: 1.5rem;
+  padding-top: 0.85rem;
+  border-top: 4px solid var(--ssi-yellow);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--ssi-muted);
+}
+
+.offer-footer img { height: 26px; }
+
+@media (max-width: 960px) {
+  .offer-meta-grid,
+  .offer-dual-col {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
-  .topbar, .hero-banner, .config-form, .site-footer, .preview-actions, #view-archive {
+  .topbar,
+  .hero-banner,
+  .config-form,
+  .site-footer,
+  .preview-actions,
+  .no-print,
+  #view-archive,
+  #view-license,
+  #view-it {
     display: none !important;
   }
+
+  #view-offer {
+    display: block !important;
+  }
+
   body { background: #fff; }
   main { width: 100%; margin: 0; padding: 0; }
   .workspace { display: block; }
   .preview { border: 0; }
   .preview-head { break-inside: avoid; }
+
+  .offer-doc {
+    border: 0;
+  }
+
+  .offer-sheet {
+    max-width: none;
+    padding: 10mm 12mm;
+  }
 }

@@ -1,0 +1,154 @@
+{
+  "title": "Angebot WAMAS Lift & Store",
+  "subtitle": "Softwarelösung für Vertical Lift Modules (SSI LOGIMAT®)",
+  "intro": "Die Softwarelösung WAMAS Lift & Store passt sich Ihren Bedürfnissen an. Der Einsatz ist als Standalone-Lösung oder angebunden an ein übergeordnetes System (HOST/ERP) möglich.",
+  "recommendation": "Wir empfehlen ein IT-Beratungsgespräch mit einem Softwareexperten, damit Umfänge und projektspezifische Anforderungen sauber abgestimmt werden.",
+  "standardFunctions": [
+    {
+      "id": "user_mgmt",
+      "title": "Benutzerverwaltung",
+      "text": "Anlegen und Verwalten einer unlimitierten Anzahl von Benutzern inkl. benutzerspezifischer Einstellungen (Sprache, Auto-Logout, Zugriffsberechtigungen)."
+    },
+    {
+      "id": "multi_client",
+      "title": "Mandantenfähigkeit",
+      "text": "Verwaltung mehrerer Mandanten/Klienten, um Artikelbestände systemisch unterscheiden zu können."
+    },
+    {
+      "id": "item_mgmt",
+      "title": "Umfangreiches Artikelmanagement",
+      "text": "Artikelverwaltung nach Kriterien wie Produktionsdatum, Charge und Mindesthaltbarkeitsdatum."
+    },
+    {
+      "id": "item_images",
+      "title": "Artikelbilder",
+      "text": "Artikelbilder zur Verifizierung bei Ein-/Auslagerung am Touch Client."
+    },
+    {
+      "id": "tray_layout",
+      "title": "Tablarlayoutverwaltung",
+      "text": "Behälterplatzierung per Drag & Drop; Layouts als Vorlage speicherbar."
+    },
+    {
+      "id": "box_create",
+      "title": "Behälteranlage",
+      "text": "Erstellen von Behältern im Admin Client und Touch Client."
+    },
+    {
+      "id": "multi_item_box",
+      "title": "Mehrere Artikel in einer Box",
+      "text": "Unterschiedliche Artikel (Charge, Seriennummer etc.) in einem Behälter; farbliche Hervorhebung am Touch Client."
+    },
+    {
+      "id": "manual_ops",
+      "title": "Manuelle Ein-/Auslagerungen",
+      "text": "Manuelle Prozesse am Touch Client ohne Aufträge."
+    },
+    {
+      "id": "strategies",
+      "title": "Lagerstrategien",
+      "text": "Unterstützte Strategien u. a. Redundanz, platzoptimiert und tablaroptimiert (teilweise abhängig von HOST-Anbindung)."
+    },
+    {
+      "id": "smartsearch",
+      "title": "Intelligente Suche (Smartsearch)",
+      "text": "Platzhalter- und Freitextsuche am Touch Client."
+    },
+    {
+      "id": "serial",
+      "title": "Seriennummernerfassung",
+      "text": "Seriennummernerfassung bei der Kommissionierung."
+    },
+    {
+      "id": "inventory",
+      "title": "Inventurbearbeitung",
+      "text": "Stichtagsinventur, permanente Inventur sowie spontane Inventur am Touch Client."
+    },
+    {
+      "id": "printing",
+      "title": "Druckfunktionen",
+      "text": "Lieferscheine, Artikeletiketten und Etiketten für Ladeeinheiten (manuell oder automatisch)."
+    },
+    {
+      "id": "host_interface",
+      "title": "Standardschnittstelle zu einem HOST-System",
+      "text": "Übermittlung von Aufträgen (Einlagerung, Kommissionierung, Inventur) und Artikelstammdaten vom HOST/ERP.",
+      "requiresOrderHandling": true
+    },
+    {
+      "id": "third_party_devices",
+      "title": "Integration von Drittgeräten",
+      "text": "Einbindung u. a. von Barcode-Scanner, Etikettendrucker und RFID-Kartenlesegerät."
+    },
+    {
+      "id": "remote",
+      "title": "Remote-Zugriff",
+      "text": "TeamViewer-Integration für Remote-Zugriff, z. B. im Servicefall."
+    }
+  ],
+  "optionTexts": {
+    "advanced_security": {
+      "title": "Advanced Security",
+      "text": "Kontrollierter Zugriff auf einzelne Tablare und Artikel durch Vergabe von Benutzerrechten."
+    },
+    "tray_weight_control": {
+      "title": "Tray Weight Control",
+      "text": "Visuelle Überwachung der Tablarbeladung durch Summieren der Artikelgewichte gemäss Stammdaten."
+    },
+    "rfid_login": {
+      "title": "RFID Login",
+      "text": "Automatisches Einloggen am Bedienterminal mittels RFID-Karte (RFID-Kartenlesegerät nötig)."
+    },
+    "printing_support": {
+      "title": "Printing Support / Druckfunktionen",
+      "text": "Erweiterte Druckunterstützung für Etiketten und Dokumente."
+    },
+    "external_storage": {
+      "title": "Externe Lagerplätze",
+      "text": "Verwaltung von Lagerplätzen ausserhalb des LOGIMAT inkl. mobiler Prozesse."
+    },
+    "picking_trolley": {
+      "title": "Picking Trolley Support",
+      "text": "Unterstützung von Kommissionierwagen-Prozessen."
+    },
+    "put2light": {
+      "title": "Put 2 Light Support",
+      "text": "Visuelle Unterstützung beim Einlagern/Bereitstellen."
+    },
+    "velocity_management": {
+      "title": "Velocity Management",
+      "text": "Geschwindigkeits- und Bewegungsparameter zur Prozessoptimierung."
+    },
+    "advanced_permission": {
+      "title": "Advanced Permission",
+      "text": "Feingranulare Rechte- und Rollensteuerung für Desktop, Mobile und Touch."
+    }
+  },
+  "clients": {
+    "touch": "Touch Client für Bediener: Tablarbewegungen, Ein-/Aus-/Umlagern, Inventur, Artikelerfassung, Behältermanagement, Bestandsprüfung.",
+    "admin": "Admin Client: Stammdaten, Systemprozesse, HOST-Anbindung. Keine Maschinenbedienung aus Sicherheitsgründen.",
+    "mobile": "Mobile Terminal: mobile Lagerprozesse per Scanner/Touch."
+  },
+  "responsibilities": [
+    { "task": "Projektkoordination vor Ort (Termine, Kosten, Projektumfang)", "ssi": false, "customer": true },
+    { "task": "Anpassung des ERP an die Standardschnittstelle von WAMAS Lift & Store", "ssi": false, "customer": true },
+    { "task": "Beratung und Testen der Schnittstelle (Consulting)", "ssi": true, "customer": false },
+    { "task": "Bereitstellung der Arbeitsumgebung gemäss Systemanforderungen", "ssi": false, "customer": true },
+    { "task": "Server-Hardware / virtueller Server", "ssi": false, "customer": true },
+    { "task": "Netzwerkanschluss, Switch/Router, Ethernet-Verkabelung", "ssi": false, "customer": true },
+    { "task": "Netzwerkkonfiguration (z. B. IP-Adressen)", "ssi": false, "customer": true },
+    { "task": "Internetzugang für TeamViewer/VPN (Remote Support)", "ssi": false, "customer": true },
+    { "task": "Zusätzliche Hardware (Scanner, Drucker, RFID etc.)", "ssi": false, "customer": true },
+    { "task": "Installation & Konfiguration WAMAS Lift & Store", "ssi": true, "customer": false },
+    { "task": "Bedienerschulung WAMAS Lift & Store", "ssi": true, "customer": false },
+    { "task": "Installation/Inbetriebnahme zusätzlicher Hardware", "ssi": false, "customer": true },
+    { "task": "Dokumentation", "ssi": true, "customer": false }
+  ],
+  "documents": [
+    "Administrator Manual WAMAS Lift & Store 2.8",
+    "User Manual WAMAS Lift & Store 2.8",
+    "Interface Manual WLS–ERP 2.8",
+    "System Requirements / Supported Hardware (projektspezifisch)"
+  ],
+  "closing": "Die angeführten Dokumente werden spätestens im Zuge der Auftragsbearbeitung zur Verfügung gestellt. Alle Preise verstehen sich, sofern nicht anders angegeben, exkl. MwSt."
+}

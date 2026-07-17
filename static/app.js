@@ -4,6 +4,7 @@
     itCatalog: null,
     licenseOffer: null,
     itOffer: null,
+    offerDocument: null,
     savedLicenseId: null,
     savedItId: null,
   };
@@ -100,6 +101,206 @@
     });
     document.getElementById(`view-${name}`).classList.add("active");
     if (name === "archive") loadArchive();
+    if (name === "offer" && (state.licenseOffer || state.itOffer)) {
+      // still require explicit button, but keep print enabled if doc exists
+      document.getElementById("btnPrintOffer").disabled = !document.querySelector(".offer-sheet");
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  async function ensureCurrentCalcs() {
+    // frische Live-Daten aus den Formularen holen
+    applyLicenseSelectionToIt();
+    await Promise.all([recalcLicense(), recalcIt()]);
+  }
+
+  async function composeOfferDocument() {
+    await ensureCurrentCalcs();
+    if (!state.licenseOffer && !state.itOffer) {
+      alert("Bitte zuerst Lizenz- und/oder IT-Kalkulation ausfüllen.");
+      return;
+    }
+    const body = {
+      license: state.licenseOffer || null,
+      it: state.itOffer || null,
+    };
+    try {
+      const doc = await api("/api/offer/compose", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      state.offerDocument = doc;
+      renderOfferDocument(doc);
+      document.getElementById("btnPrintOffer").disabled = false;
+      switchView("offer");
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  function renderOfferDocument(doc) {
+    const root = document.getElementById("offerDocument");
+    const c = doc.customer || {};
+    const cfg = doc.content.configurationSummary || {};
+    const licenseTotals = doc.totals.license;
+    const itTotals = doc.totals.it;
+
+    const commercialRows = [];
+    let lastSection = "";
+    (doc.commercialLines || []).forEach((line) => {
+      if (line.section !== lastSection) {
+        commercialRows.push(`<tr class="section-head"><td colspan="4">${escapeHtml(line.section)}</td></tr>`);
+        lastSection = line.section;
+      }
+      commercialRows.push(`
+        <tr>
+          <td>${escapeHtml(line.name)}<div class="muted">${escapeHtml(line.description || "")}</div></td>
+          <td class="num">${escapeHtml(line.qty ?? "")}</td>
+          <td class="num">${line.hours != null ? escapeHtml(line.hours) : ""}</td>
+          <td class="num">${money(line.amount, line.currency || "EUR")}</td>
+        </tr>`);
+    });
+    if (licenseTotals) {
+      commercialRows.push(`
+        <tr class="total">
+          <td colspan="3">Softwarelizenzen IC Total</td>
+          <td class="num">${money(licenseTotals.net, licenseTotals.currency || "EUR")}</td>
+        </tr>`);
+    }
+    if (itTotals) {
+      commercialRows.push(`
+        <tr class="total">
+          <td colspan="3">IT-Aufwand Total exkl. MwSt</td>
+          <td class="num">${money(itTotals.totalAmount, itTotals.currency || "CHF")}</td>
+        </tr>`);
+    }
+
+    const standardHtml = (doc.content.standardFunctions || [])
+      .map((fn) => `<div class="offer-card"><strong>${escapeHtml(fn.title)}</strong><span>${escapeHtml(fn.text)}</span></div>`)
+      .join("");
+
+    const optionsHtml = (doc.content.selectedOptions || []).length
+      ? (doc.content.selectedOptions || [])
+        .map((opt) => `<li><strong>${escapeHtml(opt.title)}</strong> – ${escapeHtml(opt.text)}</li>`)
+        .join("")
+      : "<li>Keine optionalen Module gewählt.</li>";
+
+    const respHtml = (doc.content.responsibilities || [])
+      .map((r) => `
+        <tr>
+          <td>${escapeHtml(r.task)}</td>
+          <td class="center">${r.ssi ? "X" : ""}</td>
+          <td class="center">${r.customer ? "X" : ""}</td>
+        </tr>`)
+      .join("");
+
+    root.innerHTML = `
+      <div class="offer-sheet">
+        <div class="offer-doc-header">
+          <img src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
+          <div class="ssi-badge"><img src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" /></div>
+        </div>
+
+        <div class="offer-doc-titlebar">
+          <h1>${escapeHtml(doc.content.title)}</h1>
+          <p>${escapeHtml(doc.content.subtitle)} · Version ${escapeHtml(doc.branding.version)}</p>
+        </div>
+
+        <div class="offer-meta-grid">
+          <div><strong>Angebotsnummer</strong>${escapeHtml(doc.meta.offerNumber)}</div>
+          <div><strong>Datum / Gültig bis</strong>${escapeHtml(doc.meta.createdAt?.slice(0, 10) || "")} / ${escapeHtml(doc.meta.validUntil || "")}</div>
+          <div><strong>Kunde</strong>${escapeHtml(c.company || "—")}</div>
+          <div><strong>Projekt</strong>${escapeHtml(c.projectName || "—")}</div>
+          <div><strong>Ansprechpartner</strong>${escapeHtml(c.contact || "—")}</div>
+          <div><strong>Erstellt von</strong>${escapeHtml(doc.meta.preparedBy || "—")}</div>
+          <div><strong>Konfiguration</strong>
+            ${cfg.instanceName ? escapeHtml(cfg.instanceName) + (cfg.instanceCount ? ` (${cfg.instanceCount}×)` : "") : "—"}
+            ${cfg.deviceCount ? ` · ${cfg.deviceCount} Geräte` : ""}
+            ${cfg.openingCount ? ` · ${cfg.openingCount} Öffnungen` : ""}
+          </div>
+          <div><strong>Quellen</strong>
+            ${escapeHtml(doc.sources.licenseOfferNumber || "Lizenz live")}
+            ${doc.sources.itOfferNumber ? " · " + escapeHtml(doc.sources.itOfferNumber) : " · IT live"}
+          </div>
+        </div>
+
+        <section class="offer-section">
+          <h2>1. Umfang WAMAS Lift &amp; Store</h2>
+          <p>${escapeHtml(doc.content.intro)}</p>
+          <p>${escapeHtml(doc.content.recommendation)}</p>
+        </section>
+
+        <section class="offer-section">
+          <h2>2. Standard-Funktionen / Prozesse</h2>
+          <div class="offer-dual-col">${standardHtml}</div>
+        </section>
+
+        <section class="offer-section">
+          <h2>3. Gewählte Optionen</h2>
+          <ul>${optionsHtml}</ul>
+        </section>
+
+        <section class="offer-section">
+          <h2>4. Bedienoberflächen</h2>
+          <div class="offer-dual-col">
+            <div class="offer-card"><strong>Touch Client</strong><span>${escapeHtml(doc.content.clients.touch)}</span></div>
+            <div class="offer-card"><strong>Admin Client</strong><span>${escapeHtml(doc.content.clients.admin)}</span></div>
+            <div class="offer-card"><strong>Mobile Terminal</strong><span>${escapeHtml(doc.content.clients.mobile)}</span></div>
+          </div>
+        </section>
+
+        <section class="offer-section">
+          <h2>5. Kommerzielle Positionen</h2>
+          <table class="offer-price-table">
+            <thead>
+              <tr>
+                <th>Position</th>
+                <th>Menge</th>
+                <th>Stunden</th>
+                <th>Betrag</th>
+              </tr>
+            </thead>
+            <tbody>${commercialRows.join("")}</tbody>
+          </table>
+          <p class="muted" style="margin-top:0.55rem">
+            IC-Lizenzpreise in EUR; IT-Aufwände gemäss Installationskalkulation in CHF.
+            ${licenseTotals ? `SLL-Rabatt: ${licenseTotals.discountPercent}% (− ${money(licenseTotals.discountAmount, licenseTotals.currency || "EUR")}).` : ""}
+          </p>
+        </section>
+
+        <section class="offer-section">
+          <h2>6. Zuständigkeiten</h2>
+          <table class="offer-resp">
+            <thead>
+              <tr><th>Aufgabe</th><th>SSI</th><th>Kunde</th></tr>
+            </thead>
+            <tbody>${respHtml}</tbody>
+          </table>
+        </section>
+
+        <section class="offer-section">
+          <h2>7. Begleitende Dokumente</h2>
+          <ul>
+            ${(doc.content.documents || []).map((d) => `<li>${escapeHtml(d)}</li>`).join("")}
+          </ul>
+          <p>${escapeHtml(doc.content.closing)}</p>
+        </section>
+
+        <div class="offer-footer">
+          <div>
+            <img src="/static/assets/SSI_WAMAS.png" alt="WAMAS" />
+            <div>Vorlage: ${escapeHtml(doc.meta.templateSource)}</div>
+          </div>
+          <div class="ssi-badge"><img src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" /></div>
+        </div>
+      </div>`;
   }
 
   // -------------------- LICENSE --------------------
@@ -500,6 +701,12 @@
         await api(`/api/offers/${encodeURIComponent(id)}`, { method: "DELETE" });
         await loadArchive();
       }
+    });
+
+    document.getElementById("btnComposeOffer").addEventListener("click", composeOfferDocument);
+    document.getElementById("btnPrintOffer").addEventListener("click", () => {
+      switchView("offer");
+      window.print();
     });
   }
 

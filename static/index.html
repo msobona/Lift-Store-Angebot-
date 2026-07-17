@@ -18,6 +18,7 @@
     <nav class="top-nav">
       <button type="button" class="nav-link active" data-view="license">Lizenzkalkulator</button>
       <button type="button" class="nav-link" data-view="it">IT-Aufwand</button>
+      <button type="button" class="nav-link" data-view="offer">Angebot</button>
       <button type="button" class="nav-link" data-view="archive">Archiv</button>
     </nav>
     <div class="ssi-badge">
@@ -250,6 +251,32 @@
           </div>
         </aside>
       </div>
+    </section>
+
+    <!-- OFFER DOCUMENT -->
+    <section id="view-offer" class="view">
+      <div class="hero-banner no-print">
+        <div class="hero-yellow">
+          <div>
+            <h1>Angebot</h1>
+            <p>Vorlage angelehnt an „Anhang zu Software WAMAS Lift &amp; Store“</p>
+          </div>
+        </div>
+        <div class="hero-body">
+          <p>
+            Das Angebotsdokument kombiniert Lizenzkalkulation, IT-Aufwand und Leistungsbeschreibung
+            aus dem Word-Anhang. Bitte zuerst Lizenz und/oder IT kalkulieren, dann Angebot erzeugen.
+          </p>
+          <div class="form-actions" style="margin:0">
+            <button type="button" class="btn primary" id="btnComposeOffer">Angebot erzeugen</button>
+            <button type="button" class="btn" id="btnPrintOffer" disabled>Drucken / PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <article id="offerDocument" class="offer-doc" aria-live="polite">
+        <p class="empty-state">Noch kein Angebot erzeugt. Lizenz/IT konfigurieren und „Angebot erzeugen“ wählen.</p>
+      </article>
     </section>
 
     <!-- ARCHIVE -->

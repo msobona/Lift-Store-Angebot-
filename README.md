@@ -1,9 +1,10 @@
 # WAMAS Lift & Store – SSI SCHÄFER Kalkulator
 
-Zwei Module in einer App:
+Module in einer App:
 
 1. **Lizenzkalkulator** – IC License Price List (Basic/Advanced, Add-ons, Clients, SLL-Rabatt)
-2. **IT-Aufwand** – analog `Kalkulation WAMAS Installation.xlsm` (Geräte/Zonen/Öffnungen, Optionen, Reisekosten)
+2. **IT-Aufwand** – analog `Kalkulation WAMAS Installation.xlsm`
+3. **Angebot** – druckfertiges Dokument im Stil des Word-Anhangs „Anhang zu Software WAMAS Lift & Store“
 
 Design angelehnt an SSI SCHÄFER Manuals / Anhang (Gelb `#FFED00`, Schwarz, Weiß, WAMAS-/SSI-Logo).
 
