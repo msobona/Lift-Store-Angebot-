@@ -87,6 +87,9 @@ class OfferRequest(BaseModel):
     upgradeYears: int = Field(0, ge=0, le=20)
     notes: str = ""
     preparedBy: str = ""
+    # Optional: überschreibt Katalog-Defaults (interne Kalkulation)
+    licenseMarginPercent: Optional[float] = Field(None, ge=0, le=500)
+    eurToChfRate: Optional[float] = Field(None, gt=0, le=10)
 
 
 def resolve_discount(catalog: Dict[str, Any], sll: int) -> Dict[str, Any]:
@@ -232,8 +235,16 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     discount_amount = round(subtotal * (discount["percent"] / 100), 2)
     net = round(subtotal - discount_amount, 2)
     product = catalog["product"]
-    margin_percent = float(product.get("licenseMarginPercent") or 0)
-    eur_to_chf = float(product.get("eurToChfRate") or 1)
+    margin_percent = float(
+        payload.licenseMarginPercent
+        if payload.licenseMarginPercent is not None
+        else (product.get("licenseMarginPercent") or 0)
+    )
+    eur_to_chf = float(
+        payload.eurToChfRate
+        if payload.eurToChfRate is not None
+        else (product.get("eurToChfRate") or 1)
+    )
     margin_factor = 1.0 + (margin_percent / 100.0)
     margin_amount_eur = round(net * (margin_percent / 100.0), 2)
     sell_net_eur = round(net * margin_factor, 2)
@@ -782,14 +793,13 @@ def compose_offer(payload: ComposeOfferRequest):
         fx = float(lic_totals.get("eurToChfRate") or 1)
         margin_factor = 1.0 + (margin_pct / 100.0)
         for line in license_offer.get("lines", []):
+            # Kundenangebot: nur Verkaufspreise, keine IC-/Einkaufspreise in der Beschreibung
             add_commercial(
                 "A · Softwarelizenzen (Verkauf CHF)",
                 {
                     **line,
                     "currency": lic_currency,
-                    "description": (
-                        f"{line.get('description') or ''} · IC {line.get('totalIcEur', line.get('total'))} EUR"
-                    ).strip(" ·"),
+                    "description": line.get("description") or "",
                 },
                 amount_key="total",
             )
@@ -802,10 +812,7 @@ def compose_offer(payload: ComposeOfferRequest):
                     "section": "A · Softwarelizenzen (Verkauf CHF)",
                     "sku": "DISC-SLL",
                     "name": f"Mengenrabatt SLL ({lic_totals.get('discountPercent', 0)}%)",
-                    "description": (
-                        f"{license_offer.get('configuration', {}).get('discountLabel', '')} · "
-                        f"IC −{lic_totals.get('discountAmount')} EUR"
-                    ).strip(),
+                    "description": license_offer.get("configuration", {}).get("discountLabel", "") or "",
                     "qty": 1,
                     "unitPrice": -disc_chf,
                     "hours": None,
@@ -884,9 +891,10 @@ def compose_offer(payload: ComposeOfferRequest):
         if it_totals
         else None,
         "grandTotalChf": grand_chf,
+        # Kundenfreundlich: keine Einkaufspreise / Marge / Kurs offenlegen
         "note": (
-            "Lizenzen: IC-Preise EUR + 28% Marge, umgerechnet mit Kurs EUR→CHF 0.93. "
-            "IT-Aufwände in CHF gemäss Installationskalkulation. Alle Beträge exkl. MwSt."
+            "Alle Preise in CHF, exkl. MwSt. "
+            "Softwarelizenzen und IT-Aufwände gemäss dieser Aufstellung."
         ),
     }
 
@@ -1144,10 +1152,6 @@ def api_export_excel(offer_id: str):
             [
                 [],
                 ["Zusammenfassung"],
-                ["IC Total EUR", lic.get("icNet"), lic.get("icCurrency")],
-                ["Marge %", lic.get("marginPercent")],
-                ["Verkauf EUR", lic.get("sellNetEur")],
-                ["Kurs EUR→CHF", lic.get("eurToChfRate")],
                 ["Softwarelizenzen Verkauf CHF", lic.get("total"), lic.get("currency")],
                 ["IT-Aufwand Total", it.get("total"), it.get("currency")],
                 ["Gesamttotal CHF", summary.get("grandTotalChf"), "CHF"],

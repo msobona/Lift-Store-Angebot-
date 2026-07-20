@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260717e" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260720a" />
 </head>
 <body>
   <header class="topbar">
@@ -77,6 +77,21 @@
             <h2>Add-on Licenses</h2>
             <p class="block-lead">One-time fee je Instance.</p>
             <div id="addonOptions" class="feature-list"></div>
+          </section>
+
+          <section class="block">
+            <h2>Verkaufskalkulation</h2>
+            <p class="block-lead">
+              Einkaufspreise (IC EUR) bleiben intern. Marge und Kurs steuern den Verkaufspreis CHF fürs Kundenangebot.
+            </p>
+            <div class="grid-2">
+              <label>Marge %
+                <input name="licenseMarginPercent" type="number" min="0" max="500" step="0.1" value="28" />
+              </label>
+              <label>Kurs EUR→CHF
+                <input name="eurToChfRate" type="number" min="0.01" max="10" step="0.01" value="0.93" />
+              </label>
+            </div>
           </section>
 
           <section class="block">
@@ -304,6 +319,6 @@
     <span>IC License Prices · IT-Aufwand gemäss Installationskalkulation</span>
   </footer>
 
-  <script src="/static/app.js?v=20260717f"></script>
+  <script src="/static/app.js?v=20260720a"></script>
 </body>
 </html>

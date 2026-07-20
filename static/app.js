@@ -32,9 +32,19 @@
 
   function licensePricing() {
     const p = state.licenseCatalog?.product || {};
+    const formMargin = licenseForm?.licenseMarginPercent
+      ? Number(licenseForm.licenseMarginPercent.value)
+      : NaN;
+    const formRate = licenseForm?.eurToChfRate
+      ? Number(licenseForm.eurToChfRate.value)
+      : NaN;
     return {
-      marginPercent: Number(p.licenseMarginPercent ?? 28),
-      eurToChfRate: Number(p.eurToChfRate ?? 0.93),
+      marginPercent: Number.isFinite(formMargin)
+        ? formMargin
+        : Number(p.licenseMarginPercent ?? 28),
+      eurToChfRate: Number.isFinite(formRate) && formRate > 0
+        ? formRate
+        : Number(p.eurToChfRate ?? 0.93),
       sellCurrency: p.offerCurrency || "CHF",
       icCurrency: p.currency || "EUR",
     };
@@ -210,6 +220,18 @@
     setFormValue(licenseForm, "thirdPartyVlmTypes", cfg.thirdPartyVlmTypes ?? 0);
     setFormValue(licenseForm, "testInstances", cfg.testInstances ?? 0);
     setFormValue(licenseForm, "upgradeYears", cfg.upgradeYears ?? 0);
+    const defaults = state.licenseCatalog?.product || {};
+    const totals = offer.totals || {};
+    setFormValue(
+      licenseForm,
+      "licenseMarginPercent",
+      cfg.licenseMarginPercent ?? totals.marginPercent ?? defaults.licenseMarginPercent ?? 28
+    );
+    setFormValue(
+      licenseForm,
+      "eurToChfRate",
+      cfg.eurToChfRate ?? totals.eurToChfRate ?? defaults.eurToChfRate ?? 0.93
+    );
 
     const instanceId = cfg.instanceId || "basic";
     const radio = licenseForm.querySelector(`input[name="instanceId"][value="${instanceId}"]`);
@@ -374,7 +396,14 @@
 
     const commercialRows = [];
     let lastSection = "";
+    // Auch alte Angebote: IC-Beträge nicht in Kundenbeschreibung anzeigen
     (doc.commercialLines || []).forEach((line) => {
+      if (line.description) {
+        line.description = String(line.description)
+          .replace(/\s*·\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR/gi, "")
+          .replace(/\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR/gi, "")
+          .trim();
+      }
       if (line.section !== lastSection) {
         commercialRows.push(
           `<tr class="section-head"><td colspan="7">${escapeHtml(line.section)}</td></tr>`
@@ -403,7 +432,7 @@
     if (licSum?.total != null) {
       commercialRows.push(`
         <tr class="subtotal">
-          <td colspan="5">A · Softwarelizenzen Verkauf${licSum.sllCount != null ? ` (SLL ${licSum.sllCount})` : ""} · Marge ${licSum.marginPercent ?? 28}%</td>
+          <td colspan="5">A · Softwarelizenzen Verkauf${licSum.sllCount != null ? ` (SLL ${licSum.sllCount})` : ""}</td>
           <td class="num">${money(licSum.total, licSum.currency || "CHF")}</td>
           <td class="num">${escapeHtml(licSum.currency || "CHF")}</td>
         </tr>`);
@@ -418,17 +447,20 @@
     }
 
     const grand = summary.grandTotalChf;
+    const customerNote = (() => {
+      const note = summary.note || "Alle Beträge exkl. MwSt.";
+      if (/IC-Preise|Marge|EUR→CHF|EUR→CHF/i.test(note)) {
+        return "Alle Preise in CHF, exkl. MwSt. Softwarelizenzen und IT-Aufwände gemäss dieser Aufstellung.";
+      }
+      return note;
+    })();
     const priceCards = `
       <div class="offer-price-summary">
         ${licSum ? `
           <div class="offer-price-card">
             <span>Softwarelizenzen Verkauf</span>
             <strong>${money(licSum.total, licSum.currency || "CHF")}</strong>
-            <small>
-              IC ${money(licSum.icNet, licSum.icCurrency || "EUR")}
-              + Marge ${licSum.marginPercent ?? 28}%
-              · Kurs EUR→CHF ${licSum.eurToChfRate ?? 0.93}
-            </small>
+            <small>Verkaufspreise CHF · exkl. MwSt.</small>
           </div>` : ""}
         ${itSum ? `
           <div class="offer-price-card">
@@ -442,7 +474,7 @@
         <div class="offer-price-card">
           <span>Gesamttotal CHF</span>
           <strong>${grand != null ? money(grand, "CHF") : "—"}</strong>
-          <small>${escapeHtml(summary.note || "Alle Beträge exkl. MwSt.")}</small>
+          <small>${escapeHtml(customerNote)}</small>
         </div>
       </div>`;
 
@@ -557,7 +589,7 @@
 
         <section class="offer-section offer-section-prices" id="sec-commercial">
           <h2>1. Preisliste – alle Positionen</h2>
-          <p>Vollständige Aufstellung aller kalkulierten Preise (Softwarelizenzen IC und IT-Aufwand inkl. Reisekosten).</p>
+          <p>Vollständige Aufstellung aller Verkaufspreise (Softwarelizenzen und IT-Aufwand inkl. Reisekosten).</p>
           <table class="offer-price-table offer-price-table-full">
             <thead>
               <tr>
@@ -577,7 +609,7 @@
             ${itSum ? `<div><span>IT-Aufwand inkl. Reise</span><strong>${money(itSum.total, itSum.currency || "CHF")}</strong></div>` : ""}
             ${grand != null ? `<div class="offer-totals-grand"><span>Gesamttotal exkl. MwSt</span><strong>${money(grand, "CHF")}</strong></div>` : ""}
           </div>
-          <p class="offer-note">${escapeHtml(summary.note || "")}</p>
+          <p class="offer-note">${escapeHtml(customerNote)}</p>
         </section>
 
         <div class="offer-annex-start">
@@ -799,6 +831,7 @@
 
   function collectLicensePayload() {
     const data = new FormData(licenseForm);
+    const pricing = licensePricing();
     return {
       customer: {
         company: String(data.get("company") || "").trim(),
@@ -819,17 +852,23 @@
       upgradeYears: Number(data.get("upgradeYears") || 0),
       notes: String(data.get("notes") || "").trim(),
       preparedBy: String(data.get("preparedBy") || "").trim(),
+      licenseMarginPercent: pricing.marginPercent,
+      eurToChfRate: pricing.eurToChfRate,
     };
   }
 
   function renderInstances() {
     const root = document.getElementById("instanceOptions");
+    const previousId = selectedInstanceId();
     root.innerHTML = "";
     state.licenseCatalog.instances.forEach((inst, index) => {
+      const selected = previousId
+        ? inst.id === previousId
+        : index === 0;
       const label = document.createElement("label");
-      label.className = `option${index === 0 ? " selected" : ""}`;
+      label.className = `option${selected ? " selected" : ""}`;
       label.innerHTML = `
-        <input type="radio" name="instanceId" value="${inst.id}" ${index === 0 ? "checked" : ""} />
+        <input type="radio" name="instanceId" value="${inst.id}" ${selected ? "checked" : ""} />
         <div>
           <h3>${inst.name}</h3>
           <p>${inst.description}</p>
@@ -1145,14 +1184,26 @@
         alert(`Gespeichert: ${offer.meta.offerNumber}`);
       } catch (err) { alert(err.message); }
     });
-    licenseForm.addEventListener("input", () => {
+    licenseForm.addEventListener("input", (event) => {
       syncCustomerProject(licenseForm, itForm);
+      const name = event.target?.name;
+      if (name === "licenseMarginPercent" || name === "eurToChfRate") {
+        renderInstances();
+        renderAddons();
+        updateClientHints();
+      }
       recalcLicense();
     });
-    licenseForm.addEventListener("change", () => {
+    licenseForm.addEventListener("change", (event) => {
       // Bei Lizenzänderungen IT-Vorschläge mitziehen (inkl. External Storage → IT)
       applyLicenseSelectionToIt();
       syncCustomerProject(licenseForm, itForm);
+      const name = event.target?.name;
+      if (name === "licenseMarginPercent" || name === "eurToChfRate") {
+        renderInstances();
+        renderAddons();
+        updateClientHints();
+      }
       recalcLicense();
       // Falls IT-Tab aktiv ist, sofort neu rechnen
       if (document.getElementById("view-it").classList.contains("active")) {
@@ -1254,6 +1305,9 @@
     renderInstances();
     renderAddons();
     updateClientHints();
+    const product = state.licenseCatalog.product || {};
+    setFormValue(licenseForm, "licenseMarginPercent", product.licenseMarginPercent ?? 28);
+    setFormValue(licenseForm, "eurToChfRate", product.eurToChfRate ?? 0.93);
     document.getElementById("sllHint").textContent = state.licenseCatalog.sllDefinition || "";
     document.getElementById("licenseDisclaimer").textContent = state.licenseCatalog.product.disclaimer;
     renderItOptions();

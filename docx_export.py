@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List
@@ -143,13 +144,16 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
 
     lines: List[Dict[str, Any]] = []
     for line in offer.get("commercialLines") or []:
+        desc = str(line.get("description") or "")
+        desc = re.sub(r"\s*·\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR", "", desc, flags=re.IGNORECASE)
+        desc = re.sub(r"\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR", "", desc, flags=re.IGNORECASE).strip()
         lines.append(
             {
                 "pos": line.get("pos", ""),
                 "section": line.get("section", ""),
                 "sku": line.get("sku", ""),
                 "name": line.get("name", ""),
-                "description": line.get("description", ""),
+                "description": desc,
                 "qty": _fmt_num(line.get("qty")),
                 "unit_price": _fmt_num(line.get("unitPrice")),
                 "hours": _fmt_num(line.get("hours")) if line.get("hours") not in (None, 0, 0.0) else "",
@@ -208,11 +212,16 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "einleitung": einleitung,
         "optionen_text": _render_optionen_text(content.get("selectedOptions") or []),
         "bedingungen_text": _render_bedingungen_text(terms),
-        "preis_hinweis": summary.get("note") or "",
+        "preis_hinweis": (
+            summary.get("note")
+            if summary.get("note") and "IC-Preise" not in str(summary.get("note"))
+            else "Alle Preise in CHF, exkl. MwSt."
+        ),
         "lizenz_total_chf": _money(lic.get("total"), lic.get("currency") or "CHF") if lic else "—",
-        "lizenz_ic_eur": _money(lic.get("icNet"), "EUR") if lic and lic.get("icNet") is not None else "—",
-        "marge_percent": lic.get("marginPercent", 28) if lic else 28,
-        "kurs_eur_chf": lic.get("eurToChfRate", 0.93) if lic else 0.93,
+        # Intern verfügbar, aber nicht kundenseitig in der Standardvorlage genutzt
+        "lizenz_ic_eur": "",
+        "marge_percent": "",
+        "kurs_eur_chf": "",
         "it_total_chf": _money(it.get("total"), it.get("currency") or "CHF") if it else "—",
         "it_work_chf": _money(it.get("workAmount"), "CHF") if it else "—",
         "it_travel_chf": _money(it.get("travelAmount"), "CHF") if it else "—",
