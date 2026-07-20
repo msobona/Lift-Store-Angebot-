@@ -1,86 +1,70 @@
-# Feldliste Word-Angebot (Platzhalter)
+# Feldliste Word-Angebot (Platzhalter im Software-Anhang)
 
-Vorlage: `angebot_platzhalter.docx`  
-Engine: `docxtpl` (Jinja2)  
-Software-Anhang (unverändert angehängt): `docs/manuals/2.8/Anhang zu Software_v2.6.X.docx`
+## So funktioniert der Export
 
-Vorlage erzeugen/aktualisieren:
+**Ein Dokument:** `anhang_angebot_vorlage.docx`  
+= Original-Software-Anhang (SSI-Design, Bilder, Funktionen) **plus** Platzhalter für Angebotsdaten.
+
+Die App befüllt **nur dieses eine Dokument**. Es wird **nichts** mehr vorangestellt.
+
+| Datei | Bedeutung |
+|-------|-----------|
+| `anhang_angebot_vorlage.docx` | Bearbeitbare Vorlage (Platzhalter + SSI-Anhang) |
+| `../../../../docs/manuals/2.8/Anhang zu Software_v2.6.X.docx` | Original-Quelle (unverändert) |
+
+## Vorlage erzeugen / zurücksetzen
 
 ```bash
 cd lift-store-angebot
-.venv/bin/python scripts/build_docx_template.py
+python scripts/build_annex_template.py
 ```
+
+Das kopiert den Original-Anhang und setzt die Platzhalter-Blöcke am Anfang wieder ein.  
+**Achtung:** Eigene Layout-Änderungen in der Vorlage gehen dabei verloren — vorher sichern.
+
+## Vorlage in Word bearbeiten
+
+1. `docs/templates/anhang_angebot_vorlage.docx` öffnen  
+2. Platzhalter wie `{{kunde}}`, `{{gesamt_chf}}` verschieben oder formatieren  
+3. SSI-Anhang-Teil unten unverändert lassen (oder anpassen)  
+4. Unter gleichem Namen speichern  
+5. In der App: Angebot → Word exportieren  
+
+**Wichtig:** Jeden Platzhalter als **einen** durchgehenden Text schreiben (`{{kunde}}`), nicht Buchstabe für Buchstabe formatieren.
 
 ## Einfache Felder
 
-In Word als `{{feldname}}` einfügen.
-
-| Platzhalter | Bedeutung | Beispiel |
-|-------------|-----------|----------|
-| `{{dokument_label}}` | Kennzeichnung | Angebot / Preisliste |
-| `{{titel}}` | Titel | Angebot WAMAS® Lift & Store |
-| `{{untertitel}}` | Untertitel | SSI SCHÄFER · … |
-| `{{meta_zeile}}` | Nr. / Datum / Gültig / Rev. | Angebot ANG-… · 17.07.2026 · … |
-| `{{angebotsnummer}}` | Angebotsnummer | ANG-20260717-ABC123 |
-| `{{datum}}` | Datum | 17.07.2026 |
-| `{{gueltig_bis}}` | Gültig bis | 31.07.2026 |
-| `{{version_software}}` | Software-Version | 2.8 |
-| `{{erstellt_von}}` | Erstellt von | Florian Brunner |
-| `{{revision_von}}` | Revision von | ANG-… (leer wenn neu) |
-| `{{kunde}}` | Firma | Muster AG |
-| `{{projekt}}` | Projekt | LOGIMAT Halle 3 |
-| `{{ansprechpartner}}` | Ansprechpartner | Max Beispiel |
-| `{{email}}` | E-Mail | max@muster.ch |
-| `{{adresse}}` | Adresse | Musterweg 1… |
-| `{{konfiguration}}` | Konfiguration kurz | Advanced (1×) · 1 Gerät |
-| `{{einleitung}}` | Einleitung (vorgerendert) | Die Softwarelösung… |
-| `{{optionen_text}}` | Optionen (vorgerendert) | • RFID Login … |
-| `{{bedingungen_text}}` | Bedingungen CH (vorgerendert) | 1.1 Geltung … |
-| `{{terms_version}}` | Bedingungen-Version | 09.2022 |
-| `{{preis_hinweis}}` | Preisnote | IC + 28% · Kurs 0.93 |
-| `{{lizenz_total_chf}}` | Lizenzen CHF | CHF 9'951.74 |
-| `{{lizenz_ic_eur}}` | IC EUR | EUR 8'360.00 |
-| `{{marge_percent}}` | Marge % | 28 |
-| `{{kurs_eur_chf}}` | Kurs | 0.93 |
-| `{{it_total_chf}}` | IT Total CHF | CHF 23'215.00 |
-| `{{it_work_chf}}` | IT Arbeit | CHF 20'580.00 |
-| `{{it_travel_chf}}` | Reise | CHF 2'635.00 |
-| `{{gesamt_chf}}` | Gesamttotal | CHF 33'166.74 |
-| `{{schluss_text}}` | Schlusstext | Ihrem Auftrag… |
-| `{{gruss}}` | Gruss | Freundliche Grüsse |
-| `{{firma_ssi}}` | Firma | SSI SCHÄFER AG |
-| `{{signatur_1_name}}` | Signatur 1 | Florian Brunner |
-| `{{signatur_1_titel}}` | Titel 1 | Bereichsleiter… |
-| `{{signatur_1_rolle}}` | Rolle 1 | Mitglied GL |
-| `{{signatur_2_name}}` | Signatur 2 | Andrej Pulfer |
-| `{{signatur_2_titel}}` | Titel 2 | Leiter Vertrieb… |
-
-## Preistabelle `lines`
-
-In einer Word-Tabelle drei Zeilen unter dem Header:
-
-1. `{%tr for line in lines %}` (eigene Zeile)
-2. Datenzeile mit `{{ line.pos }}`, `{{ line.name }}`, …
-3. `{%tr endfor %}` (eigene Zeile)
-
-```
-{%tr for line in lines %}
-{{ line.pos }} | {{ line.name }} | {{ line.qty }} | {{ line.unit_price }} | {{ line.hours }} | {{ line.amount }} {{ line.currency }}
-{%tr endfor %}
-```
-
-Weitere Zeilenfelder: `section`, `sku`, `description`
-
-## Vorgerenderte Blöcke
-
-`optionen_text` und `bedingungen_text` werden in `docx_export.py` aus den Listen gebaut.  
-So entfallen verschachtelte `{% for %}`-Schleifen in Word (stabiler bei Word-XML).
-
-## So passt du die Vorlage an
-
-1. `angebot_platzhalter.docx` in Word öffnen  
-2. Layout ändern, Platzhalter `{{…}}` beibehalten oder verschieben  
-3. Speichern unter dem gleichen Dateinamen  
-4. Angebot erneut als Word exportieren  
+| Platzhalter | Bedeutung |
+|-------------|-----------|
+| `{{dokument_label}}` | Kennzeichnung |
+| `{{titel}}` | Titel |
+| `{{untertitel}}` | Untertitel |
+| `{{meta_zeile}}` | Nr. / Datum / Gültig / Rev. |
+| `{{angebotsnummer}}` | Angebotsnummer |
+| `{{datum}}` | Datum |
+| `{{gueltig_bis}}` | Gültig bis |
+| `{{version_software}}` | Software-Version |
+| `{{erstellt_von}}` | Erstellt von |
+| `{{revision_von}}` | Revision von |
+| `{{kunde}}` | Firma |
+| `{{projekt}}` | Projekt |
+| `{{ansprechpartner}}` | Ansprechpartner |
+| `{{email}}` | E-Mail |
+| `{{adresse}}` | Adresse |
+| `{{konfiguration}}` | Konfiguration kurz |
+| `{{einleitung}}` | Einleitung |
+| `{{leistungsumfang_text}}` | Leistungsumfang (Namen + Beschreibungen, Totals) |
+| `{{optionen_text}}` | Optionen |
+| `{{bedingungen_text}}` | Kaufmännische Bedingungen CH |
+| `{{terms_version}}` | Bedingungen-Version |
+| `{{preis_hinweis}}` | Preisnote |
+| `{{lizenz_total_chf}}` | Lizenzen Total |
+| `{{it_total_chf}}` | IT Total |
+| `{{gesamt_chf}}` | Gesamttotal |
+| `{{schluss_text}}` | Schlusstext |
+| `{{gruss}}` | Gruss |
+| `{{firma_ssi}}` | Firma SSI |
+| `{{signatur_1_name}}` / `_titel` / `_rolle` | Signatur 1 |
+| `{{signatur_2_name}}` / `_titel` | Signatur 2 |
 
 Maschinenlesbare Liste: `../../data/docx_field_map.json`

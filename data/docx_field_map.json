@@ -1,14 +1,14 @@
 {
-  "version": "1.1",
-  "templateFile": "docs/templates/angebot_platzhalter.docx",
+  "version": "2.0",
+  "templateFile": "docs/templates/anhang_angebot_vorlage.docx",
   "engine": "docxtpl (Jinja2)",
-  "annexFile": "docs/manuals/2.8/Anhang zu Software_v2.6.X.docx",
+  "annexSourceFile": "docs/manuals/2.8/Anhang zu Software_v2.6.X.docx",
   "notes": [
+    "Ein Dokument: SSI-Software-Anhang mit eingebetteten Platzhaltern.",
+    "Export befüllt nur anhang_angebot_vorlage.docx — kein Voranstellen einer zweiten Datei.",
     "Einfache Felder: {{feldname}}",
-    "Tabellenzeilen: {%tr for line in lines %} … {%tr endfor %}",
-    "Optionen und kaufmännische Bedingungen werden in Python vorgerendert (optionen_text, bedingungen_text) — keine verschachtelten Jinja-Schleifen in Word.",
-    "Der Software-Anhang wird nach dem befüllten Vorlagenteil angehängt (Originalformat).",
-    "Vorlage neu erzeugen: python scripts/build_docx_template.py"
+    "Optionen, Bedingungen und Leistungsumfang vorgerendert: optionen_text, bedingungen_text, leistungsumfang_text",
+    "Vorlage neu aus Original erzeugen: python scripts/build_annex_template.py"
   ],
   "fields": [
     { "name": "dokument_label", "label": "Dokumentkennzeichnung", "example": "Angebot / Preisliste", "section": "deckblatt" },
@@ -27,24 +27,14 @@
     { "name": "email", "label": "E-Mail Kunde", "example": "max@muster.ch", "section": "kunde" },
     { "name": "adresse", "label": "Adresse Kunde", "example": "Musterweg 1, 8000 Zürich", "section": "kunde" },
     { "name": "konfiguration", "label": "Konfiguration Kurztext", "example": "Advanced Instance (1×) · 1 Gerät · 2 Öffnungen", "section": "konfiguration" },
-    { "name": "instance_name", "label": "Instance-Name", "example": "Advanced Instance", "section": "konfiguration" },
-    { "name": "instance_count", "label": "Anzahl Instances", "example": "1", "section": "konfiguration" },
-    { "name": "device_count", "label": "Anzahl Geräte", "example": "1", "section": "konfiguration" },
-    { "name": "zone_count", "label": "Anzahl Zonen", "example": "1", "section": "konfiguration" },
-    { "name": "opening_count", "label": "Anzahl Öffnungen", "example": "2", "section": "konfiguration" },
-    { "name": "order_handling", "label": "Order Handling ja/nein", "example": "Ja", "section": "konfiguration" },
     { "name": "einleitung", "label": "Einleitungstext (vorgerendert)", "example": "Die Softwarelösung …", "section": "inhalt" },
+    { "name": "leistungsumfang_text", "label": "Leistungsumfang (vorgerendert)", "example": "A · Softwarelizenzen\n• …", "section": "inhalt" },
     { "name": "optionen_text", "label": "Optionen (vorgerendert)", "example": "• RFID Login\n…", "section": "inhalt" },
     { "name": "bedingungen_text", "label": "Kaufmännische Bedingungen (vorgerendert)", "example": "1.1 Geltung\n…", "section": "bedingungen" },
     { "name": "terms_version", "label": "Bedingungen Version", "example": "09.2022", "section": "bedingungen" },
-    { "name": "preis_hinweis", "label": "Preis-/Währungshinweis", "example": "IC + 28% Marge, Kurs 0.93 …", "section": "preise" },
+    { "name": "preis_hinweis", "label": "Preis-/Währungshinweis", "example": "Alle Preise in CHF, exkl. MwSt.", "section": "preise" },
     { "name": "lizenz_total_chf", "label": "Softwarelizenzen Verkauf CHF", "example": "CHF 9'951.74", "section": "preise" },
-    { "name": "lizenz_ic_eur", "label": "IC Total EUR", "example": "EUR 8'360.00", "section": "preise" },
-    { "name": "marge_percent", "label": "Marge %", "example": "28", "section": "preise" },
-    { "name": "kurs_eur_chf", "label": "Kurs EUR→CHF", "example": "0.93", "section": "preise" },
     { "name": "it_total_chf", "label": "IT-Aufwand Total CHF", "example": "CHF 23'215.00", "section": "preise" },
-    { "name": "it_work_chf", "label": "IT Arbeit CHF", "example": "CHF 20'580.00", "section": "preise" },
-    { "name": "it_travel_chf", "label": "Reisekosten CHF", "example": "CHF 2'635.00", "section": "preise" },
     { "name": "gesamt_chf", "label": "Gesamttotal CHF", "example": "CHF 33'166.74", "section": "preise" },
     { "name": "schluss_text", "label": "Schlusstext Auftrag", "example": "Ihrem Auftrag … entgegen.", "section": "schluss" },
     { "name": "gruss", "label": "Grussformel", "example": "Freundliche Grüsse", "section": "schluss" },
@@ -55,23 +45,5 @@
     { "name": "signatur_2_name", "label": "Unterschrift 2 Name", "example": "Andrej Pulfer", "section": "schluss" },
     { "name": "signatur_2_titel", "label": "Unterschrift 2 Titel", "example": "Leiter Vertrieb …", "section": "schluss" }
   ],
-  "lists": [
-    {
-      "name": "lines",
-      "label": "Preispositionen (Tabellenzeilen)",
-      "rowFields": [
-        { "name": "pos", "label": "Pos" },
-        { "name": "section", "label": "Bereich" },
-        { "name": "sku", "label": "SKU" },
-        { "name": "name", "label": "Bezeichnung" },
-        { "name": "description", "label": "Beschreibung" },
-        { "name": "qty", "label": "Menge" },
-        { "name": "unit_price", "label": "Einzelpreis" },
-        { "name": "hours", "label": "Stunden" },
-        { "name": "amount", "label": "Betrag" },
-        { "name": "currency", "label": "Währung" }
-      ],
-      "syntax": "Eigene Zeile {%tr for line in lines %} · Datenzeile mit {{ line.* }} · eigene Zeile {%tr endfor %}"
-    }
-  ]
+  "lists": []
 }

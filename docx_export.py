@@ -1,31 +1,30 @@
-"""Word-Export über Platzhalter-Vorlage (docxtpl) + originaler Software-Anhang."""
+"""Word-Export: Software-Anhang mit Platzhaltern befüllen (ein Dokument)."""
 
 from __future__ import annotations
 
 import io
 import json
 import re
-from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List
 
-from docx import Document
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
 from docxtpl import DocxTemplate
 
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent
 FIELD_MAP_FILE = BASE_DIR / "data" / "docx_field_map.json"
 
+# Primär: Anhang mit Platzhaltern (SSI-Original + Angebotsfelder)
 PLACEHOLDER_CANDIDATES = [
+    BASE_DIR / "docs" / "templates" / "anhang_angebot_vorlage.docx",
+    REPO_ROOT / "lift-store-angebot" / "docs" / "templates" / "anhang_angebot_vorlage.docx",
+    # Fallback: alte schlanke Vorlage (ohne SSI-Anhang)
     BASE_DIR / "docs" / "templates" / "angebot_platzhalter.docx",
-    REPO_ROOT / "lift-store-angebot" / "docs" / "templates" / "angebot_platzhalter.docx",
 ]
-ANNEX_CANDIDATES = [
+
+ANNEX_SOURCE_CANDIDATES = [
     REPO_ROOT / "docs" / "manuals" / "2.8" / "Anhang zu Software_v2.6.X.docx",
     BASE_DIR / "docs" / "manuals" / "2.8" / "Anhang zu Software_v2.6.X.docx",
-    BASE_DIR / "docs" / "templates" / "Anhang zu Software_v2.6.X.docx",
 ]
 
 
@@ -34,18 +33,37 @@ def find_placeholder_template() -> Path:
         if path.exists():
             return path
     raise FileNotFoundError(
-        "Platzhalter-Vorlage nicht gefunden. Erwartet: docs/templates/angebot_platzhalter.docx "
-        "(mit scripts/build_docx_template.py erzeugen)."
+        "Anhang-Vorlage nicht gefunden. Bitte erzeugen mit:\n"
+        "  python scripts/build_annex_template.py\n"
+        "Erwartet: docs/templates/anhang_angebot_vorlage.docx"
     )
 
 
-def find_annex_template() -> Path:
-    for path in ANNEX_CANDIDATES:
+def find_annex_source() -> Path:
+    for path in ANNEX_SOURCE_CANDIDATES:
         if path.exists():
             return path
     raise FileNotFoundError(
-        "Word-Anhang nicht gefunden. Erwartet unter docs/manuals/2.8/Anhang zu Software_v2.6.X.docx"
+        "Original-Anhang nicht gefunden unter docs/manuals/2.8/Anhang zu Software_v2.6.X.docx"
     )
+
+
+def ensure_annex_template() -> Path:
+    """Legt anhang_angebot_vorlage.docx an, falls sie fehlt."""
+    for path in PLACEHOLDER_CANDIDATES[:2]:
+        if path.exists():
+            return path
+    # Script ausführen
+    import runpy
+
+    build_script = BASE_DIR / "scripts" / "build_annex_template.py"
+    if not build_script.exists():
+        raise FileNotFoundError(str(build_script))
+    runpy.run_path(str(build_script), run_name="__main__")
+    for path in PLACEHOLDER_CANDIDATES[:2]:
+        if path.exists():
+            return path
+    raise FileNotFoundError("Vorlage konnte nicht erzeugt werden.")
 
 
 def load_field_map() -> Dict[str, Any]:
@@ -257,7 +275,6 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
             else "Alle Preise in CHF, exkl. MwSt."
         ),
         "lizenz_total_chf": _money(lic.get("total"), lic.get("currency") or "CHF") if lic else "—",
-        # Intern verfügbar, aber nicht kundenseitig in der Standardvorlage genutzt
         "lizenz_ic_eur": "",
         "marge_percent": "",
         "kurs_eur_chf": "",
@@ -282,41 +299,17 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _insert_filled_into_annex(annex_doc: Document, filled_doc: Document) -> None:
-    body = annex_doc.element.body
-    break_p = OxmlElement("w:p")
-    break_r = OxmlElement("w:r")
-    break_br = OxmlElement("w:br")
-    break_br.set(qn("w:type"), "page")
-    break_r.append(break_br)
-    break_p.append(break_r)
-
-    front_children = [c for c in filled_doc.element.body if not c.tag.endswith("sectPr")]
-    body.insert(0, break_p)
-    for child in reversed(front_children):
-        body.insert(0, deepcopy(child))
-
-
 def build_offer_docx(offer: Dict[str, Any]) -> bytes:
-    """Befüllt Platzhalter-Vorlage und kombiniert sie mit dem Software-Anhang."""
+    """Befüllt die Anhang-Vorlage (ein Dokument, SSI-Anhang inkl. Platzhalter)."""
     if offer.get("kind") != "offer_document":
         raise ValueError("Word-Export ist nur für Gesamtangebote (offer_document) verfügbar.")
 
-    template_path = find_placeholder_template()
-    annex_path = find_annex_template()
+    template_path = ensure_annex_template()
     context = build_template_context(offer)
 
     tpl = DocxTemplate(str(template_path))
     tpl.render(context)
 
-    filled_buf = io.BytesIO()
-    tpl.save(filled_buf)
-    filled_buf.seek(0)
-    filled_doc = Document(filled_buf)
-
-    annex_doc = Document(str(annex_path))
-    _insert_filled_into_annex(annex_doc, filled_doc)
-
     out = io.BytesIO()
-    annex_doc.save(out)
+    tpl.save(out)
     return out.getvalue()
