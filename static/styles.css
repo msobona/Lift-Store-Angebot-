@@ -839,6 +839,27 @@ textarea:focus {
   font-size: 1.15rem;
 }
 
+.offer-scope-group {
+  margin: 1rem 0 1.25rem;
+}
+
+.offer-scope-group > h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  color: #111;
+}
+
+.offer-scope-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  background: #f4f4f4;
+  border-left: 4px solid var(--ssi-yellow);
+  font-weight: 700;
+}
+
 .offer-annex-start {
   margin: 2rem 0 1rem;
   padding: 1rem 1.1rem;

@@ -142,25 +142,63 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         if x
     )
 
+    # Kunden-Word: Leistungsumfang ohne Positionspreise/Stunden
     lines: List[Dict[str, Any]] = []
-    for line in offer.get("commercialLines") or []:
-        desc = str(line.get("description") or "")
-        desc = re.sub(r"\s*·\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR", "", desc, flags=re.IGNORECASE)
-        desc = re.sub(r"\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR", "", desc, flags=re.IGNORECASE).strip()
-        lines.append(
-            {
-                "pos": line.get("pos", ""),
-                "section": line.get("section", ""),
-                "sku": line.get("sku", ""),
-                "name": line.get("name", ""),
-                "description": desc,
-                "qty": _fmt_num(line.get("qty")),
-                "unit_price": _fmt_num(line.get("unitPrice")),
-                "hours": _fmt_num(line.get("hours")) if line.get("hours") not in (None, 0, 0.0) else "",
-                "amount": _fmt_num(line.get("amount")),
-                "currency": line.get("currency", ""),
-            }
-        )
+    scope_groups = offer.get("scopeGroups") or content.get("scopeGroups") or []
+    if scope_groups:
+        pos = 0
+        for group in scope_groups:
+            for item in group.get("items") or []:
+                pos += 1
+                lines.append(
+                    {
+                        "pos": pos,
+                        "section": group.get("title") or "",
+                        "sku": "",
+                        "name": item.get("name") or "",
+                        "description": item.get("description") or "",
+                        "qty": "",
+                        "unit_price": "",
+                        "hours": "",
+                        "amount": "",
+                        "currency": "",
+                    }
+                )
+    else:
+        for line in offer.get("commercialLines") or []:
+            desc = str(line.get("description") or "")
+            desc = re.sub(r"\s*·\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR", "", desc, flags=re.IGNORECASE)
+            desc = re.sub(r"\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR", "", desc, flags=re.IGNORECASE).strip()
+            lines.append(
+                {
+                    "pos": line.get("pos", ""),
+                    "section": line.get("section", ""),
+                    "sku": line.get("sku", ""),
+                    "name": line.get("name", ""),
+                    "description": desc,
+                    "qty": "",
+                    "unit_price": "",
+                    "hours": "",
+                    "amount": "",
+                    "currency": "",
+                }
+            )
+
+    scope_text_blocks = []
+    for group in scope_groups:
+        scope_text_blocks.append(group.get("title") or "")
+        for item in group.get("items") or []:
+            name = (item.get("name") or "").strip()
+            desc = (item.get("description") or "").strip()
+            if name and desc:
+                scope_text_blocks.append(f"• {name}\n{desc}")
+            elif name:
+                scope_text_blocks.append(f"• {name}")
+        if group.get("total") is not None:
+            scope_text_blocks.append(
+                f"Total: {_money(group.get('total'), group.get('currency') or 'CHF')}"
+            )
+    scope_text = _join_paragraphs(scope_text_blocks)
 
     einleitung = _join_paragraphs(
         [
@@ -212,6 +250,7 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "einleitung": einleitung,
         "optionen_text": _render_optionen_text(content.get("selectedOptions") or []),
         "bedingungen_text": _render_bedingungen_text(terms),
+        "leistungsumfang_text": scope_text,
         "preis_hinweis": (
             summary.get("note")
             if summary.get("note") and "IC-Preise" not in str(summary.get("note"))
@@ -223,8 +262,8 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "marge_percent": "",
         "kurs_eur_chf": "",
         "it_total_chf": _money(it.get("total"), it.get("currency") or "CHF") if it else "—",
-        "it_work_chf": _money(it.get("workAmount"), "CHF") if it else "—",
-        "it_travel_chf": _money(it.get("travelAmount"), "CHF") if it else "—",
+        "it_work_chf": "",
+        "it_travel_chf": "",
         "gesamt_chf": _money(summary.get("grandTotalChf"), "CHF")
         if summary.get("grandTotalChf") is not None
         else "—",

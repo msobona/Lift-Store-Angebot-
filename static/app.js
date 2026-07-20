@@ -166,6 +166,9 @@
       license: state.licenseOffer || null,
       it: state.itOffer || null,
       basedOnOfferNumber: state.editingFromOfferId || null,
+      discountPercent: Number(document.getElementById("offerDiscountPercent")?.value || 0) || 0,
+      discountAmountChf: Number(document.getElementById("offerDiscountAmount")?.value || 0) || 0,
+      roundTo: Number(document.getElementById("offerRoundTo")?.value || 0) || 0,
     };
     try {
       const endpoint = save ? "/api/offer/compose/save" : "/api/offer/compose";
@@ -400,83 +403,47 @@
     const itSum = summary.it;
     const arch = doc.content.architecture || {};
     const req = doc.content.requirements || {};
+    const scopeGroups = doc.scopeGroups || doc.content?.scopeGroups || [];
 
-    const commercialRows = [];
-    let lastSection = "";
-    // Auch alte Angebote: IC-Beträge nicht in Kundenbeschreibung anzeigen
-    (doc.commercialLines || []).forEach((line) => {
-      if (line.description) {
-        line.description = String(line.description)
-          .replace(/\s*·\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR/gi, "")
-          .replace(/\s*IC\s+[−\-]?\s*[\d.'\s,]+\s*EUR/gi, "")
-          .trim();
-      }
-      if (line.section !== lastSection) {
-        commercialRows.push(
-          `<tr class="section-head"><td colspan="7">${escapeHtml(line.section)}</td></tr>`
-        );
-        lastSection = line.section;
-      }
-      const unit = line.unitPrice != null
-        ? money(line.unitPrice, line.currency || "EUR")
-        : "";
-      commercialRows.push(`
-        <tr>
-          <td class="num">${escapeHtml(line.pos ?? "")}</td>
-          <td>
-            <strong>${escapeHtml(line.name || "")}</strong>
-            ${line.sku ? `<div class="muted">${escapeHtml(line.sku)}</div>` : ""}
-            ${line.description ? `<div class="muted">${escapeHtml(line.description)}</div>` : ""}
-          </td>
-          <td class="num">${escapeHtml(line.qty ?? "")}</td>
-          <td class="num">${unit}</td>
-          <td class="num">${line.hours != null && line.hours !== 0 ? escapeHtml(line.hours) : ""}</td>
-          <td class="num">${money(line.amount, line.currency || "EUR")}</td>
-          <td class="num">${escapeHtml(line.currency || "")}</td>
-        </tr>`);
-    });
-
-    if (licSum?.total != null) {
-      commercialRows.push(`
-        <tr class="subtotal">
-          <td colspan="5">A · Softwarelizenzen Verkauf${licSum.sllCount != null ? ` (SLL ${licSum.sllCount})` : ""}</td>
-          <td class="num">${money(licSum.total, licSum.currency || "CHF")}</td>
-          <td class="num">${escapeHtml(licSum.currency || "CHF")}</td>
-        </tr>`);
-    }
-    if (itSum?.total != null) {
-      commercialRows.push(`
-        <tr class="subtotal">
-          <td colspan="5">B+C · IT-Aufwand Total${itSum.workHours != null ? ` (${itSum.workHours} h)` : ""}</td>
-          <td class="num">${money(itSum.total, itSum.currency || "CHF")}</td>
-          <td class="num">${escapeHtml(itSum.currency || "CHF")}</td>
-        </tr>`);
-    }
+    const scopeHtml = scopeGroups.map((group) => {
+      const items = (group.items || [])
+        .map((item) => `
+          <div class="offer-fn">
+            <div class="offer-fn-mark">•</div>
+            <div>
+              <h4>${escapeHtml(item.name || "")}</h4>
+              ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}
+            </div>
+          </div>`)
+        .join("");
+      return `
+        <div class="offer-scope-group">
+          <h3>${escapeHtml(group.title || "")}</h3>
+          <div class="offer-fn-list">${items || "<p class=\"offer-empty-note\">Keine Positionen.</p>"}</div>
+          ${group.total != null ? `
+            <div class="offer-scope-total">
+              <span>Total ${escapeHtml(group.title || "")}</span>
+              <strong>${money(group.total, group.currency || "CHF")}</strong>
+            </div>` : ""}
+        </div>`;
+    }).join("");
 
     const grand = summary.grandTotalChf;
-    const customerNote = (() => {
-      const note = summary.note || "Alle Beträge exkl. MwSt.";
-      if (/IC-Preise|Marge|EUR→CHF|EUR→CHF/i.test(note)) {
-        return "Alle Preise in CHF, exkl. MwSt. Softwarelizenzen und IT-Aufwände gemäss dieser Aufstellung.";
-      }
-      return note;
-    })();
+    const customerNote = summary.note || "Alle Preise in CHF, exkl. MwSt.";
+
     const priceCards = `
       <div class="offer-price-summary">
         ${licSum ? `
           <div class="offer-price-card">
-            <span>Softwarelizenzen Verkauf</span>
+            <span>Softwarelizenzen</span>
             <strong>${money(licSum.total, licSum.currency || "CHF")}</strong>
-            <small>Verkaufspreise CHF · exkl. MwSt.</small>
+            <small>Gesamttotal Lizenzen · exkl. MwSt.</small>
           </div>` : ""}
         ${itSum ? `
           <div class="offer-price-card">
             <span>IT-Aufwand / Installation</span>
             <strong>${money(itSum.total, itSum.currency || "CHF")}</strong>
-            <small>
-              Arbeit ${money(itSum.workAmount, itSum.currency || "CHF")} (${itSum.workHours || 0} h)
-              · Reise ${money(itSum.travelAmount, itSum.currency || "CHF")}
-            </small>
+            <small>Gesamttotal IT inkl. Reise · exkl. MwSt.</small>
           </div>` : ""}
         <div class="offer-price-card">
           <span>Gesamttotal CHF</span>
@@ -595,25 +562,15 @@
         </header>
 
         <section class="offer-section offer-section-prices" id="sec-commercial">
-          <h2>1. Preisliste – alle Positionen</h2>
-          <p>Vollständige Aufstellung aller Verkaufspreise (Softwarelizenzen und IT-Aufwand inkl. Reisekosten).</p>
-          <table class="offer-price-table offer-price-table-full">
-            <thead>
-              <tr>
-                <th>Pos</th>
-                <th>Bezeichnung</th>
-                <th>Menge</th>
-                <th>EP</th>
-                <th>Std.</th>
-                <th>Betrag</th>
-                <th>Währ.</th>
-              </tr>
-            </thead>
-            <tbody>${commercialRows.join("") || `<tr><td colspan="7">Keine Positionen kalkuliert.</td></tr>`}</tbody>
-          </table>
+          <h2>1. Leistungsumfang &amp; Preise</h2>
+          <p>Auflistung der Leistungen ohne Einzelpreise. Ausgewiesen werden die Bereichstotals und das Gesamttotal.</p>
+          ${scopeHtml || "<p class=\"offer-empty-note\">Kein Leistungsumfang kalkuliert.</p>"}
           <div class="offer-totals-box">
-            ${licSum ? `<div><span>Softwarelizenzen Verkauf</span><strong>${money(licSum.total, licSum.currency || "CHF")}</strong></div>` : ""}
+            ${licSum ? `<div><span>Softwarelizenzen</span><strong>${money(licSum.total, licSum.currency || "CHF")}</strong></div>` : ""}
             ${itSum ? `<div><span>IT-Aufwand inkl. Reise</span><strong>${money(itSum.total, itSum.currency || "CHF")}</strong></div>` : ""}
+            ${summary.subtotalChf != null && (summary.commercialDiscountChf || summary.roundingAmountChf) ? `<div><span>Zwischentotal</span><strong>${money(summary.subtotalChf, "CHF")}</strong></div>` : ""}
+            ${summary.commercialDiscountChf ? `<div><span>Projektrabatt</span><strong>− ${money(summary.commercialDiscountChf, "CHF")}</strong></div>` : ""}
+            ${summary.roundingAmountChf ? `<div><span>Abrundung</span><strong>− ${money(summary.roundingAmountChf, "CHF")}</strong></div>` : ""}
             ${grand != null ? `<div class="offer-totals-grand"><span>Gesamttotal exkl. MwSt</span><strong>${money(grand, "CHF")}</strong></div>` : ""}
           </div>
           <p class="offer-note">${escapeHtml(customerNote)}</p>

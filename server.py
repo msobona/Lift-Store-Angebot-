@@ -732,6 +732,10 @@ class ComposeOfferRequest(BaseModel):
     license: Optional[Dict[str, Any]] = None
     it: Optional[Dict[str, Any]] = None
     basedOnOfferNumber: Optional[str] = None
+    # Kommerzielle Anpassung vor Angebotserzeugung (Kundenangebot)
+    discountPercent: Optional[float] = Field(None, ge=0, le=100)
+    discountAmountChf: Optional[float] = Field(None, ge=0)
+    roundTo: Optional[int] = Field(None, ge=0)  # 0/None = aus, sonst z.B. 10/50/100
 
 
 def _load_saved_offer(offer_id: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -887,9 +891,121 @@ def compose_offer(payload: ComposeOfferRequest):
     it_totals = (it_offer or {}).get("totals")
     lic_sell_chf = (license_totals or {}).get("sellNetChf")
     it_total_chf = (it_totals or {}).get("totalAmount")
-    grand_chf = None
+    subtotal_chf = None
     if lic_sell_chf is not None or it_total_chf is not None:
-        grand_chf = round(float(lic_sell_chf or 0) + float(it_total_chf or 0), 2)
+        subtotal_chf = round(float(lic_sell_chf or 0) + float(it_total_chf or 0), 2)
+
+    # Kunden-Leistungsumfang ohne Positionspreise / Stunden
+    scope_groups: List[Dict[str, Any]] = []
+    if license_offer:
+        lic_items = []
+        for line in license_offer.get("lines") or []:
+            lic_items.append(
+                {
+                    "name": line.get("name") or "",
+                    "description": line.get("description") or "",
+                }
+            )
+        if (license_totals or {}).get("discountPercent"):
+            lic_items.append(
+                {
+                    "name": f"Mengenrabatt SLL ({license_totals.get('discountPercent')}%)",
+                    "description": (license_offer.get("configuration") or {}).get("discountLabel") or "",
+                }
+            )
+        scope_groups.append(
+            {
+                "id": "license",
+                "title": "A · Softwarelizenzen",
+                "items": lic_items,
+                "total": lic_sell_chf,
+                "currency": (license_totals or {}).get("currency", "CHF"),
+            }
+        )
+
+    if it_offer:
+        it_cfg = it_offer.get("configuration") or {}
+        it_items = [
+            {
+                "name": f"Anzahl Geräte: {it_cfg.get('deviceCount', 0)}",
+                "description": "Geräte, die installiert und in Betrieb genommen werden.",
+            },
+            {
+                "name": f"Anzahl Zonen: {it_cfg.get('zoneCount', 0)}",
+                "description": "Zonen mit LOGIMAT / WAMAS Lift & Store.",
+            },
+            {
+                "name": f"Anzahl Öffnungen: {it_cfg.get('openingCount', 0)}",
+                "description": "Gesamtanzahl Bedienöffnungen.",
+            },
+        ]
+        # Gewählte IT-Optionen mit Beschreibung (ohne Stunden/Preise)
+        it_cat = load_it_catalog()
+        option_defs = {o["id"]: o for o in it_cat.get("options") or []}
+        selected = it_cfg.get("options") or {}
+        for oid, enabled in selected.items():
+            if not enabled:
+                continue
+            opt = option_defs.get(oid)
+            if not opt:
+                continue
+            if oid == "testSystem" and not selected.get("orderHandling"):
+                continue
+            it_items.append(
+                {
+                    "name": opt.get("name") or oid,
+                    "description": opt.get("description") or "",
+                }
+            )
+        for ext in it_cfg.get("customExtensions") or []:
+            if float(ext.get("hours") or 0) <= 0 and not (ext.get("description") or "").strip():
+                continue
+            desc = (ext.get("description") or "").strip() or "Projektspezifische Erweiterung"
+            it_items.append({"name": desc, "description": "Projektspezifische Erweiterung."})
+        if float((it_totals or {}).get("travelAmount") or 0) > 0:
+            it_items.append(
+                {
+                    "name": "Reisekosten",
+                    "description": "Fahrten, Kilometer, Übernachtung und Verpflegung gemäss Projektplanung.",
+                }
+            )
+        scope_groups.append(
+            {
+                "id": "it",
+                "title": "B · IT-Aufwand / Installation",
+                "items": it_items,
+                "total": it_total_chf,
+                "currency": (it_totals or {}).get("currency", "CHF"),
+            }
+        )
+
+    # Rabatt / Abrundung auf Gesamttotal
+    adj_notes: List[str] = []
+    discount_percent = float(payload.discountPercent or 0)
+    discount_amount_chf = float(payload.discountAmountChf or 0)
+    round_to = int(payload.roundTo or 0)
+    commercial_discount = 0.0
+    grand_before_round = subtotal_chf
+    grand_chf = subtotal_chf
+    if grand_chf is not None:
+        if discount_percent > 0:
+            pct_disc = round(grand_chf * (discount_percent / 100.0), 2)
+            commercial_discount += pct_disc
+            adj_notes.append(f"Projektrabatt {discount_percent:g}%")
+        if discount_amount_chf > 0:
+            commercial_discount += discount_amount_chf
+            adj_notes.append(f"Rabatt CHF {discount_amount_chf:,.2f}".replace(",", "'"))
+        commercial_discount = round(min(commercial_discount, grand_chf), 2)
+        grand_before_round = round(grand_chf - commercial_discount, 2)
+        grand_chf = grand_before_round
+        if round_to and round_to > 0:
+            # Abrunden auf Vielfaches (kundenseitig „glatter“ Preis)
+            grand_chf = float(int(grand_chf // round_to) * round_to)
+            adj_notes.append(f"Abgerundet auf {round_to} CHF")
+
+    rounding_amount = None
+    if grand_before_round is not None and grand_chf is not None:
+        rounding_amount = round(grand_before_round - grand_chf, 2)
 
     price_summary = {
         "license": {
@@ -920,11 +1036,18 @@ def compose_offer(payload: ComposeOfferRequest):
         }
         if it_totals
         else None,
+        "subtotalChf": subtotal_chf,
+        "commercialDiscountChf": commercial_discount if commercial_discount else None,
+        "discountPercent": discount_percent if discount_percent else None,
+        "discountAmountChf": discount_amount_chf if discount_amount_chf else None,
+        "roundTo": round_to if round_to else None,
+        "roundingAmountChf": rounding_amount if rounding_amount else None,
+        "adjustmentNotes": adj_notes,
         "grandTotalChf": grand_chf,
-        # Kundenfreundlich: keine Einkaufspreise / Marge / Kurs offenlegen
         "note": (
             "Alle Preise in CHF, exkl. MwSt. "
-            "Softwarelizenzen und IT-Aufwände gemäss dieser Aufstellung."
+            "Leistungsumfang ohne Einzelpreise; Gesamttotal gemäss Aufstellung."
+            + ((" · " + " · ".join(adj_notes)) if adj_notes else "")
         ),
     }
 
@@ -988,8 +1111,10 @@ def compose_offer(payload: ComposeOfferRequest):
             "closing": template["closing"],
             "itOfferSections": (it_offer or {}).get("offerSections") or [],
             "commercialTerms": commercial_terms,
+            "scopeGroups": scope_groups,
         },
         "commercialLines": commercial,
+        "scopeGroups": scope_groups,
         "priceSummary": price_summary,
         "totals": {
             "license": license_totals,
