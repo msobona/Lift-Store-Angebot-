@@ -267,6 +267,13 @@
     setFormValue(itForm, "kmPerTrip", cfg.kmPerTrip ?? 0);
     setFormValue(itForm, "overnightCount", cfg.overnightCount ?? 0);
     setFormValue(itForm, "mealCount", cfg.mealCount ?? 0);
+    const totals = offer.totals || {};
+    const defaultMargin = state.itCatalog?.rates?.marginPercent ?? 28;
+    setFormValue(
+      itForm,
+      "itMarginPercent",
+      cfg.itMarginPercent ?? totals.marginPercent ?? defaultMargin
+    );
 
     const opts = cfg.options || {};
     itForm.querySelectorAll('input[name="itOption"]').forEach((el) => {
@@ -1069,18 +1076,25 @@
       mealCount: Number(data.get("mealCount") || 0),
       notes: String(data.get("notes") || "").trim(),
       preparedBy: String(data.get("preparedBy") || "").trim(),
+      itMarginPercent: (() => {
+        const v = Number(data.get("itMarginPercent"));
+        return Number.isFinite(v) ? v : (state.itCatalog?.rates?.marginPercent ?? 28);
+      })(),
     };
   }
 
   function renderItPreview(offer) {
     state.itOffer = offer;
     const c = offer.totals.currency || "CHF";
+    const t = offer.totals || {};
+    const marginPercent = t.marginPercent ?? offer.configuration?.itMarginPercent ?? 28;
     document.getElementById("itOfferNo").textContent = offer.meta.offerNumber;
-    document.getElementById("itGross").textContent = money(offer.totals.totalAmount, c);
+    document.getElementById("itGross").textContent = money(t.totalAmount, c);
     document.getElementById("itMeta").innerHTML = `
       <div><strong>${offer.customer.company}</strong>${offer.customer.projectName ? ` · ${offer.customer.projectName}` : ""}</div>
       <div>${offer.configuration.deviceCount} Geräte · ${offer.configuration.zoneCount} Zone(n) · ${offer.configuration.openingCount} Öffnung(en)</div>
-      <div>Stundensatz ${money(offer.configuration.hourlyRate, c)} · ${offer.configuration.realizationPeriod || "–"}</div>`;
+      <div>Stundensatz Einkauf ${money(offer.configuration.hourlyRate, c)} · Verkauf ${money(offer.configuration.hourlyRateSell ?? offer.configuration.hourlyRate, c)} · Marge ${marginPercent}%</div>
+      <div>${offer.configuration.realizationPeriod || "–"} · CHF intern (kein Kurs)</div>`;
 
     const visibleLines = offer.lines.filter((l) => {
       if (l.category === "option") return Boolean(l.selected) && (Number(l.hours) > 0 || Number(l.amount) > 0 || l.note);
@@ -1091,14 +1105,15 @@
 
     document.getElementById("itLines").innerHTML = visibleLines.map((line) => `
         <tr>
-          <td>${line.name}<div class="muted">${line.description || ""}${line.note ? ` · ${line.note}` : ""}</div></td>
+          <td>${line.name}<div class="muted">${line.description || ""}${line.note ? ` · ${line.note}` : ""}${line.amountCost != null ? ` · Einkauf ${money(line.amountCost, c)}` : ""}</div></td>
           <td>${line.hours || 0}</td>
           <td>${money(line.amount, c)}</td>
         </tr>`).join("");
     document.getElementById("itTotals").innerHTML = `
-      <div class="row"><span>IT-Aufwand</span><span>${offer.totals.workHours} h · ${money(offer.totals.workAmount, c)}</span></div>
-      <div class="row"><span>Reisekosten</span><span>${money(offer.totals.travelAmount, c)}</span></div>
-      <div class="row strong"><span>Total exkl. MwSt</span><span>${money(offer.totals.totalAmount, c)}</span></div>`;
+      <div class="row"><span>IT-Aufwand Einkauf</span><span>${t.workHours} h · ${money(t.workAmountCost ?? t.workAmount, c)}</span></div>
+      <div class="row"><span>Reisekosten Einkauf</span><span>${money(t.travelAmountCost ?? t.travelAmount, c)}</span></div>
+      <div class="row"><span>Marge ${marginPercent}%</span><span>+ ${money(t.marginAmount || 0, c)}</span></div>
+      <div class="row strong"><span>Verkauf Total exkl. MwSt</span><span>${money(t.totalAmount, c)}</span></div>`;
     document.getElementById("itScope").innerHTML = (offer.offerSections || [])
       .filter((s) => Number(s.amount) > 0 || (s.bullets || []).length)
       .map((s) => `<li><strong>${s.title}</strong> · ${money(s.amount, c)}<div class="muted">${(s.bullets || []).join(" · ")}</div></li>`)
@@ -1313,8 +1328,9 @@
     renderItOptions();
     renderItExtensions();
     const r = state.itCatalog.rates;
+    setFormValue(itForm, "itMarginPercent", r.marginPercent ?? 28);
     document.getElementById("itRatesHint").textContent =
-      `Stammdaten: Stundensatz ${money(r.hourlyRate, "CHF")} · km ${money(r.kmRate, "CHF")} · Verpflegung ${money(r.mealRate, "CHF")} · Übernachtung ${money(r.overnightRate, "CHF")}`;
+      `Stammdaten: Stundensatz ${money(r.hourlyRate, "CHF")} · km ${money(r.kmRate, "CHF")} · Verpflegung ${money(r.mealRate, "CHF")} · Übernachtung ${money(r.overnightRate, "CHF")} · Default-Marge ${r.marginPercent ?? 28}%`;
     document.getElementById("itDisclaimer").textContent = state.itCatalog.meta.disclaimer;
     bindEvents();
     // Initiale Live-Vorschau (auch ohne Firmenname)

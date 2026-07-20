@@ -362,6 +362,8 @@ class ItOfferRequest(BaseModel):
     mealCount: int = Field(0, ge=0, le=500)
     notes: str = ""
     preparedBy: str = ""
+    # Nur Marge (CHF intern, kein Währungskurs)
+    itMarginPercent: Optional[float] = Field(None, ge=0, le=500)
 
 
 def logimat_hours(devices: int, base: float, pct2: float, pct_n: float) -> float:
@@ -574,10 +576,28 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
         },
     ]
     lines.extend(travel_lines)
-    travel_amount = round(sum(l["amount"] for l in travel_lines), 2)
+    travel_amount_cost = round(sum(l["amount"] for l in travel_lines), 2)
+    work_amount_cost = round(work_amount, 2)
 
+    # IT intern in CHF: nur Marge, kein EUR→CHF-Kurs
+    margin_percent = float(
+        payload.itMarginPercent
+        if payload.itMarginPercent is not None
+        else (rates.get("marginPercent") or 0)
+    )
+    margin_factor = 1.0 + (margin_percent / 100.0)
+    for line in lines:
+        cost = float(line.get("amount") or 0)
+        line["amountCost"] = cost
+        line["amount"] = round(cost * margin_factor, 2)
+
+    work_amount = round(work_amount_cost * margin_factor, 2)
+    travel_amount = round(travel_amount_cost * margin_factor, 2)
+    margin_amount = round((work_amount_cost + travel_amount_cost) * (margin_percent / 100.0), 2)
     total_hours = round(work_hours + travel_hours, 2)
-    total_amount = round(work_amount + travel_amount, 2)
+    total_amount_cost = round(work_amount_cost + travel_amount_cost, 2)
+    total_amount = round(total_amount_cost * margin_factor, 2)
+    hourly_sell = round(hourly * margin_factor, 2)
 
     created = datetime.now()
     offer_sections = [
@@ -647,6 +667,8 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             "overnightCount": payload.overnightCount,
             "mealCount": payload.mealCount,
             "hourlyRate": hourly,
+            "hourlyRateSell": hourly_sell,
+            "itMarginPercent": margin_percent,
             "notes": payload.notes,
             "preparedBy": payload.preparedBy,
         },
@@ -654,10 +676,15 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
         "offerSections": offer_sections,
         "totals": {
             "workHours": work_hours,
+            "workAmountCost": work_amount_cost,
             "workAmount": work_amount,
             "travelHours": travel_hours,
+            "travelAmountCost": travel_amount_cost,
             "travelAmount": travel_amount,
             "totalHours": total_hours,
+            "totalAmountCost": total_amount_cost,
+            "marginPercent": margin_percent,
+            "marginAmount": margin_amount,
             "totalAmount": total_amount,
             "currency": cat["meta"]["currency"],
         },
@@ -824,7 +851,9 @@ def compose_offer(payload: ComposeOfferRequest):
 
     if it_offer:
         it_currency = it_offer.get("totals", {}).get("currency", "CHF")
-        hourly = (it_offer.get("configuration") or {}).get("hourlyRate")
+        hourly = (it_offer.get("configuration") or {}).get("hourlyRateSell") or (
+            it_offer.get("configuration") or {}
+        ).get("hourlyRate")
         for line in it_offer.get("lines", []):
             # nur relevante / gewählte Positionen mit Aufwand oder Betrag
             if line.get("category") == "option" and not line.get("selected") and not line.get("amount"):
@@ -886,6 +915,7 @@ def compose_offer(payload: ComposeOfferRequest):
             "workHours": (it_totals or {}).get("workHours"),
             "workAmount": (it_totals or {}).get("workAmount"),
             "travelAmount": (it_totals or {}).get("travelAmount"),
+            "marginPercent": (it_totals or {}).get("marginPercent"),
             "total": it_total_chf,
         }
         if it_totals
@@ -1185,9 +1215,11 @@ def api_export_excel(offer_id: str):
             [
                 [],
                 ["IT-Aufwand Stunden", totals.get("workHours")],
-                ["IT-Aufwand Betrag", totals.get("workAmount")],
-                ["Reisekosten", totals.get("travelAmount")],
-                ["Total", totals.get("totalAmount")],
+                ["IT-Aufwand Einkauf CHF", totals.get("workAmountCost")],
+                ["Reisekosten Einkauf CHF", totals.get("travelAmountCost")],
+                ["Marge %", totals.get("marginPercent")],
+                ["Marge CHF", totals.get("marginAmount")],
+                ["Verkauf Total CHF", totals.get("totalAmount")],
             ]
         )
     else:

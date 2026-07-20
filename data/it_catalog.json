@@ -10,7 +10,8 @@
     "hourlyRate": 210,
     "kmRate": 1.4,
     "mealRate": 30,
-    "overnightRate": 150
+    "overnightRate": 150,
+    "marginPercent": 28
   },
   "effort": {
     "baseHours": 32,
