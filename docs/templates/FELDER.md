@@ -1,70 +1,37 @@
-# Feldliste Word-Angebot (Platzhalter im Software-Anhang)
+# Feldliste Word-Angebot (aktive Vorlage)
 
-## So funktioniert der Export
+## Aktive Vorlage
 
-**Ein Dokument:** `anhang_angebot_vorlage.docx`  
-= Original-Software-Anhang (SSI-Design, Bilder, Funktionen) **plus** Platzhalter für Angebotsdaten.
+**`Angebot Logimat DE.docx`**  
+Pfad: `lift-store-angebot/docs/templates/Angebot Logimat DE.docx`
 
-Die App befüllt **nur dieses eine Dokument**. Es wird **nichts** mehr vorangestellt.
+Der Word-Export befüllt **nur diese eine Datei** (docxtpl). Kein separates Voranstellen mehr.
 
-| Datei | Bedeutung |
-|-------|-----------|
-| `anhang_angebot_vorlage.docx` | Bearbeitbare Vorlage (Platzhalter + SSI-Anhang) |
-| `../../../../docs/manuals/2.8/Anhang zu Software_v2.6.X.docx` | Original-Quelle (unverändert) |
+Zum Testen: Datei ersetzen/anpassen → Server neu starten → Angebot → **Word**.
 
-## Vorlage erzeugen / zurücksetzen
-
-```bash
-cd lift-store-angebot
-python scripts/build_annex_template.py
-```
-
-Das kopiert den Original-Anhang und setzt die Platzhalter-Blöcke am Anfang wieder ein.  
-**Achtung:** Eigene Layout-Änderungen in der Vorlage gehen dabei verloren — vorher sichern.
-
-## Vorlage in Word bearbeiten
-
-1. `docs/templates/anhang_angebot_vorlage.docx` öffnen  
-2. Platzhalter wie `{{kunde}}`, `{{gesamt_chf}}` verschieben oder formatieren  
-3. SSI-Anhang-Teil unten unverändert lassen (oder anpassen)  
-4. Unter gleichem Namen speichern  
-5. In der App: Angebot → Word exportieren  
-
-**Wichtig:** Jeden Platzhalter als **einen** durchgehenden Text schreiben (`{{kunde}}`), nicht Buchstabe für Buchstabe formatieren.
-
-## Einfache Felder
+## Platzhalter in der aktuellen Vorlage
 
 | Platzhalter | Bedeutung |
 |-------------|-----------|
-| `{{dokument_label}}` | Kennzeichnung |
 | `{{titel}}` | Titel |
 | `{{untertitel}}` | Untertitel |
-| `{{meta_zeile}}` | Nr. / Datum / Gültig / Rev. |
-| `{{angebotsnummer}}` | Angebotsnummer |
-| `{{datum}}` | Datum |
-| `{{gueltig_bis}}` | Gültig bis |
-| `{{version_software}}` | Software-Version |
-| `{{erstellt_von}}` | Erstellt von |
-| `{{revision_von}}` | Revision von |
 | `{{kunde}}` | Firma |
-| `{{projekt}}` | Projekt |
 | `{{ansprechpartner}}` | Ansprechpartner |
 | `{{email}}` | E-Mail |
 | `{{adresse}}` | Adresse |
+| `{{erstellt_von}}` | Erstellt von |
 | `{{konfiguration}}` | Konfiguration kurz |
 | `{{einleitung}}` | Einleitung |
-| `{{leistungsumfang_text}}` | Leistungsumfang (Namen + Beschreibungen, Totals) |
+| `{{leistungsumfang_text}}` | Leistungsumfang |
 | `{{optionen_text}}` | Optionen |
-| `{{bedingungen_text}}` | Kaufmännische Bedingungen CH |
-| `{{terms_version}}` | Bedingungen-Version |
-| `{{preis_hinweis}}` | Preisnote |
-| `{{lizenz_total_chf}}` | Lizenzen Total |
-| `{{it_total_chf}}` | IT Total |
-| `{{gesamt_chf}}` | Gesamttotal |
-| `{{schluss_text}}` | Schlusstext |
-| `{{gruss}}` | Gruss |
-| `{{firma_ssi}}` | Firma SSI |
-| `{{signatur_1_name}}` / `_titel` / `_rolle` | Signatur 1 |
-| `{{signatur_2_name}}` / `_titel` | Signatur 2 |
+
+Weitere verfügbare Felder (einfach in Word einfügen):  
+`{{angebotsnummer}}`, `{{datum}}`, `{{gueltig_bis}}`, `{{meta_zeile}}`, `{{projekt}}`, `{{lizenz_total_chf}}`, `{{it_total_chf}}`, `{{gesamt_chf}}`, `{{preis_hinweis}}`, `{{bedingungen_text}}`, `{{schluss_text}}`, `{{gruss}}`, `{{firma_ssi}}`, Signaturfelder …
+
+## Tipps
+
+- Platzhalter als **einen** Text schreiben: `{{kunde}}`  
+- Nach starken Word-Formatierungen ggf. Platzhalter neu tippen (sonst zerlegt Word `{{` und `}}`)  
+- Fallback-Vorlagen im gleichen Ordner: `anhang_angebot_vorlage.docx`, `angebot_platzhalter.docx`
 
 Maschinenlesbare Liste: `../../data/docx_field_map.json`

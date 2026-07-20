@@ -1,14 +1,13 @@
 {
-  "version": "2.0",
-  "templateFile": "docs/templates/anhang_angebot_vorlage.docx",
+  "version": "2.1",
+  "templateFile": "docs/templates/Angebot Logimat DE.docx",
   "engine": "docxtpl (Jinja2)",
   "annexSourceFile": "docs/manuals/2.8/Anhang zu Software_v2.6.X.docx",
   "notes": [
-    "Ein Dokument: SSI-Software-Anhang mit eingebetteten Platzhaltern.",
-    "Export befüllt nur anhang_angebot_vorlage.docx — kein Voranstellen einer zweiten Datei.",
+    "Aktive Vorlage: Angebot Logimat DE.docx (ein Dokument, SSI/Logimat-Design).",
+    "Export befüllt nur diese Datei — kein Voranstellen einer zweiten Datei.",
     "Einfache Felder: {{feldname}}",
-    "Optionen, Bedingungen und Leistungsumfang vorgerendert: optionen_text, bedingungen_text, leistungsumfang_text",
-    "Vorlage neu aus Original erzeugen: python scripts/build_annex_template.py"
+    "Fallbacks: anhang_angebot_vorlage.docx, angebot_platzhalter.docx"
   ],
   "fields": [
     { "name": "dokument_label", "label": "Dokumentkennzeichnung", "example": "Angebot / Preisliste", "section": "deckblatt" },

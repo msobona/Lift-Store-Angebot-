@@ -14,17 +14,14 @@ BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent
 FIELD_MAP_FILE = BASE_DIR / "data" / "docx_field_map.json"
 
-# Primär: Anhang mit Platzhaltern (SSI-Original + Angebotsfelder)
+# Primär: SSI-/Logimat-Vorlage mit Platzhaltern (ein Dokument)
 PLACEHOLDER_CANDIDATES = [
+    BASE_DIR / "docs" / "templates" / "Angebot Logimat DE.docx",
+    REPO_ROOT / "lift-store-angebot" / "docs" / "templates" / "Angebot Logimat DE.docx",
     BASE_DIR / "docs" / "templates" / "anhang_angebot_vorlage.docx",
     REPO_ROOT / "lift-store-angebot" / "docs" / "templates" / "anhang_angebot_vorlage.docx",
-    # Fallback: alte schlanke Vorlage (ohne SSI-Anhang)
+    # Fallback: schlanke Vorlage
     BASE_DIR / "docs" / "templates" / "angebot_platzhalter.docx",
-]
-
-ANNEX_SOURCE_CANDIDATES = [
-    REPO_ROOT / "docs" / "manuals" / "2.8" / "Anhang zu Software_v2.6.X.docx",
-    BASE_DIR / "docs" / "manuals" / "2.8" / "Anhang zu Software_v2.6.X.docx",
 ]
 
 
@@ -33,37 +30,14 @@ def find_placeholder_template() -> Path:
         if path.exists():
             return path
     raise FileNotFoundError(
-        "Anhang-Vorlage nicht gefunden. Bitte erzeugen mit:\n"
-        "  python scripts/build_annex_template.py\n"
-        "Erwartet: docs/templates/anhang_angebot_vorlage.docx"
-    )
-
-
-def find_annex_source() -> Path:
-    for path in ANNEX_SOURCE_CANDIDATES:
-        if path.exists():
-            return path
-    raise FileNotFoundError(
-        "Original-Anhang nicht gefunden unter docs/manuals/2.8/Anhang zu Software_v2.6.X.docx"
+        "Word-Vorlage nicht gefunden. Erwartet z.B.:\n"
+        "  docs/templates/Angebot Logimat DE.docx"
     )
 
 
 def ensure_annex_template() -> Path:
-    """Legt anhang_angebot_vorlage.docx an, falls sie fehlt."""
-    for path in PLACEHOLDER_CANDIDATES[:2]:
-        if path.exists():
-            return path
-    # Script ausführen
-    import runpy
-
-    build_script = BASE_DIR / "scripts" / "build_annex_template.py"
-    if not build_script.exists():
-        raise FileNotFoundError(str(build_script))
-    runpy.run_path(str(build_script), run_name="__main__")
-    for path in PLACEHOLDER_CANDIDATES[:2]:
-        if path.exists():
-            return path
-    raise FileNotFoundError("Vorlage konnte nicht erzeugt werden.")
+    """Liefert die aktive Word-Vorlage (Logimat / Anhang / Fallback)."""
+    return find_placeholder_template()
 
 
 def load_field_map() -> Dict[str, Any]:
