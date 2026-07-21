@@ -981,7 +981,9 @@
     const dbChf = t.contributionMarginChf != null
       ? Number(t.contributionMarginChf)
       : sellChf - costChf;
-    const dbPercent = sellChf > 0 ? Math.round((dbChf / sellChf) * 1000) / 10 : 0;
+    const dbPercent = t.contributionMarginPercent != null
+      ? Number(t.contributionMarginPercent)
+      : (sellChf > 0 ? Math.round((dbChf / sellChf) * 1000) / 10 : 0);
     document.getElementById("licenseTotals").innerHTML = `
       <div class="row"><span>Einkauf Total</span><span>${money(t.net, ic)}</span></div>
       <div class="row"><span>Marge ${marginPercent}%</span><span>+ ${money(marginEur, ic)}</span></div>
@@ -1118,7 +1120,9 @@
     const itDb = t.contributionMarginChf != null
       ? Number(t.contributionMarginChf)
       : Number(t.marginAmount || 0);
-    const itDbPercent = itSell > 0 ? Math.round((itDb / itSell) * 1000) / 10 : 0;
+    const itDbPercent = t.contributionMarginPercent != null
+      ? Number(t.contributionMarginPercent)
+      : (itSell > 0 ? Math.round((itDb / itSell) * 1000) / 10 : 0);
     document.getElementById("itTotals").innerHTML = `
       <div class="row"><span>IT-Aufwand Einkauf</span><span>${t.workHours} h · ${money(t.workAmountCost ?? t.workAmount, c)}</span></div>
       <div class="row"><span>Reisekosten Einkauf</span><span>${money(t.travelAmountCost ?? t.travelAmount, c)}</span></div>
