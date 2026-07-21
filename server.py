@@ -253,6 +253,9 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     cost_chf = round(net * eur_to_chf, 2)
     contribution_margin_eur = margin_amount_eur
     contribution_margin_chf = round(sell_net_chf - cost_chf, 2)
+    contribution_margin_percent = (
+        round((contribution_margin_chf / sell_net_chf) * 100, 1) if sell_net_chf else 0.0
+    )
     vat_rate = float(product.get("vatRate") or 0)
     vat = round(sell_net_chf * vat_rate, 2)
     gross = round(sell_net_chf + vat, 2)
@@ -328,6 +331,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "sellNetChf": sell_net_chf,
             "contributionMarginEur": contribution_margin_eur,
             "contributionMarginChf": contribution_margin_chf,
+            "contributionMarginPercent": contribution_margin_percent,
             "vatRate": vat_rate,
             "vat": vat,
             "gross": gross,
@@ -604,6 +608,9 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
     total_hours = round(work_hours + travel_hours, 2)
     total_amount_cost = round(work_amount_cost + travel_amount_cost, 2)
     total_amount = round(total_amount_cost * margin_factor, 2)
+    contribution_margin_percent = (
+        round((margin_amount / total_amount) * 100, 1) if total_amount else 0.0
+    )
     hourly_sell = round(hourly * margin_factor, 2)
 
     created = datetime.now()
@@ -693,6 +700,7 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             "marginPercent": margin_percent,
             "marginAmount": margin_amount,
             "contributionMarginChf": margin_amount,
+            "contributionMarginPercent": contribution_margin_percent,
             "totalAmount": total_amount,
             "currency": cat["meta"]["currency"],
         },
@@ -1352,7 +1360,8 @@ def api_export_excel(offer_id: str):
                 ["Reisekosten Einkauf CHF", totals.get("travelAmountCost")],
                 ["Marge %", totals.get("marginPercent")],
                 ["Marge CHF", totals.get("marginAmount")],
-                ["Deckungsbeitrag CHF", totals.get("contributionMarginChf")],
+                ["Deckungsbeitrag CHF / DB", totals.get("contributionMarginChf")],
+                ["DB % vom Verkauf", totals.get("contributionMarginPercent")],
                 ["Verkauf Total CHF", totals.get("totalAmount")],
             ]
         )
@@ -1390,7 +1399,8 @@ def api_export_excel(offer_id: str):
                 ["Einkauf CHF (IC×Kurs)", totals.get("costChf")],
                 ["Verkauf CHF", totals.get("sellNetChf")],
                 ["Deckungsbeitrag EUR", totals.get("contributionMarginEur")],
-                ["Deckungsbeitrag CHF", totals.get("contributionMarginChf")],
+                ["Deckungsbeitrag CHF / DB", totals.get("contributionMarginChf")],
+                ["DB % vom Verkauf", totals.get("contributionMarginPercent")],
             ]
         )
 

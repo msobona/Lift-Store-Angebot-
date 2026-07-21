@@ -158,25 +158,35 @@
     if (!box) return;
     const lic = state.licenseOffer?.totals || null;
     const it = state.itOffer?.totals || null;
+    const licSell = lic?.sellNetChf != null ? Number(lic.sellNetChf) : null;
+    const itSell = it?.totalAmount != null ? Number(it.totalAmount) : null;
     const licDb = lic?.contributionMarginChf != null
       ? Number(lic.contributionMarginChf)
-      : (lic?.sellNetChf != null && lic?.costChf != null
-        ? Number(lic.sellNetChf) - Number(lic.costChf)
+      : (licSell != null && lic?.costChf != null
+        ? licSell - Number(lic.costChf)
         : null);
     const itDb = it?.contributionMarginChf != null
       ? Number(it.contributionMarginChf)
       : (it?.marginAmount != null ? Number(it.marginAmount) : null);
     if (licDb == null && itDb == null) {
-      box.innerHTML = `<span class="muted">Deckungsbeitrag (intern): Lizenz- und/oder IT-Kalkulation ausfüllen.</span>`;
+      box.innerHTML = `<span class="muted">DB (intern): Lizenz- und/oder IT-Kalkulation ausfüllen.</span>`;
       return;
     }
     const parts = [];
-    if (licDb != null) parts.push(`Lizenzen ${money(licDb, "CHF")}`);
-    if (itDb != null) parts.push(`IT ${money(itDb, "CHF")}`);
-    const total = (licDb || 0) + (itDb || 0);
+    if (licDb != null && licSell != null) {
+      const p = licSell > 0 ? Math.round((licDb / licSell) * 1000) / 10 : 0;
+      parts.push(`Lizenzen ${money(licDb, "CHF")} (${p}%)`);
+    }
+    if (itDb != null && itSell != null) {
+      const p = itSell > 0 ? Math.round((itDb / itSell) * 1000) / 10 : 0;
+      parts.push(`IT ${money(itDb, "CHF")} (${p}%)`);
+    }
+    const totalDb = (licDb || 0) + (itDb || 0);
+    const totalSell = (licSell || 0) + (itSell || 0);
+    const totalPct = totalSell > 0 ? Math.round((totalDb / totalSell) * 1000) / 10 : 0;
     box.innerHTML = `
-      <div><strong>Deckungsbeitrag intern (Verkauf − Einkauf): ${money(total, "CHF")}</strong></div>
-      <span class="muted">${parts.join(" · ")} · erscheint nicht im Kundenangebot</span>`;
+      <div><strong>DB intern: ${money(totalDb, "CHF")} · ${totalPct}%</strong></div>
+      <span class="muted">${parts.join(" · ")} · vom Verkauf · erscheint nicht im Kundenangebot</span>`;
   }
 
   async function ensureCurrentCalcs() {
@@ -967,18 +977,18 @@
         <td>${money(chfTotal, sell)}</td>
       </tr>`;
     }).join("");
+    const costChf = t.costChf != null ? Number(t.costChf) : Number(t.net || 0) * fx;
+    const dbChf = t.contributionMarginChf != null
+      ? Number(t.contributionMarginChf)
+      : sellChf - costChf;
+    const dbPercent = sellChf > 0 ? Math.round((dbChf / sellChf) * 1000) / 10 : 0;
     document.getElementById("licenseTotals").innerHTML = `
       <div class="row"><span>Einkauf Total</span><span>${money(t.net, ic)}</span></div>
       <div class="row"><span>Marge ${marginPercent}%</span><span>+ ${money(marginEur, ic)}</span></div>
       <div class="row"><span>Verkauf EUR</span><span>${money(sellEur, ic)}</span></div>
-      <div class="row"><span>Einkauf CHF (× ${fx})</span><span>${money(t.costChf != null ? t.costChf : Number(t.net || 0) * fx, sell)}</span></div>
+      <div class="row"><span>Einkauf CHF (× ${fx})</span><span>${money(costChf, sell)}</span></div>
       <div class="row strong"><span>Verkauf CHF</span><span>${money(sellChf, sell)}</span></div>
-      <div class="row db"><span>Deckungsbeitrag (intern)</span><span>${money(
-        t.contributionMarginChf != null
-          ? t.contributionMarginChf
-          : sellChf - (t.costChf != null ? Number(t.costChf) : Number(t.net || 0) * fx),
-        sell
-      )}</span></div>`;
+      <div class="row db"><span>DB (intern)</span><span>${money(dbChf, sell)} · ${dbPercent}%</span></div>`;
     document.getElementById("licenseScope").innerHTML =
       (offer.scopeOfSupply || []).map((s) => `<li>${s}</li>`).join("");
     document.getElementById("licenseDisclaimer").textContent = offer.product.disclaimer;
@@ -1103,16 +1113,19 @@
           <td>${line.hours || 0}</td>
           <td>${money(line.amount, c)}</td>
         </tr>`).join("");
+    const itCost = Number(t.totalAmountCost ?? 0);
+    const itSell = Number(t.totalAmount || 0);
+    const itDb = t.contributionMarginChf != null
+      ? Number(t.contributionMarginChf)
+      : Number(t.marginAmount || 0);
+    const itDbPercent = itSell > 0 ? Math.round((itDb / itSell) * 1000) / 10 : 0;
     document.getElementById("itTotals").innerHTML = `
       <div class="row"><span>IT-Aufwand Einkauf</span><span>${t.workHours} h · ${money(t.workAmountCost ?? t.workAmount, c)}</span></div>
       <div class="row"><span>Reisekosten Einkauf</span><span>${money(t.travelAmountCost ?? t.travelAmount, c)}</span></div>
-      <div class="row"><span>Einkauf Total</span><span>${money(t.totalAmountCost ?? 0, c)}</span></div>
+      <div class="row"><span>Einkauf Total</span><span>${money(itCost, c)}</span></div>
       <div class="row"><span>Marge ${marginPercent}%</span><span>+ ${money(t.marginAmount || 0, c)}</span></div>
-      <div class="row strong"><span>Verkauf Total exkl. MwSt</span><span>${money(t.totalAmount, c)}</span></div>
-      <div class="row db"><span>Deckungsbeitrag (intern)</span><span>${money(
-        t.contributionMarginChf != null ? t.contributionMarginChf : (t.marginAmount || 0),
-        c
-      )}</span></div>`;
+      <div class="row strong"><span>Verkauf Total exkl. MwSt</span><span>${money(itSell, c)}</span></div>
+      <div class="row db"><span>DB (intern)</span><span>${money(itDb, c)} · ${itDbPercent}%</span></div>`;
     document.getElementById("itScope").innerHTML = (offer.offerSections || [])
       .filter((s) => Number(s.amount) > 0 || (s.bullets || []).length)
       .map((s) => `<li><strong>${s.title}</strong> · ${money(s.amount, c)}<div class="muted">${(s.bullets || []).join(" · ")}</div></li>`)
