@@ -909,14 +909,19 @@
     state.licenseCatalog.addons.forEach((addon) => {
       const available = addon.availableFor.includes(instId);
       const el = document.createElement("label");
-      el.className = `feature${available ? "" : " locked"}`;
+      el.className = `option-row${available ? "" : " locked"}`;
       el.innerHTML = `
         <input type="checkbox" name="addon" value="${addon.id}"
           ${available && prev.has(addon.id) ? "checked" : ""} ${available ? "" : "disabled"} />
-        <div>
+        <div class="row-main">
           <strong>${addon.name}</strong>
           <span>${addon.functionalDescription || addon.description || ""}</span>
-          <span>${available ? `${money(icEurToSellChf(addon.price), "CHF")} · Einkauf ${money(addon.price, "EUR")}` : "Nur für Advanced"}</span>
+          ${available ? "" : "<span>Nur für Advanced</span>"}
+        </div>
+        <div class="row-price">
+          ${available
+            ? `${money(icEurToSellChf(addon.price), "CHF")}<small>Einkauf ${money(addon.price, "EUR")}</small>`
+            : "—"}
         </div>`;
       if (available) el.querySelector("input").addEventListener("change", () => recalcLicense());
       root.appendChild(el);
@@ -930,10 +935,16 @@
     document.getElementById("clientHints").innerHTML = (state.licenseCatalog.clientLicenses || [])
       .map((c) => {
         const locked = !c.availableFor.includes(selectedInstanceId());
-        return `<div class="hint-card${locked ? " locked" : ""}">
-          <strong>${c.name}</strong>
-          <span>${c.functionalDescription || c.description}</span>
-          <span>${money(icEurToSellChf(c.price), "CHF")} · Einkauf ${money(c.price, "EUR")}${locked ? " · nur für Advanced" : ""}</span>
+        return `<div class="option-row info-only${locked ? " locked" : ""}">
+          <div class="row-main">
+            <strong>${c.name}</strong>
+            <span>${c.functionalDescription || c.description}</span>
+            ${locked ? "<span>Nur für Advanced</span>" : ""}
+          </div>
+          <div class="row-price">
+            ${money(icEurToSellChf(c.price), "CHF")}
+            <small>Einkauf ${money(c.price, "EUR")}</small>
+          </div>
         </div>`;
       })
       .join("");
@@ -1014,18 +1025,34 @@
   }
 
   // -------------------- IT --------------------
+  function itOptionHoursHint(opt) {
+    const effort = state.itCatalog.effort || {};
+    const direct = effort[`${opt.id}Hours`];
+    if (direct != null) return `${direct} h`;
+    if (opt.id === "rfid" && effort.rfidBaseHours != null) {
+      return `ab ${effort.rfidBaseHours} h`;
+    }
+    if (opt.id === "scanner" && effort.scannerBaseHours != null) {
+      return `ab ${effort.scannerBaseHours} h`;
+    }
+    return "";
+  }
+
   function renderItOptions() {
     const root = document.getElementById("itOptions");
+    const prev = new Set([...root.querySelectorAll('input[name="itOption"]:checked')].map((el) => el.value));
     root.innerHTML = "";
     state.itCatalog.options.forEach((opt) => {
+      const hours = itOptionHoursHint(opt);
       const el = document.createElement("label");
-      el.className = "feature";
+      el.className = hours ? "option-row" : "option-row no-price";
       el.innerHTML = `
-        <input type="checkbox" name="itOption" value="${opt.id}" />
-        <div>
+        <input type="checkbox" name="itOption" value="${opt.id}" ${prev.has(opt.id) ? "checked" : ""} />
+        <div class="row-main">
           <strong>${opt.name}</strong>
           <span>${opt.description}</span>
-        </div>`;
+        </div>
+        ${hours ? `<div class="row-price">${hours}<small>Richtwert</small></div>` : ""}`;
       el.querySelector("input").addEventListener("change", () => recalcIt());
       root.appendChild(el);
     });
