@@ -249,6 +249,10 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     margin_amount_eur = round(net * (margin_percent / 100.0), 2)
     sell_net_eur = round(net * margin_factor, 2)
     sell_net_chf = round(sell_net_eur * eur_to_chf, 2)
+    # Deckungsbeitrag intern: Verkauf − Einkauf (Einkauf CHF = IC×Kurs)
+    cost_chf = round(net * eur_to_chf, 2)
+    contribution_margin_eur = margin_amount_eur
+    contribution_margin_chf = round(sell_net_chf - cost_chf, 2)
     vat_rate = float(product.get("vatRate") or 0)
     vat = round(sell_net_chf * vat_rate, 2)
     gross = round(sell_net_chf + vat, 2)
@@ -320,7 +324,10 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "marginAmountEur": margin_amount_eur,
             "sellNetEur": sell_net_eur,
             "eurToChfRate": eur_to_chf,
+            "costChf": cost_chf,
             "sellNetChf": sell_net_chf,
+            "contributionMarginEur": contribution_margin_eur,
+            "contributionMarginChf": contribution_margin_chf,
             "vatRate": vat_rate,
             "vat": vat,
             "gross": gross,
@@ -685,6 +692,7 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             "totalAmountCost": total_amount_cost,
             "marginPercent": margin_percent,
             "marginAmount": margin_amount,
+            "contributionMarginChf": margin_amount,
             "totalAmount": total_amount,
             "currency": cat["meta"]["currency"],
         },
@@ -1344,6 +1352,7 @@ def api_export_excel(offer_id: str):
                 ["Reisekosten Einkauf CHF", totals.get("travelAmountCost")],
                 ["Marge %", totals.get("marginPercent")],
                 ["Marge CHF", totals.get("marginAmount")],
+                ["Deckungsbeitrag CHF", totals.get("contributionMarginChf")],
                 ["Verkauf Total CHF", totals.get("totalAmount")],
             ]
         )
@@ -1378,7 +1387,10 @@ def api_export_excel(offer_id: str):
                 ["IC Total EUR", totals.get("net")],
                 ["Marge EUR", totals.get("marginAmountEur")],
                 ["Verkauf EUR", totals.get("sellNetEur")],
+                ["Einkauf CHF (IC×Kurs)", totals.get("costChf")],
                 ["Verkauf CHF", totals.get("sellNetChf")],
+                ["Deckungsbeitrag EUR", totals.get("contributionMarginEur")],
+                ["Deckungsbeitrag CHF", totals.get("contributionMarginChf")],
             ]
         )
 

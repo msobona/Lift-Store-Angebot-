@@ -128,9 +128,12 @@
     });
     document.getElementById(`view-${name}`).classList.add("active");
     if (name === "archive") loadArchive();
-    if (name === "offer" && (state.licenseOffer || state.itOffer)) {
-      // still require explicit button, but keep print enabled if doc exists
-      document.getElementById("btnPrintOffer").disabled = !document.querySelector(".offer-sheet");
+    if (name === "offer") {
+      updateInternalContributionBox();
+      if (state.licenseOffer || state.itOffer) {
+        // still require explicit button, but keep print enabled if doc exists
+        document.getElementById("btnPrintOffer").disabled = !document.querySelector(".offer-sheet");
+      }
     }
   }
 
@@ -148,6 +151,32 @@
     const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (m) return `${m[3]}.${m[2]}.${m[1]}`;
     return String(value);
+  }
+
+  function updateInternalContributionBox() {
+    const box = document.getElementById("internalContributionBox");
+    if (!box) return;
+    const lic = state.licenseOffer?.totals || null;
+    const it = state.itOffer?.totals || null;
+    const licDb = lic?.contributionMarginChf != null
+      ? Number(lic.contributionMarginChf)
+      : (lic?.sellNetChf != null && lic?.costChf != null
+        ? Number(lic.sellNetChf) - Number(lic.costChf)
+        : null);
+    const itDb = it?.contributionMarginChf != null
+      ? Number(it.contributionMarginChf)
+      : (it?.marginAmount != null ? Number(it.marginAmount) : null);
+    if (licDb == null && itDb == null) {
+      box.innerHTML = `<span class="muted">Deckungsbeitrag (intern): Lizenz- und/oder IT-Kalkulation ausfüllen.</span>`;
+      return;
+    }
+    const parts = [];
+    if (licDb != null) parts.push(`Lizenzen ${money(licDb, "CHF")}`);
+    if (itDb != null) parts.push(`IT ${money(itDb, "CHF")}`);
+    const total = (licDb || 0) + (itDb || 0);
+    box.innerHTML = `
+      <div><strong>Deckungsbeitrag intern (Verkauf − Einkauf): ${money(total, "CHF")}</strong></div>
+      <span class="muted">${parts.join(" · ")} · erscheint nicht im Kundenangebot</span>`;
   }
 
   async function ensureCurrentCalcs() {
@@ -942,12 +971,20 @@
       <div class="row"><span>Einkauf Total</span><span>${money(t.net, ic)}</span></div>
       <div class="row"><span>Marge ${marginPercent}%</span><span>+ ${money(marginEur, ic)}</span></div>
       <div class="row"><span>Verkauf EUR</span><span>${money(sellEur, ic)}</span></div>
-      <div class="row strong"><span>Verkauf CHF (× ${fx})</span><span>${money(sellChf, sell)}</span></div>`;
+      <div class="row"><span>Einkauf CHF (× ${fx})</span><span>${money(t.costChf != null ? t.costChf : Number(t.net || 0) * fx, sell)}</span></div>
+      <div class="row strong"><span>Verkauf CHF</span><span>${money(sellChf, sell)}</span></div>
+      <div class="row db"><span>Deckungsbeitrag (intern)</span><span>${money(
+        t.contributionMarginChf != null
+          ? t.contributionMarginChf
+          : sellChf - (t.costChf != null ? Number(t.costChf) : Number(t.net || 0) * fx),
+        sell
+      )}</span></div>`;
     document.getElementById("licenseScope").innerHTML =
       (offer.scopeOfSupply || []).map((s) => `<li>${s}</li>`).join("");
     document.getElementById("licenseDisclaimer").textContent = offer.product.disclaimer;
     document.getElementById("btnLicenseExcel").disabled = !state.savedLicenseId;
     document.getElementById("btnLicensePrint").disabled = !offer;
+    updateInternalContributionBox();
   }
 
   async function recalcLicense() {
@@ -1069,8 +1106,13 @@
     document.getElementById("itTotals").innerHTML = `
       <div class="row"><span>IT-Aufwand Einkauf</span><span>${t.workHours} h · ${money(t.workAmountCost ?? t.workAmount, c)}</span></div>
       <div class="row"><span>Reisekosten Einkauf</span><span>${money(t.travelAmountCost ?? t.travelAmount, c)}</span></div>
+      <div class="row"><span>Einkauf Total</span><span>${money(t.totalAmountCost ?? 0, c)}</span></div>
       <div class="row"><span>Marge ${marginPercent}%</span><span>+ ${money(t.marginAmount || 0, c)}</span></div>
-      <div class="row strong"><span>Verkauf Total exkl. MwSt</span><span>${money(t.totalAmount, c)}</span></div>`;
+      <div class="row strong"><span>Verkauf Total exkl. MwSt</span><span>${money(t.totalAmount, c)}</span></div>
+      <div class="row db"><span>Deckungsbeitrag (intern)</span><span>${money(
+        t.contributionMarginChf != null ? t.contributionMarginChf : (t.marginAmount || 0),
+        c
+      )}</span></div>`;
     document.getElementById("itScope").innerHTML = (offer.offerSections || [])
       .filter((s) => Number(s.amount) > 0 || (s.bullets || []).length)
       .map((s) => `<li><strong>${s.title}</strong> · ${money(s.amount, c)}<div class="muted">${(s.bullets || []).join(" · ")}</div></li>`)
@@ -1078,6 +1120,7 @@
     document.getElementById("itDisclaimer").textContent = offer.product.disclaimer;
     document.getElementById("btnItExcel").disabled = !state.savedItId;
     document.getElementById("btnItPrint").disabled = !offer;
+    updateInternalContributionBox();
   }
 
   async function recalcIt() {
