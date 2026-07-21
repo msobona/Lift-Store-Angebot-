@@ -1096,7 +1096,14 @@ def compose_offer(payload: ComposeOfferRequest):
             adj_notes.append(f"Projektrabatt {discount_percent:g}%")
         if discount_amount_chf > 0:
             commercial_discount += discount_amount_chf
-            adj_notes.append(f"Rabatt CHF {discount_amount_chf:,.2f}".replace(",", "'"))
+            # Schweizer Zahlenformat wie im Rest der App
+            chf_fmt = (
+                f"{discount_amount_chf:,.2f}"
+                .replace(",", "X")
+                .replace(".", ",")
+                .replace("X", "'")
+            )
+            adj_notes.append(f"Rabatt CHF {chf_fmt}")
         commercial_discount = round(min(commercial_discount, grand_chf), 2)
         grand_before_round = round(grand_chf - commercial_discount, 2)
         grand_chf = grand_before_round
@@ -1192,6 +1199,7 @@ def compose_offer(payload: ComposeOfferRequest):
             "footnotes": template.get("footnotes", []),
             "annexLabel": template.get("documentLabel", "Anhang zur Software"),
             "configurationSummary": {
+                "instanceId": (license_offer or {}).get("configuration", {}).get("instanceId"),
                 "instanceName": instance_name,
                 "instanceCount": (license_offer or {}).get("configuration", {}).get("instanceCount"),
                 "deviceCount": (it_offer or {}).get("configuration", {}).get("deviceCount"),

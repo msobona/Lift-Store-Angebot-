@@ -58,7 +58,7 @@
   "instances": [
     {
       "id": "basic",
-      "name": "Basic Instance",
+      "name": "Basis-Instanz",
       "price": 2200,
       "includedOpeningClients": 1,
       "includedAdminClients": 1,
@@ -75,7 +75,7 @@
     },
     {
       "id": "advanced",
-      "name": "Advanced Instance",
+      "name": "Advanced-Instanz",
       "price": 3700,
       "includedOpeningClients": 1,
       "includedAdminClients": 1,

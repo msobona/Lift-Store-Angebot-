@@ -6,23 +6,27 @@ import io
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from docxtpl import DocxTemplate
 
 BASE_DIR = Path(__file__).resolve().parent
-REPO_ROOT = BASE_DIR.parent
 FIELD_MAP_FILE = BASE_DIR / "data" / "docx_field_map.json"
 
-# Primär: SSI-/Logimat-Vorlage mit Platzhaltern (ein Dokument)
+# Primär: vollständige Kunden-Vorlage (Preise, Bedingungen, Signaturen).
+# Logimat bleibt als optionale Design-Vorlage, ist aber inhaltlich unvollständig.
 PLACEHOLDER_CANDIDATES = [
-    BASE_DIR / "docs" / "templates" / "Angebot Logimat DE.docx",
-    REPO_ROOT / "lift-store-angebot" / "docs" / "templates" / "Angebot Logimat DE.docx",
     BASE_DIR / "docs" / "templates" / "anhang_angebot_vorlage.docx",
-    REPO_ROOT / "lift-store-angebot" / "docs" / "templates" / "anhang_angebot_vorlage.docx",
-    # Fallback: schlanke Vorlage
     BASE_DIR / "docs" / "templates" / "angebot_platzhalter.docx",
+    BASE_DIR / "docs" / "templates" / "Angebot Logimat DE.docx",
 ]
+
+INSTANCE_DISPLAY_NAMES = {
+    "basic": "Basis-Instanz",
+    "advanced": "Advanced-Instanz",
+    "Basic Instance": "Basis-Instanz",
+    "Advanced Instance": "Advanced-Instanz",
+}
 
 
 def find_placeholder_template() -> Path:
@@ -31,12 +35,12 @@ def find_placeholder_template() -> Path:
             return path
     raise FileNotFoundError(
         "Word-Vorlage nicht gefunden. Erwartet z.B.:\n"
-        "  docs/templates/Angebot Logimat DE.docx"
+        "  docs/templates/anhang_angebot_vorlage.docx"
     )
 
 
 def ensure_annex_template() -> Path:
-    """Liefert die aktive Word-Vorlage (Logimat / Anhang / Fallback)."""
+    """Liefert die aktive Word-Vorlage (Anhang / Fallback / Logimat)."""
     return find_placeholder_template()
 
 
@@ -71,6 +75,23 @@ def _join_paragraphs(parts: List[str]) -> str:
     return "\n\n".join(p.strip() for p in parts if p and str(p).strip())
 
 
+def _pluralize(count: Any, singular: str, plural: str) -> Optional[str]:
+    try:
+        n = int(count)
+    except (TypeError, ValueError):
+        return None
+    if n <= 0:
+        return None
+    return f"{n} {singular if n == 1 else plural}"
+
+
+def _display_instance_name(name: Any, instance_id: Any = None) -> str:
+    if instance_id and str(instance_id) in INSTANCE_DISPLAY_NAMES:
+        return INSTANCE_DISPLAY_NAMES[str(instance_id)]
+    raw = str(name or "").strip()
+    return INSTANCE_DISPLAY_NAMES.get(raw, raw)
+
+
 def _render_optionen_text(options: List[Dict[str, Any]]) -> str:
     if not options:
         return "Keine optionalen Softwaremodule gewählt."
@@ -87,24 +108,48 @@ def _render_optionen_text(options: List[Dict[str, Any]]) -> str:
     return _join_paragraphs(blocks)
 
 
+def _render_section_body(sec: Dict[str, Any], blocks: List[str], heading_prefix: str = "") -> None:
+    sid = (sec.get("id") or "").strip()
+    title = (sec.get("title") or "").strip()
+    head = f"{heading_prefix}{sid} {title}".strip()
+    if head:
+        blocks.append(head)
+    for p in sec.get("paragraphs") or []:
+        if p:
+            blocks.append(str(p).strip())
+    for b in sec.get("bullets") or []:
+        if b:
+            blocks.append(f"• {str(b).strip()}")
+    table = sec.get("table")
+    if isinstance(table, dict):
+        headers = [str(h).strip() for h in (table.get("headers") or []) if str(h).strip()]
+        if headers:
+            blocks.append(" | ".join(headers))
+        for row in table.get("rows") or []:
+            cells = [str(c).strip() for c in row]
+            if any(cells):
+                blocks.append(" | ".join(cells))
+    for p in sec.get("paragraphsAfter") or []:
+        if p:
+            blocks.append(str(p).strip())
+    for sub in sec.get("subsections") or []:
+        if isinstance(sub, dict):
+            _render_section_body(sub, blocks)
+
+
 def _render_bedingungen_text(terms: Dict[str, Any]) -> str:
     blocks: List[str] = []
     for sec in terms.get("sections") or []:
-        sid = (sec.get("id") or "").strip()
-        title = (sec.get("title") or "").strip()
-        head = f"{sid} {title}".strip()
-        if head:
-            blocks.append(head)
-        for p in sec.get("paragraphs") or []:
-            if p:
-                blocks.append(str(p).strip())
-        for b in sec.get("bullets") or []:
-            if b:
-                blocks.append(f"• {str(b).strip()}")
-        for p in sec.get("paragraphsAfter") or []:
-            if p:
-                blocks.append(str(p).strip())
+        if isinstance(sec, dict):
+            _render_section_body(sec, blocks)
     return _join_paragraphs(blocks) if blocks else "—"
+
+
+def _greeting_line(contact: str) -> str:
+    name = (contact or "").strip()
+    if not name:
+        return "Sehr geehrte Damen und Herren,"
+    return f"Sehr geehrte Damen und Herren / Sehr geehrte/r {name},"
 
 
 def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
@@ -122,14 +167,15 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
     sig1 = signatories[0] if len(signatories) > 0 else {}
     sig2 = signatories[1] if len(signatories) > 1 else {}
 
+    instance_name = _display_instance_name(cfg.get("instanceName"), cfg.get("instanceId"))
     cfg_bits = " · ".join(
         x
         for x in [
-            cfg.get("instanceName"),
+            instance_name or None,
             f"{cfg['instanceCount']}×" if cfg.get("instanceCount") else None,
-            f"{cfg.get('deviceCount')} Geräte" if cfg.get("deviceCount") else None,
-            f"{cfg.get('zoneCount')} Zone(n)" if cfg.get("zoneCount") else None,
-            f"{cfg.get('openingCount')} Öffnung(en)" if cfg.get("openingCount") else None,
+            _pluralize(cfg.get("deviceCount"), "Gerät", "Geräte"),
+            _pluralize(cfg.get("zoneCount"), "Zone", "Zonen"),
+            _pluralize(cfg.get("openingCount"), "Öffnung", "Öffnungen"),
         ]
         if x
     )
@@ -176,6 +222,7 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
                 }
             )
 
+    # Keine Bereichs-Totals hier: Projektrabatt/Abrundung gelten nur für Gesamttotal.
     scope_text_blocks = []
     for group in scope_groups:
         scope_text_blocks.append(group.get("title") or "")
@@ -186,10 +233,6 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
                 scope_text_blocks.append(f"• {name}\n{desc}")
             elif name:
                 scope_text_blocks.append(f"• {name}")
-        if group.get("total") is not None:
-            scope_text_blocks.append(
-                f"Total: {_money(group.get('total'), group.get('currency') or 'CHF')}"
-            )
     scope_text = _join_paragraphs(scope_text_blocks)
 
     einleitung = _join_paragraphs(
@@ -216,6 +259,12 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
     ]
     meta_zeile = "  ·  ".join(p for p in meta_parts if p)
 
+    note = summary.get("note")
+    if note and "IC-Preise" in str(note):
+        note = "Alle Preise in CHF, exkl. MwSt."
+    if not note:
+        note = "Alle Preise in CHF, exkl. MwSt."
+
     return {
         "dokument_label": content.get("documentLabel") or "Angebot / Preisliste",
         "titel": content.get("title") or "Angebot WAMAS® Lift & Store",
@@ -230,10 +279,12 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "kunde": customer.get("company", ""),
         "projekt": customer.get("projectName", ""),
         "ansprechpartner": customer.get("contact", ""),
+        "anrede": _greeting_line(customer.get("contact", "")),
         "email": customer.get("email", ""),
+        "telefon": customer.get("phone", ""),
         "adresse": customer.get("address", ""),
         "konfiguration": cfg_bits,
-        "instance_name": cfg.get("instanceName") or "",
+        "instance_name": instance_name,
         "instance_count": cfg.get("instanceCount") or "",
         "device_count": cfg.get("deviceCount") or "",
         "zone_count": cfg.get("zoneCount") or "",
@@ -243,11 +294,7 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "optionen_text": _render_optionen_text(content.get("selectedOptions") or []),
         "bedingungen_text": _render_bedingungen_text(terms),
         "leistungsumfang_text": scope_text,
-        "preis_hinweis": (
-            summary.get("note")
-            if summary.get("note") and "IC-Preise" not in str(summary.get("note"))
-            else "Alle Preise in CHF, exkl. MwSt."
-        ),
+        "preis_hinweis": note,
         "lizenz_total_chf": _money(lic.get("total"), lic.get("currency") or "CHF") if lic else "—",
         "lizenz_ic_eur": "",
         "marge_percent": "",
@@ -270,6 +317,7 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "signatur_1_rolle": sig1.get("role", ""),
         "signatur_2_name": sig2.get("name", ""),
         "signatur_2_titel": sig2.get("title", ""),
+        "signatur_2_rolle": sig2.get("role", ""),
     }
 
 
@@ -282,7 +330,8 @@ def build_offer_docx(offer: Dict[str, Any]) -> bytes:
     context = build_template_context(offer)
 
     tpl = DocxTemplate(str(template_path))
-    tpl.render(context)
+    # autoescape=True: & und ähnliche Zeichen korrekt als XML escapen
+    tpl.render(context, autoescape=True)
 
     out = io.BytesIO()
     tpl.save(out)
