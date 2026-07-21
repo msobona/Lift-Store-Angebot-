@@ -73,6 +73,154 @@
     return res;
   }
 
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    const toRad = (d) => (d * Math.PI) / 180;
+    const r = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * r * Math.asin(Math.sqrt(a));
+  }
+
+  function initAddressAutocomplete(input) {
+    if (!input) return;
+    const list = document.getElementById("addressSuggestions");
+    if (!list) return;
+
+    let timer = null;
+    let items = [];
+    let activeIndex = -1;
+    let userGeo = null;
+    let requestSeq = 0;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userGeo = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        },
+        () => {},
+        { enableHighAccuracy: false, timeout: 4000, maximumAge: 600000 },
+      );
+    }
+
+    function closeList() {
+      list.hidden = true;
+      list.innerHTML = "";
+      input.setAttribute("aria-expanded", "false");
+      activeIndex = -1;
+    }
+
+    function openList() {
+      list.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+    }
+
+    function applyActive() {
+      [...list.querySelectorAll("li")].forEach((li, i) => {
+        li.classList.toggle("active", i === activeIndex);
+      });
+    }
+
+    function selectItem(item) {
+      if (!item) return;
+      input.value = item.label;
+      closeList();
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function render(suggestions) {
+      items = suggestions;
+      activeIndex = suggestions.length ? 0 : -1;
+      if (!suggestions.length) {
+        closeList();
+        return;
+      }
+      list.innerHTML = suggestions
+        .map((s, i) => {
+          const dist =
+            s.distanceKm != null && Number.isFinite(s.distanceKm)
+              ? `<span class="suggest-meta">${s.distanceKm < 10 ? s.distanceKm.toFixed(1) : Math.round(s.distanceKm)} km</span>`
+              : "";
+          return `<li role="option" data-index="${i}"${i === 0 ? ' class="active"' : ""}>${escapeHtml(s.label)}${dist}</li>`;
+        })
+        .join("");
+      openList();
+    }
+
+    async function search(q) {
+      const seq = ++requestSeq;
+      try {
+        const data = await api(
+          `/api/geo/address-suggest?q=${encodeURIComponent(q)}&limit=10`,
+        );
+        if (seq !== requestSeq) return;
+        let suggestions = data.suggestions || [];
+        if (userGeo) {
+          suggestions = suggestions
+            .map((s) => {
+              const lat = Number(s.lat);
+              const lon = Number(s.lon);
+              const distanceKm =
+                Number.isFinite(lat) && Number.isFinite(lon)
+                  ? haversineKm(userGeo.lat, userGeo.lon, lat, lon)
+                  : null;
+              return { ...s, distanceKm };
+            })
+            .sort((a, b) => {
+              if (a.distanceKm == null && b.distanceKm == null) return 0;
+              if (a.distanceKm == null) return 1;
+              if (b.distanceKm == null) return -1;
+              return a.distanceKm - b.distanceKm;
+            });
+        }
+        render(suggestions);
+      } catch (_) {
+        if (seq === requestSeq) closeList();
+      }
+    }
+
+    input.addEventListener("input", () => {
+      const q = input.value.trim();
+      clearTimeout(timer);
+      if (q.length < 2) {
+        closeList();
+        return;
+      }
+      timer = setTimeout(() => search(q), 220);
+    });
+
+    input.addEventListener("keydown", (ev) => {
+      if (list.hidden || !items.length) return;
+      if (ev.key === "ArrowDown") {
+        ev.preventDefault();
+        activeIndex = (activeIndex + 1) % items.length;
+        applyActive();
+      } else if (ev.key === "ArrowUp") {
+        ev.preventDefault();
+        activeIndex = (activeIndex - 1 + items.length) % items.length;
+        applyActive();
+      } else if (ev.key === "Enter" && activeIndex >= 0) {
+        ev.preventDefault();
+        selectItem(items[activeIndex]);
+      } else if (ev.key === "Escape") {
+        closeList();
+      }
+    });
+
+    list.addEventListener("mousedown", (ev) => {
+      const li = ev.target.closest("li[data-index]");
+      if (!li) return;
+      ev.preventDefault();
+      selectItem(items[Number(li.dataset.index)]);
+    });
+
+    input.addEventListener("blur", () => {
+      setTimeout(closeList, 120);
+    });
+  }
+
   function syncCustomerProject(fromForm, toForm) {
     ["company", "projectName", "preparedBy"].forEach((field) => {
       if (fromForm[field] && toForm[field]) {
@@ -1376,6 +1524,7 @@
     document.getElementById("itRatesHint").textContent =
       `Stammdaten: Stundensatz ${money(r.hourlyRate, "CHF")} · km ${money(r.kmRate, "CHF")} · Verpflegung ${money(r.mealRate, "CHF")} · Übernachtung ${money(r.overnightRate, "CHF")} · Default-Marge ${r.marginPercent ?? 28}%`;
     document.getElementById("itDisclaimer").textContent = state.itCatalog.meta.disclaimer;
+    initAddressAutocomplete(document.getElementById("customerAddress"));
     bindEvents();
     // Initiale Live-Vorschau (auch ohne Firmenname)
     recalcLicense();

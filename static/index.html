@@ -75,7 +75,21 @@
               <label>Ansprechpartner<input name="contact" /></label>
               <label>E-Mail<input name="email" type="email" /></label>
               <label>Erstellt von<input name="preparedBy" /></label>
-              <label class="span-2">Adresse<input name="address" /></label>
+              <label class="span-2 address-autocomplete">Adresse
+                <span class="address-field">
+                  <input
+                    name="address"
+                    id="customerAddress"
+                    autocomplete="off"
+                    placeholder="z. B. Industriestrasse 12, Zürich"
+                    aria-autocomplete="list"
+                    aria-controls="addressSuggestions"
+                    aria-expanded="false"
+                  />
+                  <ul id="addressSuggestions" class="address-suggestions" hidden role="listbox"></ul>
+                </span>
+                <span class="field-hint">Vorschläge aus dem amtlichen Gebäudeadressverzeichnis (geo.admin.ch)</span>
+              </label>
             </div>
           </section>
 

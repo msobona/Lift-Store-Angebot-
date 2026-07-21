@@ -5,12 +5,16 @@ from __future__ import annotations
 import io
 import json
 import math
+import re
 import uuid
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,6 +22,8 @@ from openpyxl import Workbook
 from pydantic import BaseModel, Field
 
 from docx_export import build_offer_docx
+
+GEOADMIN_SEARCH_URL = "https://api3.geo.admin.ch/rest/services/api/SearchServer"
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -720,6 +726,86 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
 @app.get("/api/health")
 def health():
     return {"ok": True, "service": "WAMAS Lift & Store Calculator", "modules": ["license", "it"]}
+
+
+def _strip_html(text: str) -> str:
+    cleaned = re.sub(r"<[^>]+>", "", text or "")
+    return (
+        cleaned.replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .strip()
+    )
+
+
+def format_swiss_address(attrs: Dict[str, Any]) -> str:
+    """Normalize GeoAdmin label to 'Strasse Nr, PLZ Ort'."""
+    label = _strip_html(str(attrs.get("label") or ""))
+    label = re.sub(r"\s+#\s*", " ", label)
+    label = re.sub(r"\s+", " ", label).strip()
+    match = re.match(r"^(.+?)\s+(\d{4}\s+.+)$", label)
+    if match:
+        return f"{match.group(1).strip()}, {match.group(2).strip()}"
+    return label
+
+
+@app.get("/api/geo/address-suggest")
+def address_suggest(
+    q: str = Query("", min_length=0, max_length=200),
+    limit: int = Query(8, ge=1, le=15),
+) -> Dict[str, Any]:
+    """Swiss address autocomplete via geo.admin.ch (official building addresses)."""
+    query = (q or "").strip()
+    if len(query) < 2:
+        return {"suggestions": [], "source": "geo.admin.ch"}
+
+    params = urllib.parse.urlencode(
+        {
+            "searchText": query,
+            "type": "locations",
+            "origins": "address",
+            "limit": str(limit),
+            "sr": "2056",
+            "lang": "de",
+        }
+    )
+    url = f"{GEOADMIN_SEARCH_URL}?{params}"
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "WAMAS-LiftStore-Angebot/1.0 (SSI Schweiz)"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"GeoAdmin-Fehler ({exc.code})",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="GeoAdmin Adresssuche nicht erreichbar",
+        ) from exc
+
+    suggestions: List[Dict[str, Any]] = []
+    for row in payload.get("results") or []:
+        attrs = row.get("attrs") or {}
+        if attrs.get("origin") not in (None, "address"):
+            continue
+        label = format_swiss_address(attrs)
+        if not label:
+            continue
+        suggestions.append(
+            {
+                "label": label,
+                "lat": attrs.get("lat"),
+                "lon": attrs.get("lon"),
+                "featureId": attrs.get("featureId"),
+            }
+        )
+    return {"suggestions": suggestions, "source": "geo.admin.ch"}
 
 
 @app.get("/api/catalog")

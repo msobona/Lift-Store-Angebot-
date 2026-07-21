@@ -240,6 +240,59 @@ label {
 label.span-2,
 label.full { grid-column: 1 / -1; }
 
+.address-field {
+  position: relative;
+  display: block;
+}
+
+.address-suggestions {
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--ssi-line);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.address-suggestions li {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ssi-ink);
+  border-bottom: 1px solid var(--ssi-line);
+}
+
+.address-suggestions li:last-child { border-bottom: 0; }
+.address-suggestions li:hover,
+.address-suggestions li.active {
+  background: #fffdf0;
+}
+
+.address-suggestions li .suggest-meta {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
+}
+
 label.check {
   flex-direction: row;
   align-items: center;
