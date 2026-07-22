@@ -301,6 +301,18 @@
     return String(value);
   }
 
+  function splitSwissAddress(address) {
+    const raw = String(address || "").replace(/\s+/g, " ").trim();
+    if (!raw) return { street: "", city: "", full: "" };
+    let m = raw.match(/^(.*?),\s*(\d{4}\s+.+)$/);
+    if (m) return { street: m[1].trim(), city: m[2].trim(), full: raw };
+    m = raw.match(/^(.*?)(\d{4}\s+.+)$/);
+    if (m && m[1].trim()) {
+      return { street: m[1].replace(/[,\s]+$/, ""), city: m[2].trim(), full: raw };
+    }
+    return { street: raw, city: "", full: raw };
+  }
+
   function updateInternalContributionBox() {
     const box = document.getElementById("internalContributionBox");
     if (!box) return;
@@ -687,70 +699,78 @@
       cfg.instanceName
         ? `${escapeHtml(cfg.instanceName)}${cfg.instanceCount ? ` (${cfg.instanceCount}×)` : ""}`
         : "",
-      cfg.deviceCount ? `${cfg.deviceCount} Geräte` : "",
-      cfg.zoneCount ? `${cfg.zoneCount} Zone(n)` : "",
-      cfg.openingCount ? `${cfg.openingCount} Öffnung(en)` : "",
+      cfg.deviceCount ? `${cfg.deviceCount} Gerät${Number(cfg.deviceCount) === 1 ? "" : "e"}` : "",
+      cfg.zoneCount ? `${cfg.zoneCount} Zone${Number(cfg.zoneCount) === 1 ? "" : "n"}` : "",
+      cfg.openingCount ? `${cfg.openingCount} Öffnung${Number(cfg.openingCount) === 1 ? "" : "en"}` : "",
       cfg.hasOrderHandling ? "Order Handling" : "Standalone",
     ].filter(Boolean).join(" · ");
 
-    root.innerHTML = `
-      <div class="offer-sheet">
-        <header class="offer-cover">
-          <div class="offer-letterhead">
-            <div class="offer-letterhead-brand">
-              <div class="offer-wamas-mark">WAMAS<span>Lift &amp; Store</span></div>
-              <p>Softwarelösung für Vertical Lift Modules</p>
-            </div>
-            <img class="offer-logo-ssi" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
-          </div>
-          <div class="offer-cover-band">
-            <p class="offer-doc-label">${escapeHtml(doc.content.documentLabel || "Angebot / Preisliste")}</p>
-            <h1>${escapeHtml(doc.content.title)}</h1>
-            <p class="offer-cover-sub">${escapeHtml(doc.content.subtitle)}</p>
-          </div>
-          <div class="offer-cover-meta">
-            <div>
-              <span>Version</span>
-              <strong>${escapeHtml(doc.branding.version || "2.8")}</strong>
-            </div>
-            <div>
-              <span>Datum</span>
-              <strong>${escapeHtml(doc.meta.documentDate || formatDateDe(doc.meta.createdAt))}</strong>
-            </div>
-            <div>
-              <span>Angebotsnummer</span>
-              <strong>${escapeHtml(doc.meta.offerNumber)}</strong>
-            </div>
-            <div>
-              <span>Gültig bis</span>
-              <strong>${escapeHtml(formatDateDe(doc.meta.validUntil))}</strong>
-            </div>
-            ${doc.meta.revisionOf || doc.sources?.basedOnOfferNumber ? `
-            <div>
-              <span>Revision von</span>
-              <strong>${escapeHtml(doc.meta.revisionOf || doc.sources.basedOnOfferNumber)}</strong>
-            </div>` : ""}
-          </div>
-          <div class="offer-party-grid">
-            <div class="offer-party">
-              <h3>Kunde / Projekt</h3>
-              <p><strong>${escapeHtml(c.company || "—")}</strong></p>
-              <p>${escapeHtml(c.projectName || "—")}</p>
-              <p>${escapeHtml(c.contact || "")}${c.email ? ` · ${escapeHtml(c.email)}` : ""}</p>
-              <p class="muted">${c.address ? escapeHtml(c.address) : ""}</p>
-            </div>
-            <div class="offer-party">
-              <h3>SSI SCHÄFER</h3>
-              <p><strong>Erstellt von</strong><br>${escapeHtml(doc.meta.preparedBy || "—")}</p>
-              <p><strong>Konfiguration</strong><br>${cfgBits || "—"}</p>
-              <p class="muted">Quellen: ${escapeHtml(doc.sources?.licenseOfferNumber || "Lizenz")} · ${escapeHtml(doc.sources?.itOfferNumber || "IT")}</p>
-            </div>
-          </div>
-          ${priceCards}
-        </header>
+    const addrParts = splitSwissAddress(c.address || "");
+    const offerDate = doc.meta.documentDate || formatDateDe(doc.meta.createdAt);
+    const subtitle = doc.content.subtitle
+      || "SSI SCHÄFER · Softwarelösung für Vertical Lift Modules (SSI LOGIMAT®)";
+    const termsClosing = doc.content.commercialTerms?.closing || {};
+    const sigs = termsClosing.signatories || [];
+    const sig1 = sigs[0] || {};
+    const sig2 = sigs[1] || {};
+    const ssi1Name = doc.meta.preparedBy || sig1.name || "—";
+    const ssi1Pos = sig1.title || sig1.role || "";
+    const ssi2Name = sig2.name || "";
+    const ssi2Pos = sig2.title || sig2.role || "";
 
+    root.innerHTML = `
+      <div class="offer-sheet offer-cover-page">
+        <header class="offer-cover-hero">
+          <img class="offer-cover-bg" src="/static/assets/offer-cover-logimat.jpg" alt="" />
+          <img class="offer-cover-logo" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
+          <div class="offer-cover-titleblock">
+            <h1>${escapeHtml(doc.content.title || "Angebot WAMAS® Lift & Store")}</h1>
+            <p class="offer-cover-date">${escapeHtml(offerDate)}</p>
+            <p class="offer-cover-banner">${escapeHtml(subtitle)}</p>
+          </div>
+          <aside class="offer-cover-customer" aria-label="Kundendaten">
+            <div><span>Firmenname:</span><strong>${escapeHtml(c.company || "—")}</strong></div>
+            <div><span>Name:</span><strong>${escapeHtml(c.contact || "—")}</strong></div>
+            <div><span>Strasse:</span><strong>${escapeHtml(addrParts.street || "—")}</strong></div>
+            <div><span>Postleitzahl, Ort:</span><strong>${escapeHtml(addrParts.city || "—")}</strong></div>
+            <div><span>Telefon:</span><strong>${escapeHtml(c.phone || "")}</strong></div>
+            <div><span>Fax:</span><strong></strong></div>
+            <div><span>E-Mail:</span><strong>${escapeHtml(c.email || "")}</strong></div>
+            ${c.projectName ? `<div><span>Projekt:</span><strong>${escapeHtml(c.projectName)}</strong></div>` : ""}
+            <div><span>Angebotsnr.:</span><strong>${escapeHtml(doc.meta.offerNumber || "")}</strong></div>
+          </aside>
+          <div class="offer-cover-contacts">
+            <table>
+              <thead>
+                <tr><th colspan="4">SSI Schäfer Ansprechpartner</th></tr>
+                <tr>
+                  <th>Name</th><th>Position</th><th>E-Mail</th><th>Telefon</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>${escapeHtml(ssi1Name)}</td>
+                  <td>${escapeHtml(ssi1Pos)}</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>${escapeHtml(ssi2Name)}</td>
+                  <td>${escapeHtml(ssi2Pos)}</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="offer-cover-accent" aria-hidden="true"></div>
+        </header>
+      </div>
+
+      <div class="offer-sheet offer-body-sheet">
         <section class="offer-section offer-section-prices" id="sec-commercial">
           <h2>1. Leistungsumfang &amp; Preise</h2>
+          <p class="offer-lead-line">${escapeHtml(cfgBits || "")}</p>
           <p>Auflistung der Leistungen ohne Einzelpreise. Ausgewiesen werden die Bereichstotals und das Gesamttotal.</p>
           ${scopeHtml || "<p class=\"offer-empty-note\">Kein Leistungsumfang kalkuliert.</p>"}
           <div class="offer-totals-box">
@@ -762,6 +782,7 @@
             ${grand != null ? `<div class="offer-totals-grand"><span>Gesamttotal exkl. MwSt</span><strong>${money(grand, "CHF")}</strong></div>` : ""}
           </div>
           <p class="offer-note">${escapeHtml(customerNote)}</p>
+          ${priceCards}
         </section>
 
         <div class="offer-annex-start">
@@ -890,7 +911,8 @@
           </div>
           <img class="offer-logo-ssi offer-logo-ssi-sm" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
         </div>
-      </div>`;
+      </div>
+    `;
   }
 
   function linkifyUrls(text) {

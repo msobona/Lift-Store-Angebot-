@@ -770,6 +770,172 @@ textarea:focus {
   margin: 0 0 1.25rem;
 }
 
+/* Logimat-style title page (screen + PDF print) */
+.offer-cover-page {
+  padding: 0 !important;
+  overflow: hidden;
+  min-height: 297mm;
+}
+
+.offer-cover-hero {
+  position: relative;
+  width: 100%;
+  min-height: 297mm;
+  height: 297mm;
+  background: #d7d7d7;
+  color: #111;
+}
+
+.offer-cover-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 62% 40%;
+  z-index: 0;
+}
+
+.offer-cover-logo {
+  position: absolute;
+  top: 10mm;
+  right: 10mm;
+  width: 42mm;
+  height: auto;
+  z-index: 2;
+  background: #fff200;
+  padding: 2.5mm 3mm;
+  box-sizing: border-box;
+}
+
+.offer-cover-titleblock {
+  position: absolute;
+  top: 18mm;
+  left: 12mm;
+  right: 58mm;
+  z-index: 2;
+  max-width: 120mm;
+}
+
+.offer-cover-titleblock h1 {
+  margin: 0;
+  font-size: 22pt;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: #111;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+}
+
+.offer-cover-date {
+  margin: 3mm 0 0;
+  font-size: 11pt;
+  font-weight: 700;
+}
+
+.offer-cover-banner {
+  display: inline-block;
+  margin: 5mm 0 0;
+  padding: 2.5mm 4mm;
+  background: #fff200;
+  font-size: 8.5pt;
+  font-weight: 700;
+  line-height: 1.3;
+  max-width: 100%;
+}
+
+.offer-cover-customer {
+  position: absolute;
+  top: 78mm;
+  right: 10mm;
+  width: 72mm;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0,0,0,0.08);
+  padding: 4mm 4.5mm;
+  box-sizing: border-box;
+  backdrop-filter: blur(2px);
+}
+
+.offer-cover-customer div {
+  display: grid;
+  grid-template-columns: 28mm 1fr;
+  gap: 1mm 2mm;
+  margin-bottom: 1.6mm;
+  font-size: 8pt;
+  line-height: 1.25;
+}
+
+.offer-cover-customer span {
+  color: #333;
+  font-weight: 700;
+}
+
+.offer-cover-customer strong {
+  font-weight: 600;
+  color: #111;
+  word-break: break-word;
+}
+
+.offer-cover-contacts {
+  position: absolute;
+  left: 12mm;
+  right: 12mm;
+  bottom: 22mm;
+  z-index: 2;
+  background: rgba(255,255,255,0.94);
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+.offer-cover-contacts table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt;
+}
+
+.offer-cover-contacts th,
+.offer-cover-contacts td {
+  border: 1px solid #ccc;
+  padding: 1.8mm 2.2mm;
+  text-align: left;
+  vertical-align: top;
+}
+
+.offer-cover-contacts thead tr:first-child th {
+  background: #fff200;
+  font-weight: 800;
+  text-align: left;
+  font-size: 9pt;
+}
+
+.offer-cover-contacts thead tr:nth-child(2) th {
+  background: #f3f3f3;
+  font-weight: 700;
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.offer-cover-accent {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 14mm;
+  height: 14mm;
+  background: #fff200;
+  z-index: 2;
+}
+
+.offer-body-sheet {
+  margin-top: 1.5rem;
+}
+
+.offer-lead-line {
+  font-weight: 700;
+  color: var(--ssi-muted);
+  margin: 0 0 0.6rem;
+}
+
 .offer-letterhead {
   display: flex;
   justify-content: space-between;
@@ -1491,6 +1657,10 @@ textarea:focus {
   margin: 12mm 14mm 14mm;
 }
 
+@page :first {
+  margin: 0;
+}
+
 @media print {
   .topbar,
   .hero-banner,
@@ -1557,6 +1727,32 @@ textarea:focus {
     line-height: 1.35;
   }
 
+  .offer-cover-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    overflow: hidden !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .offer-cover-hero {
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+  }
+
+  .offer-cover-bg {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .offer-body-sheet {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
   .offer-cover-band h1 {
     font-size: 18pt;
   }
@@ -1608,6 +1804,19 @@ textarea:focus {
 
   img {
     max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .offer-cover-bg {
+    max-width: none !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+
+  .offer-cover-logo {
+    max-width: 42mm !important;
+    width: 42mm !important;
     height: auto !important;
   }
 
