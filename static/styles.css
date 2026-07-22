@@ -782,8 +782,14 @@ textarea:focus {
   width: 100%;
   min-height: 297mm;
   height: 297mm;
-  background: #d7d7d7;
+  background-color: #d7d7d7;
+  background-image: url("/static/assets/offer-cover-logimat.jpg");
+  background-size: cover;
+  background-position: 62% 40%;
+  background-repeat: no-repeat;
   color: #111;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .offer-cover-bg {
@@ -794,6 +800,7 @@ textarea:focus {
   object-fit: cover;
   object-position: 62% 40%;
   z-index: 0;
+  pointer-events: none;
 }
 
 .offer-cover-logo {

@@ -913,6 +913,11 @@
         </div>
       </div>
     `;
+    // Cover in den Sichtbereich holen (Titelseite steht über dem Inhalt)
+    const cover = root.querySelector(".offer-cover-page");
+    if (cover) {
+      cover.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 
   function linkifyUrls(text) {
