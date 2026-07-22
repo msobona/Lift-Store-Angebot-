@@ -384,6 +384,7 @@
       document.getElementById("btnSaveOfferDoc").disabled = false;
       document.getElementById("btnExcelOfferDoc").disabled = !state.savedOfferId;
       document.getElementById("btnWordOfferDoc").disabled = !state.savedOfferId;
+      document.getElementById("btnPdfOfferDoc").disabled = !state.savedOfferId;
       switchView("offer");
       if (notify || previousId) {
         const rev = previousId ? `\n(Neu erzeugt aus ${previousId})` : "";
@@ -576,8 +577,9 @@
       renderOfferDocument(offer);
       document.getElementById("btnPrintOffer").disabled = false;
       document.getElementById("btnSaveOfferDoc").disabled = false;
-      document.getElementById("btnExcelOfferDoc").disabled = !!state.savedOfferId;
-      document.getElementById("btnWordOfferDoc").disabled = !!state.savedOfferId;
+      document.getElementById("btnExcelOfferDoc").disabled = !state.savedOfferId;
+      document.getElementById("btnWordOfferDoc").disabled = !state.savedOfferId;
+      document.getElementById("btnPdfOfferDoc").disabled = !state.savedOfferId;
       switchView("offer");
       return;
     }
@@ -592,6 +594,38 @@
       return;
     }
     window.location.href = `/api/offers/${encodeURIComponent(id)}/docx`;
+  }
+
+  async function downloadOfferPdf() {
+    const id = state.savedOfferId || state.offerDocument?.id || state.offerDocument?.meta?.offerNumber;
+    if (!id) {
+      alert("Bitte das Angebot zuerst erzeugen/speichern.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/offers/${encodeURIComponent(id)}/pdf`);
+      if (!res.ok) {
+        let detail = "PDF-Export fehlgeschlagen";
+        try {
+          const data = await res.json();
+          detail = data.detail || detail;
+        } catch (_) {}
+        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(
+        `${err.message}\n\nTipp: Word-Datei herunterladen und in Microsoft Word als PDF speichern — Layout ist dann ebenfalls 1:1.`
+      );
+    }
   }
 
   function renderOfferDocument(doc) {
@@ -1520,6 +1554,7 @@
     document.getElementById("btnComposeOffer").addEventListener("click", () => composeOfferDocument({ save: true }));
     document.getElementById("btnSaveOfferDoc").addEventListener("click", () => composeOfferDocument({ save: true, notify: true }));
     document.getElementById("btnWordOfferDoc").addEventListener("click", downloadOfferDocx);
+    document.getElementById("btnPdfOfferDoc").addEventListener("click", () => downloadOfferPdf());
     document.getElementById("btnExcelOfferDoc").addEventListener("click", () => {
       const id = state.savedOfferId || state.offerDocument?.id || state.offerDocument?.meta?.offerNumber;
       if (!id) {

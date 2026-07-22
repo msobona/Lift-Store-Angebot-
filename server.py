@@ -22,6 +22,7 @@ from openpyxl import Workbook
 from pydantic import BaseModel, Field
 
 from docx_export import build_offer_docx
+from pdf_export import PdfConversionError, convert_docx_bytes_to_pdf
 
 GEOADMIN_SEARCH_URL = "https://api3.geo.admin.ch/rest/services/api/SearchServer"
 
@@ -1534,6 +1535,39 @@ def api_export_docx(offer_id: str):
     return StreamingResponse(
         io.BytesIO(data),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/offers/{offer_id}/pdf")
+def api_export_pdf(offer_id: str):
+    """PDF 1:1 aus derselben Word-Vorlage (Word/LibreOffice-Konvertierung)."""
+    path = offer_path(offer_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Angebot nicht gefunden")
+    offer = json.loads(path.read_text(encoding="utf-8"))
+    if offer.get("kind") != "offer_document":
+        raise HTTPException(
+            status_code=400,
+            detail="PDF-Export nur für Gesamtangebote. Bitte zuerst „Angebot erzeugen“ und speichern.",
+        )
+    try:
+        docx_data = build_offer_docx(offer)
+        pdf_data = convert_docx_bytes_to_pdf(
+            docx_data,
+            basename=str(offer.get("meta", {}).get("offerNumber", offer_id)),
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except PdfConversionError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"PDF-Export fehlgeschlagen: {exc}") from exc
+
+    filename = f"{offer.get('meta', {}).get('offerNumber', offer_id)}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_data),
+        media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
