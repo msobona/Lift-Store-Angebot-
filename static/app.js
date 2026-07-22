@@ -400,6 +400,7 @@
     setFormValue(licenseForm, "projectName", c.projectName || "");
     setFormValue(licenseForm, "contact", c.contact || "");
     setFormValue(licenseForm, "email", c.email || "");
+    setFormValue(licenseForm, "phone", c.phone || "");
     setFormValue(licenseForm, "address", c.address || "");
     setFormValue(licenseForm, "preparedBy", cfg.preparedBy || "");
     setFormValue(licenseForm, "notes", cfg.notes || "");
@@ -988,7 +989,7 @@
         company: String(data.get("company") || "").trim(),
         contact: String(data.get("contact") || "").trim(),
         email: String(data.get("email") || "").trim(),
-        phone: "",
+        phone: String(data.get("phone") || "").trim(),
         address: String(data.get("address") || "").trim(),
         projectName: String(data.get("projectName") || "").trim(),
       },

@@ -13,12 +13,12 @@ from docxtpl import DocxTemplate
 BASE_DIR = Path(__file__).resolve().parent
 FIELD_MAP_FILE = BASE_DIR / "data" / "docx_field_map.json"
 
-# Primär: vollständige Kunden-Vorlage (Preise, Bedingungen, Signaturen).
-# Logimat bleibt als optionale Design-Vorlage, ist aber inhaltlich unvollständig.
+# Primär: Logimat-Vorlage (Titelseite mit Bild + Platzhalter).
+# Fallbacks: vollständige Anhang-Vorlage / schlanke Platzhalter-Vorlage.
 PLACEHOLDER_CANDIDATES = [
+    BASE_DIR / "docs" / "templates" / "Angebot Logimat DE.docx",
     BASE_DIR / "docs" / "templates" / "anhang_angebot_vorlage.docx",
     BASE_DIR / "docs" / "templates" / "angebot_platzhalter.docx",
-    BASE_DIR / "docs" / "templates" / "Angebot Logimat DE.docx",
 ]
 
 INSTANCE_DISPLAY_NAMES = {
@@ -152,6 +152,29 @@ def _greeting_line(contact: str) -> str:
     return f"Sehr geehrte Damen und Herren / Sehr geehrte/r {name},"
 
 
+def _split_swiss_address(address: str) -> Dict[str, str]:
+    """Split 'Strasse Nr, PLZ Ort' into cover fields."""
+    raw = re.sub(r"\s+", " ", (address or "").strip())
+    if not raw:
+        return {"strasse": "", "plz_ort": "", "adresse": ""}
+    match = re.match(r"^(.*?),\s*(\d{4}\s+.+)$", raw)
+    if match:
+        return {
+            "strasse": match.group(1).strip(),
+            "plz_ort": match.group(2).strip(),
+            "adresse": raw,
+        }
+    # Fallback: last token group with PLZ
+    match = re.match(r"^(.*?)(\d{4}\s+.+)$", raw)
+    if match and match.group(1).strip():
+        return {
+            "strasse": match.group(1).strip(" ,"),
+            "plz_ort": match.group(2).strip(),
+            "adresse": raw,
+        }
+    return {"strasse": raw, "plz_ort": "", "adresse": raw}
+
+
 def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
     """Mappt Angebots-JSON auf die Platzhalter-Felder der Word-Vorlage."""
     meta = offer.get("meta") or {}
@@ -265,16 +288,29 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
     if not note:
         note = "Alle Preise in CHF, exkl. MwSt."
 
+    addr = _split_swiss_address(customer.get("address", ""))
+    prepared_by = (meta.get("preparedBy") or "").strip()
+    # Cover-Tabelle SSI-Ansprechpartner: Ersteller + Signaturen aus Bedingungen
+    ssi1_name = prepared_by or (sig1.get("name") or "")
+    ssi1_pos = sig1.get("title") or sig1.get("role") or ""
+    ssi1_mail = sig1.get("email") or ""
+    ssi1_tel = sig1.get("phone") or ""
+    ssi2_name = sig2.get("name") or ""
+    ssi2_pos = sig2.get("title") or sig2.get("role") or ""
+    ssi2_mail = sig2.get("email") or ""
+    ssi2_tel = sig2.get("phone") or ""
+
     return {
         "dokument_label": content.get("documentLabel") or "Angebot / Preisliste",
         "titel": content.get("title") or "Angebot WAMAS® Lift & Store",
-        "untertitel": content.get("subtitle") or "",
+        "untertitel": content.get("subtitle")
+        or "SSI SCHÄFER · Softwarelösung für Vertical Lift Modules (SSI LOGIMAT®)",
         "angebotsnummer": angebotsnummer,
         "datum": datum,
         "gueltig_bis": gueltig_bis,
         "meta_zeile": meta_zeile,
         "version_software": (offer.get("branding") or {}).get("version", "2.8"),
-        "erstellt_von": meta.get("preparedBy", ""),
+        "erstellt_von": prepared_by,
         "revision_von": revision_von,
         "kunde": customer.get("company", ""),
         "projekt": customer.get("projectName", ""),
@@ -282,7 +318,18 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "anrede": _greeting_line(customer.get("contact", "")),
         "email": customer.get("email", ""),
         "telefon": customer.get("phone", ""),
-        "adresse": customer.get("address", ""),
+        "fax": customer.get("fax", "") or "",
+        "adresse": addr["adresse"],
+        "strasse": addr["strasse"],
+        "plz_ort": addr["plz_ort"],
+        "ssi_kontakt_1_name": ssi1_name,
+        "ssi_kontakt_1_position": ssi1_pos,
+        "ssi_kontakt_1_email": ssi1_mail,
+        "ssi_kontakt_1_telefon": ssi1_tel,
+        "ssi_kontakt_2_name": ssi2_name,
+        "ssi_kontakt_2_position": ssi2_pos,
+        "ssi_kontakt_2_email": ssi2_mail,
+        "ssi_kontakt_2_telefon": ssi2_tel,
         "konfiguration": cfg_bits,
         "instance_name": instance_name,
         "instance_count": cfg.get("instanceCount") or "",

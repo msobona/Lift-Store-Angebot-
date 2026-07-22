@@ -2,49 +2,44 @@
 
 ## Aktive Vorlage
 
-**`anhang_angebot_vorlage.docx`**  
-Pfad: `lift-store-angebot/docs/templates/anhang_angebot_vorlage.docx`
+**`Angebot Logimat DE.docx`**  
+Pfad: `lift-store-angebot/docs/templates/Angebot Logimat DE.docx`
 
-Der Word-Export befüllt **diese Vorlage** (docxtpl, mit XML-Autoescape).  
-Sie enthält Kundenkopf, Leistungsumfang, Preise, kaufmännische Bedingungen und Signaturen.
+Der Word-Export befüllt **diese Vorlage** (docxtpl, XML-Autoescape).  
+Die **Titelseite** enthält LOGIMAT-Bild, Logo, Kundendaten und SSI-Ansprechpartner.
 
-`Angebot Logimat DE.docx` bleibt als Design-Referenz im Ordner, wird aber **nicht** als Default genutzt (unvollständig: keine Preise/Bedingungen, Alttexte aus Maschinenangebot).
+Fallbacks im gleichen Ordner: `anhang_angebot_vorlage.docx`, `angebot_platzhalter.docx`.
 
-Zum Testen: Vorlage ersetzen/anpassen → Server neu starten → Angebot → **Word**.
+Zum Testen: Vorlage anpassen → Server neu starten → Angebot → **Word**.
 
-## Platzhalter in der aktiven Vorlage
+## Cover-Platzhalter (Titelseite)
 
 | Platzhalter | Bedeutung |
 |-------------|-----------|
-| `{{dokument_label}}` | Dokumenttyp |
-| `{{titel}}` | Titel |
-| `{{untertitel}}` | Untertitel |
-| `{{meta_zeile}}` | Nummer · Datum · Gültigkeit |
-| `{{kunde}}` | Firma |
-| `{{projekt}}` | Projekt |
-| `{{adresse}}` | Adresse |
-| `{{ansprechpartner}}` | Ansprechpartner |
-| `{{email}}` | E-Mail |
-| `{{telefon}}` | Telefon (falls in Vorlage eingefügt) |
-| `{{erstellt_von}}` | Erstellt von |
-| `{{konfiguration}}` | Konfiguration kurz |
-| `{{einleitung}}` | Einleitung |
-| `{{leistungsumfang_text}}` | Leistungsumfang (ohne Positionspreise) |
-| `{{optionen_text}}` | Optionen |
-| `{{preis_hinweis}}` | Preis-/Rabatthinweis |
-| `{{lizenz_total_chf}}` | Lizenz-Total CHF |
-| `{{it_total_chf}}` | IT-Total CHF |
-| `{{gesamt_chf}}` | Gesamttotal CHF |
-| `{{bedingungen_text}}` | Kaufmännische Bedingungen |
-| `{{schluss_text}}` / `{{gruss}}` / `{{firma_ssi}}` | Abschluss |
-| Signaturfelder | `{{signatur_1_name}}`, `{{signatur_1_titel}}`, `{{signatur_1_rolle}}`, … |
+| `{{titel}}` | Titel (z. B. Angebot WAMAS® Lift & Store) |
+| `{{untertitel}}` | Gelber Banner-Text |
+| `{{datum}}` | Angebotsdatum |
+| `{{kunde}}` | Firmenname |
+| `{{ansprechpartner}}` | Name Kunde |
+| `{{strasse}}` | Strasse / Nr. |
+| `{{plz_ort}}` | PLZ und Ort |
+| `{{telefon}}` | Telefon Kunde |
+| `{{fax}}` | Fax (optional) |
+| `{{email}}` | E-Mail Kunde |
+| `{{ssi_kontakt_1_*}}` / `{{ssi_kontakt_2_*}}` | SSI-Ansprechpartner (Name, Position, E-Mail, Telefon) |
 
-Weitere optionale Felder: `{{angebotsnummer}}`, `{{datum}}`, `{{gueltig_bis}}`, `{{anrede}}`, `{{terms_version}}`.
+Adresse aus dem Formular wird automatisch in `strasse` + `plz_ort` zerlegt, wenn sie dem Muster `…, 8000 Zürich` entspricht.
+
+## Weitere Platzhalter (Inhalt)
+
+`{{anrede}}`, `{{einleitung}}`, `{{konfiguration}}`, `{{leistungsumfang_text}}`, `{{optionen_text}}`,  
+`{{lizenz_total_chf}}`, `{{it_total_chf}}`, `{{gesamt_chf}}`, `{{preis_hinweis}}`, `{{meta_zeile}}`,  
+`{{erstellt_von}}`, Bedingungen/Signaturen wie bisher.
 
 ## Tipps
 
 - Platzhalter als **einen** Text schreiben: `{{kunde}}`
-- Nach starken Word-Formatierungen ggf. Platzhalter neu tippen (sonst zerlegt Word `{{` und `}}`)
-- Fallback: `angebot_platzhalter.docx`
+- Cover-Bilder nicht in Word „freistellen“ und ersetzen, ohne Backup
+- Backup der Originaldatei: `Angebot Logimat DE.backup.docx`
 
 Maschinenlesbare Liste: `../../data/docx_field_map.json`
