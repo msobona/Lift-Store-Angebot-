@@ -994,10 +994,17 @@ def compose_offer(payload: ComposeOfferRequest):
 
     selected_addons = set((license_offer or {}).get("configuration", {}).get("selectedAddons") or [])
     instance_name = (license_offer or {}).get("configuration", {}).get("instanceName", "")
-    has_order_handling = (
-        (license_offer or {}).get("configuration", {}).get("instanceId") == "advanced"
-        or bool((it_offer or {}).get("configuration", {}).get("options", {}).get("orderHandling"))
-    )
+    instance_id = (license_offer or {}).get("configuration", {}).get("instanceId") or ""
+    instance_count = int((license_offer or {}).get("configuration", {}).get("instanceCount") or 1)
+    # A1-Text strikt nach Lizenz-Instanz: Basic = ohne OH, Advanced = mit OH
+    if instance_id == "advanced":
+        has_order_handling = True
+    elif instance_id == "basic":
+        has_order_handling = False
+    else:
+        has_order_handling = bool(
+            ((it_offer or {}).get("configuration", {}) or {}).get("options", {}).get("orderHandling")
+        )
 
     standard = []
     for fn in template["standardFunctions"]:
@@ -1290,11 +1297,12 @@ def compose_offer(payload: ComposeOfferRequest):
     created = datetime.now()
     commercial_terms = load_commercial_terms()
     validity_days = int(commercial_terms.get("validityDays") or 14)
-    intro_variant = (
+    intro_variant_tpl = (
         template.get("introOrderHandling")
         if has_order_handling
         else template.get("introStandalone")
-    )
+    ) or ""
+    intro_variant = intro_variant_tpl.replace("{count}", str(max(1, instance_count)))
     doc = {
         "kind": "offer_document",
         "meta": {

@@ -3,9 +3,9 @@
   "title": "Angebot WAMAS® Lift & Store",
   "subtitle": "SSI SCHÄFER · Softwarelösung für Vertical Lift Modules (SSI LOGIMAT®)",
   "softwareVersionLabel": "WAMAS® Lift & Store Software Version 2.8",
-  "intro": "Die Softwarelösung WAMAS Lift & Store passt sich Ihren Bedürfnissen an. Daher gibt es verschiedene Möglichkeiten, die Software einzusetzen – entweder als Standalone-Lösung oder angebunden an ein übergeordnetes ERP-System.",
-  "introOrderHandling": "SSI SCHÄFER bietet Ihnen in diesem Angebot die Lösung WAMAS Lift & Store mit Order Handling an.",
-  "introStandalone": "SSI SCHÄFER bietet Ihnen in diesem Angebot die Lösung WAMAS Lift & Store als Standalone-/Basisvariante an.",
+  "intro": "Die Softwarelösung WAMAS® Lift & Store passt sich Ihren Bedürfnissen an.",
+  "introOrderHandling": "SSI SCHÄFER bietet Ihnen in diesem Angebot {count}× WAMAS® Lift & Store mit Order Handling an.",
+  "introStandalone": "SSI SCHÄFER bietet Ihnen in diesem Angebot {count}× WAMAS® Lift & Store ohne Order Handling (Standalone-/Basisvariante) an.",
   "standardLead": "Nachfolgend sind die entsprechenden Standardbausteine der Software kurz beschrieben.",
   "recommendation": "Wir empfehlen ein entsprechendes IT-Beratungsgespräch mit einem unserer Softwareexperten, damit die Umfänge und speziellen Anforderungen im vorliegenden Projekt entsprechend bedacht werden.",
   "footnotes": [

@@ -257,9 +257,10 @@
     });
 
     // Advanced Instance enthält Order Handling → IT Order Handling vorsehen
+    // Basic → Order Handling abwählen (A1-Text / IT bleiben konsistent)
     const orderHandling = itForm.querySelector('input[name="itOption"][value="orderHandling"]');
-    if (orderHandling && selectedInstanceId() === "advanced") {
-      orderHandling.checked = true;
+    if (orderHandling) {
+      orderHandling.checked = selectedInstanceId() === "advanced";
     }
 
     // Mobile Terminal Clients > 0 oft zusammen mit Externen Lagerplätzen
