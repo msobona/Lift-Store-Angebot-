@@ -260,12 +260,65 @@
       const ext = itForm.querySelector('input[name="itOption"][value="externalStorage"]');
       if (ext) ext.checked = true;
     }
+
+    // Reisekosten: Defaults + Distanz aus Kundenadresse (async, rechnet IT neu)
+    applyTravelDefaultsFromLicense({ recalc: true });
+  }
+
+  async function applyTravelDefaultsFromLicense({ recalc = true } = {}) {
+    const address = String(licenseForm.address?.value || "").trim();
+    const instanceId = selectedInstanceId() || "basic";
+    const hint = document.getElementById("travelAutoHint");
+    const travelCfg = state.itCatalog?.travelDefaults || {};
+    const originLabel = travelCfg.origin?.label || "Kesslerstrasse 1, 5037 Muhen";
+    const fallback = travelCfg[instanceId] || travelCfg.basic || { trips: 5, meals: 5 };
+
+    // Mindestens Fahrten/Verpflegung nach Instanz setzen
+    const curTrips = Number(itForm.trips?.value || 0);
+    const curMeals = Number(itForm.mealCount?.value || 0);
+    const minTrips = Number(fallback.trips || 5);
+    const minMeals = Number(fallback.meals || 5);
+    if (curTrips < minTrips) itForm.trips.value = minTrips;
+    if (curMeals < minMeals) itForm.mealCount.value = minMeals;
+
+    if (address.length < 3) {
+      if (hint) {
+        hint.textContent =
+          `Startpunkt: ${originLabel}. Bitte Kundenadresse im Lizenzkalkulator setzen — dann km/Fahrzeit automatisch. ` +
+          `${instanceId === "advanced" ? "Advanced: mind. 7 Fahrten / 7 Verpflegungen." : "Basic: mind. 5 Fahrten / 5 Verpflegungen."}`;
+      }
+      if (recalc) recalcIt();
+      return;
+    }
+
+    try {
+      const data = await api(
+        `/api/geo/travel-estimate?address=${encodeURIComponent(address)}&instanceId=${encodeURIComponent(instanceId)}`,
+      );
+      if (data.ok) {
+        itForm.kmPerTrip.value = data.kmPerTrip;
+        itForm.travelHoursPerTrip.value = data.travelHoursPerTrip;
+        // Trips/meals: auf Instanz-Default anheben, höhere manuelle Werte behalten
+        itForm.trips.value = Math.max(Number(itForm.trips.value || 0), Number(data.trips || minTrips));
+        itForm.mealCount.value = Math.max(Number(itForm.mealCount.value || 0), Number(data.meals || minMeals));
+        if (hint) {
+          const dest = data.destination?.label || address;
+          hint.textContent =
+            `Route: ${originLabel} → ${dest} · Roundtrip ${data.kmPerTrip} km / ${data.travelHoursPerTrip} h · ` +
+            `Fahrten ${itForm.trips.value}, Verpflegungen ${itForm.mealCount.value} (anpassbar).`;
+        }
+      } else if (hint) {
+        hint.textContent = data.reason || "Reiseberechnung nicht möglich.";
+      }
+    } catch (err) {
+      if (hint) hint.textContent = err.message || "Reiseberechnung fehlgeschlagen.";
+    }
+    if (recalc) recalcIt();
   }
 
   function switchView(name) {
     if (name === "it") {
       applyLicenseSelectionToIt();
-      recalcIt();
     }
     if (name === "license") {
       syncCustomerProject(itForm, licenseForm);
@@ -755,10 +808,11 @@
     root.innerHTML = `
       <div class="offer-sheet offer-cover-page">
         <header class="offer-cover-hero">
-          <img class="offer-cover-bg" src="/static/assets/offer-cover-logimat.jpg" alt="" />
+          <img class="offer-cover-bg" src="/static/assets/offer-cover-logimat.jpg?v=20260722" alt="" />
+          <div class="offer-cover-shade" aria-hidden="true"></div>
           <img class="offer-cover-logo" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
           <div class="offer-cover-titleblock">
-            <h1>${escapeHtml(doc.content.title || "Angebot WAMAS® Lift & Store")}</h1>
+            <h1>${escapeHtml((doc.content.title || "Angebot WAMAS® Lift & Store").replace("Lift & Store", "Lift Store"))}</h1>
             <p class="offer-cover-date">${escapeHtml(offerDate)}</p>
             <p class="offer-cover-banner">${escapeHtml(subtitle)}</p>
           </div>
@@ -1486,6 +1540,9 @@
     });
 
     document.getElementById("btnItRecalc").addEventListener("click", recalcIt);
+    document.getElementById("btnTravelAuto")?.addEventListener("click", () => {
+      applyTravelDefaultsFromLicense({ recalc: true });
+    });
     document.getElementById("btnItPrint").addEventListener("click", () => window.print());
     document.getElementById("btnItExcel").addEventListener("click", () => {
       if (state.savedItId) window.location.href = `/api/offers/${encodeURIComponent(state.savedItId)}/excel`;

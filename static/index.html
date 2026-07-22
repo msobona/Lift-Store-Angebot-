@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260722order" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260722travel" />
 </head>
 <body>
   <header class="topbar">
@@ -250,6 +250,14 @@
 
           <section class="block">
             <h2>Reisekosten</h2>
+            <p class="block-lead" id="travelAutoHint">
+              Startpunkt: Kesslerstrasse 1, 5037 Muhen. km und Fahrzeit werden als Roundtrip
+              aus der Kundenadresse berechnet. Basic: mind. 5 Fahrten / 5 Verpflegungen,
+              Advanced: mind. 7 / 7 — manuell überschreibbar.
+            </p>
+            <div class="form-actions" style="margin:0 0 0.75rem">
+              <button type="button" class="btn" id="btnTravelAuto">Reisekosten aus Adresse berechnen</button>
+            </div>
             <div class="grid-2">
               <label>Fahrten (Roundtrips)<input name="trips" type="number" min="0" max="200" value="0" /></label>
               <label>Fahrzeit Roundtrip [h]<input name="travelHoursPerTrip" type="number" min="0" max="48" step="0.25" value="0" /></label>
@@ -307,10 +315,12 @@
           </div>
         </div>
         <div class="hero-body">
-          <p>
-            Erzeugt <strong>ein Gesamtangebot</strong> mit Leistungsumfang und Gesamttotal
-            (ohne Einzelpreise / Stunden je Position). Optional Rabatt oder Abrundung setzen, dann erzeugen.
-          </p>
+            <p>
+              Erzeugt <strong>ein Gesamtangebot</strong> mit Leistungsumfang und Gesamttotal
+              (ohne Einzelpreise / Stunden je Position). Optional Rabatt oder Abrundung setzen, dann erzeugen.
+              <br /><strong>Kundenfertiges Cover:</strong> bitte <em>PDF 1:1 (aus Word)</em> oder Word nutzen —
+              die Bildschirmvorschau ist eine Annäherung.
+            </p>
           <div class="offer-adjust grid-2" style="margin:1rem 0;max-width:52rem">
             <label>Projektrabatt %
               <input id="offerDiscountPercent" type="number" min="0" max="100" step="0.1" value="0" />
@@ -365,6 +375,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260722order"></script>
+  <script src="/static/app.js?v=20260722travel"></script>
 </body>
 </html>

@@ -25,6 +25,12 @@ from docx_export import build_offer_docx
 from pdf_export import PdfConversionError, convert_docx_bytes_to_pdf
 
 GEOADMIN_SEARCH_URL = "https://api3.geo.admin.ch/rest/services/api/SearchServer"
+OSRM_ROUTE_URL = "https://router.project-osrm.org/route/v1/driving/{coords}"
+SSI_TRAVEL_ORIGIN = {
+    "label": "Kesslerstrasse 1, 5037 Muhen",
+    "lat": 47.328037,
+    "lon": 8.055299,
+}
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -807,6 +813,124 @@ def address_suggest(
             }
         )
     return {"suggestions": suggestions, "source": "geo.admin.ch"}
+
+
+def _http_json(url: str, timeout: float = 8) -> Dict[str, Any]:
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "WAMAS-LiftStore-Angebot/1.0 (SSI Schweiz)"},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _geocode_swiss_address(query: str) -> Optional[Dict[str, Any]]:
+    q = (query or "").strip()
+    if len(q) < 3:
+        return None
+    params = urllib.parse.urlencode(
+        {
+            "searchText": q,
+            "type": "locations",
+            "origins": "address",
+            "limit": "1",
+            "sr": "2056",
+            "lang": "de",
+        }
+    )
+    payload = _http_json(f"{GEOADMIN_SEARCH_URL}?{params}")
+    rows = payload.get("results") or []
+    if not rows:
+        return None
+    attrs = rows[0].get("attrs") or {}
+    lat = attrs.get("lat")
+    lon = attrs.get("lon")
+    if lat is None or lon is None:
+        return None
+    return {
+        "label": format_swiss_address(attrs) or q,
+        "lat": float(lat),
+        "lon": float(lon),
+    }
+
+
+def _route_car_meters_seconds(origin: Dict[str, Any], dest: Dict[str, Any]) -> Dict[str, float]:
+    coords = f"{origin['lon']},{origin['lat']};{dest['lon']},{dest['lat']}"
+    url = OSRM_ROUTE_URL.format(coords=coords) + "?overview=false"
+    payload = _http_json(url, timeout=10)
+    if payload.get("code") != "Ok" or not payload.get("routes"):
+        raise RuntimeError("Routing fehlgeschlagen")
+    route = payload["routes"][0]
+    return {
+        "distance_m": float(route.get("distance") or 0),
+        "duration_s": float(route.get("duration") or 0),
+    }
+
+
+def _round_hours_quarter(hours: float) -> float:
+    return round(max(0.0, hours) * 4) / 4.0
+
+
+@app.get("/api/geo/travel-estimate")
+def travel_estimate(
+    address: str = Query("", max_length=300),
+    instanceId: str = Query("basic"),
+) -> Dict[str, Any]:
+    """
+    Travel estimate from SSI Muhen to customer address.
+    Returns roundtrip km/hours and default trips/meals by instance.
+    """
+    catalog = load_it_catalog()
+    travel_cfg = catalog.get("travelDefaults") or {}
+    origin = travel_cfg.get("origin") or SSI_TRAVEL_ORIGIN
+    inst_key = "advanced" if str(instanceId).lower() == "advanced" else "basic"
+    defaults = (travel_cfg.get(inst_key) or travel_cfg.get("basic") or {"trips": 5, "meals": 5})
+
+    dest_query = (address or "").strip()
+    if len(dest_query) < 3:
+        return {
+            "ok": False,
+            "reason": "Adresse fehlt oder zu kurz",
+            "origin": origin,
+            "trips": int(defaults.get("trips") or 5),
+            "meals": int(defaults.get("meals") or 5),
+            "kmPerTrip": 0,
+            "travelHoursPerTrip": 0,
+            "note": travel_cfg.get("note") or "",
+        }
+
+    try:
+        dest = _geocode_swiss_address(dest_query)
+        if not dest:
+            raise HTTPException(status_code=404, detail="Kundenadresse nicht gefunden")
+        route = _route_car_meters_seconds(origin, dest)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Reiseberechnung nicht möglich: {exc}",
+        ) from exc
+
+    one_way_km = route["distance_m"] / 1000.0
+    one_way_h = route["duration_s"] / 3600.0
+    km_rt = round(one_way_km * 2, 1)
+    hours_rt = _round_hours_quarter(one_way_h * 2)
+
+    return {
+        "ok": True,
+        "origin": origin,
+        "destination": dest,
+        "oneWayKm": round(one_way_km, 1),
+        "oneWayHours": round(one_way_h, 2),
+        "kmPerTrip": km_rt,
+        "travelHoursPerTrip": hours_rt,
+        "trips": int(defaults.get("trips") or 5),
+        "meals": int(defaults.get("meals") or 5),
+        "instanceId": inst_key,
+        "note": travel_cfg.get("note") or "",
+        "source": "geo.admin.ch + OSRM",
+    }
 
 
 @app.get("/api/catalog")

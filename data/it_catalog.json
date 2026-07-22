@@ -13,6 +13,16 @@
     "overnightRate": 150,
     "marginPercent": 28
   },
+  "travelDefaults": {
+    "origin": {
+      "label": "Kesslerstrasse 1, 5037 Muhen",
+      "lat": 47.328037,
+      "lon": 8.055299
+    },
+    "basic": { "trips": 5, "meals": 5 },
+    "advanced": { "trips": 7, "meals": 7 },
+    "note": "Startpunkt SSI Schweiz (Muhen). km und Fahrzeit = Roundtrip. Fahrten/Verpflegung sind Mindestwerte und manuell anpassbar."
+  },
   "effort": {
     "baseHours": 32,
     "secondDevicePercent": 12.5,
