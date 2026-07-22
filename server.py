@@ -259,13 +259,13 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         else (product.get("eurToChfRate") or 1)
     )
     margin_factor = 1.0 + (margin_percent / 100.0)
+    # Reihenfolge: IC EUR → Kurs → Einkauf CHF → Marge → Verkauf CHF
+    cost_chf = round(net * eur_to_chf, 2)
+    sell_net_chf = round(cost_chf * margin_factor, 2)
+    contribution_margin_chf = round(sell_net_chf - cost_chf, 2)
     margin_amount_eur = round(net * (margin_percent / 100.0), 2)
     sell_net_eur = round(net * margin_factor, 2)
-    sell_net_chf = round(sell_net_eur * eur_to_chf, 2)
-    # Deckungsbeitrag intern: Verkauf − Einkauf (Einkauf CHF = IC×Kurs)
-    cost_chf = round(net * eur_to_chf, 2)
     contribution_margin_eur = margin_amount_eur
-    contribution_margin_chf = round(sell_net_chf - cost_chf, 2)
     contribution_margin_percent = (
         round((contribution_margin_chf / sell_net_chf) * 100, 1) if sell_net_chf else 0.0
     )
@@ -273,14 +273,16 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     vat = round(sell_net_chf * vat_rate, 2)
     gross = round(sell_net_chf + vat, 2)
 
-    # Verkaufspreise je Position (IC → +Marge → CHF)
+    # Verkaufspreise je Position (IC EUR → CHF → +Marge)
     for line in lines:
         ic_unit = float(line.get("unitPrice") or 0)
         ic_total = float(line.get("total") or 0)
         line["unitPriceIcEur"] = ic_unit
         line["totalIcEur"] = ic_total
-        line["unitPrice"] = round(ic_unit * margin_factor * eur_to_chf, 2)
-        line["total"] = round(ic_total * margin_factor * eur_to_chf, 2)
+        unit_cost_chf = round(ic_unit * eur_to_chf, 2)
+        total_cost_chf = round(ic_total * eur_to_chf, 2)
+        line["unitPrice"] = round(unit_cost_chf * margin_factor, 2)
+        line["total"] = round(total_cost_chf * margin_factor, 2)
         line["currency"] = product.get("offerCurrency", "CHF")
 
     created = datetime.now()
@@ -299,7 +301,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         if addon:
             scope.append(f"{addon['name']}: {addon.get('functionalDescription') or addon.get('description', '')}")
     scope.append(f"SLL-Einheiten: {sll} → Rabatt {discount['percent']}% ({discount['label']})")
-    scope.append(f"Marge {margin_percent:.0f}% auf IC · Kurs EUR→CHF {eur_to_chf}")
+    scope.append(f"Kurs EUR→CHF {eur_to_chf} · Marge {margin_percent:.0f}% auf Einkauf CHF")
 
     return {
         "kind": "license",

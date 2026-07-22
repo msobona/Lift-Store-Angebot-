@@ -52,7 +52,14 @@
 
   function icEurToSellChf(eurAmount) {
     const { marginPercent, eurToChfRate } = licensePricing();
-    return Math.round(Number(eurAmount || 0) * (1 + marginPercent / 100) * eurToChfRate * 100) / 100;
+    // Erst Kurs EUR→CHF (Einkauf CHF), dann Marge auf CHF
+    const costChf = Number(eurAmount || 0) * eurToChfRate;
+    return Math.round(costChf * (1 + marginPercent / 100) * 100) / 100;
+  }
+
+  function icEurToCostChf(eurAmount) {
+    const { eurToChfRate } = licensePricing();
+    return Math.round(Number(eurAmount || 0) * eurToChfRate * 100) / 100;
   }
 
   async function api(path, options = {}) {
@@ -1230,21 +1237,23 @@
     const sellChf = t.sellNetChf != null
       ? Number(t.sellNetChf)
       : icEurToSellChf(t.net);
+    const costChf = t.costChf != null ? Number(t.costChf) : icEurToCostChf(t.net);
     const sellEur = t.sellNetEur != null
       ? Number(t.sellNetEur)
       : Math.round(Number(t.net || 0) * (1 + marginPercent / 100) * 100) / 100;
     const marginEur = t.marginAmountEur != null
       ? Number(t.marginAmountEur)
       : Math.round((sellEur - Number(t.net || 0)) * 100) / 100;
+    const marginChf = Math.round((sellChf - costChf) * 100) / 100;
 
     document.getElementById("licenseOfferNo").textContent = offer.meta.offerNumber;
     document.getElementById("licenseGross").textContent = money(sellChf, sell);
     document.getElementById("sllBadge").textContent =
-      `SLL: ${t.sllCount} · Rabatt ${t.discountPercent}% · Marge ${marginPercent}% · Kurs ${fx}`;
+      `SLL: ${t.sllCount} · Rabatt ${t.discountPercent}% · Kurs ${fx} · Marge ${marginPercent}%`;
     document.getElementById("licenseMeta").innerHTML = `
       <div><strong>${offer.customer.company}</strong>${offer.customer.projectName ? ` · ${offer.customer.projectName}` : ""}</div>
       <div>${offer.configuration.instanceCount}× ${offer.configuration.instanceName}</div>
-      <div>Verkaufspreise CHF (Einkauf + ${marginPercent}% Marge, Kurs ${fx})</div>`;
+      <div>Einkauf EUR → Kurs ${fx} → Einkauf CHF → +${marginPercent}% Marge → Verkauf CHF</div>`;
     document.getElementById("licenseLines").innerHTML = offer.lines.map((line) => {
       const icTotal = line.totalIcEur != null ? Number(line.totalIcEur) : null;
       const chfTotal = line.currency === "CHF" && line.totalIcEur != null
@@ -1257,7 +1266,6 @@
         <td>${money(chfTotal, sell)}</td>
       </tr>`;
     }).join("");
-    const costChf = t.costChf != null ? Number(t.costChf) : Number(t.net || 0) * fx;
     const dbChf = t.contributionMarginChf != null
       ? Number(t.contributionMarginChf)
       : sellChf - costChf;
@@ -1266,9 +1274,9 @@
       : (sellChf > 0 ? Math.round((dbChf / sellChf) * 1000) / 10 : 0);
     document.getElementById("licenseTotals").innerHTML = `
       <div class="row"><span>Einkauf Total</span><span>${money(t.net, ic)}</span></div>
-      <div class="row"><span>Marge ${marginPercent}%</span><span>+ ${money(marginEur, ic)}</span></div>
-      <div class="row"><span>Verkauf EUR</span><span>${money(sellEur, ic)}</span></div>
       <div class="row"><span>Einkauf CHF (× ${fx})</span><span>${money(costChf, sell)}</span></div>
+      <div class="row"><span>Marge ${marginPercent}% auf CHF</span><span>+ ${money(marginChf, sell)}</span></div>
+      <div class="row"><span>Verkauf EUR (Referenz)</span><span>${money(sellEur, ic)}</span></div>
       <div class="row strong"><span>Verkauf CHF</span><span>${money(sellChf, sell)}</span></div>
       <div class="row db"><span>DB (intern)</span><span>${money(dbChf, sell)} · ${dbPercent}%</span></div>`;
     document.getElementById("licenseScope").innerHTML =
