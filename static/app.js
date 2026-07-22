@@ -802,42 +802,30 @@
       </div>
 
       <div class="offer-sheet offer-body-sheet">
-        <section class="offer-section offer-section-prices" id="sec-commercial">
-          <h2>1. Leistungsumfang &amp; Preise</h2>
-          <p class="offer-lead-line">${escapeHtml(cfgBits || "")}</p>
-          <p>Auflistung der Leistungen ohne Einzelpreise. Ausgewiesen werden die Bereichstotals und das Gesamttotal.</p>
-          ${scopeHtml || "<p class=\"offer-empty-note\">Kein Leistungsumfang kalkuliert.</p>"}
-          <div class="offer-totals-box">
-            ${licSum ? `<div><span>Softwarelizenzen</span><strong>${money(licSum.total, licSum.currency || "CHF")}</strong></div>` : ""}
-            ${itSum ? `<div><span>IT-Aufwand inkl. Reise</span><strong>${money(itSum.total, itSum.currency || "CHF")}</strong></div>` : ""}
-            ${summary.subtotalChf != null && (summary.commercialDiscountChf || summary.roundingAmountChf) ? `<div><span>Zwischentotal</span><strong>${money(summary.subtotalChf, "CHF")}</strong></div>` : ""}
-            ${summary.commercialDiscountChf ? `<div><span>Projektrabatt</span><strong>− ${money(summary.commercialDiscountChf, "CHF")}</strong></div>` : ""}
-            ${summary.roundingAmountChf ? `<div><span>Abrundung</span><strong>− ${money(summary.roundingAmountChf, "CHF")}</strong></div>` : ""}
-            ${grand != null ? `<div class="offer-totals-grand"><span>Gesamttotal exkl. MwSt</span><strong>${money(grand, "CHF")}</strong></div>` : ""}
-          </div>
-          <p class="offer-note">${escapeHtml(customerNote)}</p>
-          ${priceCards}
-        </section>
-
         <div class="offer-annex-start">
           <p class="offer-doc-label">${escapeHtml(doc.content.annexLabel || "Anhang zur Software")}</p>
           <h2>Leistungsbeschreibung WAMAS® Lift &amp; Store</h2>
         </div>
 
-        <nav class="offer-toc" aria-label="Inhaltsverzeichnis Anhang">
-          <h2>Inhaltsverzeichnis Anhang</h2>
+        <nav class="offer-toc" aria-label="Inhaltsverzeichnis">
+          <h2>Inhaltsverzeichnis</h2>
           <ol>
-            <li><a href="#sec-scope">Umfang WAMAS Lift &amp; Store</a>
+            <li><a href="#sec-scope">A1. Umfang WAMAS Lift &amp; Store</a>
               <ol>
-                <li><a href="#sec-functions">Standard-Funktionen / Prozesse</a></li>
-                <li><a href="#sec-options">Mögliche Optionen</a></li>
-                <li><a href="#sec-clients">Bedienoberflächen</a></li>
+                <li><a href="#sec-functions">A1.1 Standard-Funktionen / Prozesse</a></li>
+                <li><a href="#sec-options">A1.2 Mögliche Optionen</a>
+                  <ol>
+                    <li><a href="#sec-hardware">A1.2.1 Hardware-Optionen</a></li>
+                  </ol>
+                </li>
+                <li><a href="#sec-commercial">1. Leistungsumfang &amp; Preise</a></li>
+                <li><a href="#sec-clients">A1.3 Bedienoberflächen</a></li>
               </ol>
             </li>
-            <li><a href="#sec-architecture">Standard-Systemarchitektur</a></li>
-            <li><a href="#sec-requirements">Anforderungen</a></li>
-            <li><a href="#sec-responsibilities">Zuständigkeiten</a></li>
-            <li><a href="#sec-documents">Begleitende Dokumente</a></li>
+            <li><a href="#sec-architecture">A2. Standard-Systemarchitektur</a></li>
+            <li><a href="#sec-requirements">A3. Anforderungen</a></li>
+            <li><a href="#sec-responsibilities">A4. Zuständigkeiten</a></li>
+            <li><a href="#sec-documents">A5. Begleitende Dokumente</a></li>
             <li><a href="#sec-terms">Kaufmännische Bedingungen (Schweiz)</a></li>
           </ol>
         </nav>
@@ -863,8 +851,25 @@
           <p>${escapeHtml(doc.content.machineOptionsLead || "")}</p>
           <h3>Gewählte Software-Optionen</h3>
           <div class="offer-fn-list">${optionsHtml}</div>
-          <h3>A1.2.1 Hardware-Optionen vom WAMAS® Lift &amp; Store</h3>
+          <h3 id="sec-hardware">A1.2.1 Hardware-Optionen vom WAMAS® Lift &amp; Store</h3>
           <div class="offer-hw-grid">${hardwareHtml}</div>
+        </section>
+
+        <section class="offer-section offer-section-prices" id="sec-commercial">
+          <h2>1. Leistungsumfang &amp; Preise</h2>
+          <p class="offer-lead-line">${escapeHtml(cfgBits || "")}</p>
+          <p>Auflistung der Leistungen ohne Einzelpreise. Ausgewiesen werden die Bereichstotals und das Gesamttotal.</p>
+          ${scopeHtml || "<p class=\"offer-empty-note\">Kein Leistungsumfang kalkuliert.</p>"}
+          <div class="offer-totals-box">
+            ${licSum ? `<div><span>Softwarelizenzen</span><strong>${money(licSum.total, licSum.currency || "CHF")}</strong></div>` : ""}
+            ${itSum ? `<div><span>IT-Aufwand inkl. Reise</span><strong>${money(itSum.total, itSum.currency || "CHF")}</strong></div>` : ""}
+            ${summary.subtotalChf != null && (summary.commercialDiscountChf || summary.roundingAmountChf) ? `<div><span>Zwischentotal</span><strong>${money(summary.subtotalChf, "CHF")}</strong></div>` : ""}
+            ${summary.commercialDiscountChf ? `<div><span>Projektrabatt</span><strong>− ${money(summary.commercialDiscountChf, "CHF")}</strong></div>` : ""}
+            ${summary.roundingAmountChf ? `<div><span>Abrundung</span><strong>− ${money(summary.roundingAmountChf, "CHF")}</strong></div>` : ""}
+            ${grand != null ? `<div class="offer-totals-grand"><span>Gesamttotal exkl. MwSt</span><strong>${money(grand, "CHF")}</strong></div>` : ""}
+          </div>
+          <p class="offer-note">${escapeHtml(customerNote)}</p>
+          ${priceCards}
         </section>
 
         <section class="offer-section" id="sec-clients">
