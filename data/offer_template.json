@@ -211,7 +211,7 @@
       "(E) Maschinensteuerung",
       "(F) Admin Client"
     ],
-    "image": "/static/assets/annex/architecture.png"
+    "image": "/static/assets/annex/architecture.png?v=20260722arch"
   },
   "requirements": {
     "title": "Anforderungen (Auszug)",
