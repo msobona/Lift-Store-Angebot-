@@ -1494,6 +1494,25 @@ textarea:focus {
   border-bottom: 2px solid var(--ssi-yellow);
 }
 
+.offer-options-table thead th.offer-summary-banner {
+  background: #ffed00;
+  color: #111;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 0;
+}
+
+.offer-grand-total-table {
+  margin-top: 1rem;
+}
+
+.offer-grand-total-table .offer-options-total td {
+  font-size: 1.05rem;
+}
+
 .offer-options-table tbody td {
   min-height: 4.5rem;
   padding-top: 1.35rem;

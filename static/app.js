@@ -983,63 +983,94 @@
       if (!scopeGroups.length) {
         return `<p class="offer-empty-note">Kein Leistungsumfang kalkuliert.</p>`;
       }
-      let pos = 0;
-      const bodyRows = [];
-      scopeGroups.forEach((group) => {
-        bodyRows.push(`
-          <tr class="offer-scope-section">
-            <td colspan="4"><strong>${escapeHtml(group.title || "")}</strong></td>
-          </tr>`);
-        (group.items || []).forEach((item) => {
-          pos += 1;
-          bodyRows.push(`
-            <tr>
-              <td class="col-pos">${pos}</td>
-              <td class="col-name"><strong>${escapeHtml(item.name || "")}</strong></td>
-              <td class="col-desc">${escapeHtml(item.description || "")}</td>
-              <td class="col-price"></td>
-            </tr>`);
-        });
-        if (group.total != null) {
-          bodyRows.push(`
-            <tr class="offer-scope-subtotal">
-              <td colspan="3">Total ${escapeHtml(group.title || "")}</td>
-              <td class="col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
-            </tr>`);
-        }
+      const licenseGroups = scopeGroups.filter((g) => {
+        const id = String(g.id || "").toLowerCase();
+        const title = String(g.title || "").toLowerCase();
+        return id === "license" || title.includes("lizenz") || title.includes("software");
       });
+      const itGroups = scopeGroups.filter((g) => {
+        const id = String(g.id || "").toLowerCase();
+        const title = String(g.title || "").toLowerCase();
+        return id === "it" || title.includes("it-") || title.includes("it ") || title.includes("reise");
+      });
+      // Falls Filter nichts trifft: alles in Lizenzen belassen
+      const lic = licenseGroups.length || itGroups.length ? licenseGroups : scopeGroups;
+      const it = licenseGroups.length || itGroups.length ? itGroups : [];
+
+      const renderBlock = (groups, headerTitle, totalLabel) => {
+        if (!groups.length) return "";
+        let pos = 0;
+        const bodyRows = [];
+        groups.forEach((group) => {
+          (group.items || []).forEach((item) => {
+            pos += 1;
+            bodyRows.push(`
+              <tr>
+                <td class="col-pos">${pos}</td>
+                <td class="col-name"><strong>${escapeHtml(item.name || "")}</strong></td>
+                <td class="col-desc">${escapeHtml(item.description || "")}</td>
+                <td class="col-price"></td>
+              </tr>`);
+          });
+          if (group.total != null) {
+            bodyRows.push(`
+              <tr class="offer-scope-subtotal">
+                <td colspan="3">${escapeHtml(totalLabel)}</td>
+                <td class="col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
+              </tr>`);
+          }
+        });
+        return `
+          <table class="offer-options-table offer-scope-price-table">
+            <thead>
+              <tr>
+                <th colspan="4" class="offer-summary-banner">${escapeHtml(headerTitle)}</th>
+              </tr>
+              <tr>
+                <th class="col-pos">Pos.</th>
+                <th class="col-name">Position</th>
+                <th class="col-desc">Beschreibung</th>
+                <th class="col-price">Preis</th>
+              </tr>
+            </thead>
+            <tbody>${bodyRows.join("")}</tbody>
+          </table>`;
+      };
+
+      const parts = [
+        renderBlock(lic, "Zusammenfassung – Softwarelizenzen", "Total A · Softwarelizenzen"),
+        renderBlock(it, "Zusammenfassung – IT-Aufwand", "Total B · IT-Aufwand"),
+      ].filter(Boolean);
+
+      let footer = "";
       if (summary.subtotalChf != null && summary.commercialDiscountChf) {
-        bodyRows.push(`
+        footer += `
           <tr class="offer-scope-subtotal">
             <td colspan="3">Zwischentotal</td>
             <td class="col-price"><strong>${money(summary.subtotalChf, "CHF")}</strong></td>
-          </tr>`);
-        bodyRows.push(`
+          </tr>
           <tr>
             <td colspan="3">Projektrabatt</td>
             <td class="col-price"><strong>− ${money(summary.commercialDiscountChf, "CHF")}</strong></td>
-          </tr>`);
+          </tr>`;
       }
-      return `
-        <table class="offer-options-table offer-scope-price-table">
+      footer += `
+        <tr class="offer-options-total">
+          <td colspan="3">Total netto exkl. MwSt.</td>
+          <td class="col-price"><strong>${grand != null ? money(grand, "CHF") : "—"}</strong></td>
+        </tr>`;
+
+      parts.push(`
+        <table class="offer-options-table offer-scope-price-table offer-grand-total-table">
           <thead>
             <tr>
-              <th class="col-pos">Pos.</th>
-              <th class="col-name">Position</th>
-              <th class="col-desc">Beschreibung</th>
-              <th class="col-price">Preis</th>
+              <th colspan="4" class="offer-summary-banner">Gesamttotal</th>
             </tr>
           </thead>
-          <tbody>
-            ${bodyRows.join("")}
-          </tbody>
-          <tfoot>
-            <tr class="offer-options-total">
-              <td colspan="3">Gesamttotal exkl. MwSt.</td>
-              <td class="col-price"><strong>${grand != null ? money(grand, "CHF") : "—"}</strong></td>
-            </tr>
-          </tfoot>
-        </table>`;
+          <tbody>${footer}</tbody>
+        </table>`);
+
+      return parts.join("");
     })();
 
     const hardwareHtml = (doc.content.hardwareOptions || [])

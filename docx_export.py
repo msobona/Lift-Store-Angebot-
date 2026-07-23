@@ -276,6 +276,26 @@ def apply_options_table(
     return out.getvalue()
 
 
+def _set_tc_text_simple(tc, text: str, *, bold: bool = True, fill: Optional[str] = None) -> None:
+    """Kurzer Zelltext (z. B. gelber Tabellenkopf)."""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    if fill:
+        tcPr = tc.find(qn("w:tcPr"))
+        if tcPr is None:
+            tcPr = OxmlElement("w:tcPr")
+            tc.insert(0, tcPr)
+        for old in tcPr.findall(qn("w:shd")):
+            tcPr.remove(old)
+        shd = OxmlElement("w:shd")
+        shd.set(qn("w:val"), "clear")
+        shd.set(qn("w:color"), "auto")
+        shd.set(qn("w:fill"), fill)
+        tcPr.append(shd)
+    _set_tc_paragraphs(tc, [text], first_bold=bold)
+
+
 def apply_zusammenfassung_table(
     docx_bytes: bytes,
     scope_groups: List[Dict[str, Any]],
@@ -285,12 +305,15 @@ def apply_zusammenfassung_table(
     grand_total_chf: Any = None,
 ) -> bytes:
     """
-    Zusammenfassung dynamisch: je Leistungsposition eine Zeile, dann Bereichstotals + Gesamttotal.
-    Nutzt die stabile 4-Spalten-Struktur der Optionen-Tabelle als Zeilenvorlage.
+    Zwei Zusammenfassungstabellen mit gelbem Kopf:
+      1) Softwarelizenzen → Total A
+      2) IT-Aufwand → Total B
+    Danach fett: Total netto exkl. MwSt.
     """
     from copy import deepcopy
 
     from docx import Document
+    from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
 
     doc = Document(io.BytesIO(docx_bytes))
@@ -308,22 +331,45 @@ def apply_zusammenfassung_table(
     if z_table is None:
         return docx_bytes
 
-    # Zeilenvorlage: bevorzugt Optionen-Datenzeile (4 konsistente Zellen)
     template_tr = None
     if opt_table is not None and len(opt_table.rows) > 1:
         template_tr = deepcopy(opt_table.rows[1]._tr)
     elif len(z_table.rows) > 1:
-        # längste Datenzeile der Zusammenfassung
         best = max(z_table.rows[1:], key=lambda r: len(r._tr.findall(qn("w:tc"))))
         template_tr = deepcopy(best._tr)
     if template_tr is None:
         return docx_bytes
 
-    tbl = z_table._tbl
-    for row in list(z_table.rows)[1:]:
-        tbl.remove(row._tr)
+    header_tr_template = deepcopy(z_table.rows[0]._tr)
 
-    def add_row(cell_texts: List[Any], *, min_height: int = 1400, first_bold: bool = False) -> None:
+    def classify_groups() -> Dict[str, List[Dict[str, Any]]]:
+        lic: List[Dict[str, Any]] = []
+        it: List[Dict[str, Any]] = []
+        for group in scope_groups or []:
+            gid = str(group.get("id") or "").lower()
+            title = str(group.get("title") or "").lower()
+            if gid == "license" or "lizenz" in title or "software" in title:
+                lic.append(group)
+            elif gid == "it" or "it-" in title or "it " in title or "reise" in title:
+                it.append(group)
+            else:
+                # Fallback: unklare Gruppen zu Lizenzen
+                lic.append(group)
+        return {"license": lic, "it": it}
+
+    def clear_data_rows(table) -> None:
+        tbl = table._tbl
+        for row in list(table.rows)[1:]:
+            tbl.remove(row._tr)
+
+    def set_header(table, title: str) -> None:
+        tcs = table.rows[0]._tr.findall(qn("w:tc"))
+        if not tcs:
+            return
+        # Erste Zelle des Merge-Headers
+        _set_tc_text_simple(tcs[0], title, bold=True, fill="FFED00")
+
+    def add_row(table, cell_texts: List[Any], *, min_height: int = 1400, first_bold: bool = False) -> None:
         tr = deepcopy(template_tr)
         tcs = tr.findall(qn("w:tc"))
         values = list(cell_texts)
@@ -335,18 +381,23 @@ def apply_zusammenfassung_table(
                 lines = [str(x) for x in raw]
             else:
                 lines = str(raw).split("\n") if raw is not None else [""]
-            _set_tc_paragraphs(tc, lines, first_bold=(first_bold and i == 0))
+            # Alle Zellen der Totalzeile fett, wenn first_bold und letzte Spalte Preis
+            _set_tc_paragraphs(
+                tc,
+                lines,
+                first_bold=(first_bold and (i == 0 or i == len(tcs) - 1)),
+            )
         _set_row_min_height(tr, min_height)
-        tbl.append(tr)
+        table._tbl.append(tr)
 
-    pos = 0
-    if not scope_groups:
-        add_row(["Kein Leistungsumfang kalkuliert.", "", "", ""], min_height=800)
-    else:
-        for group in scope_groups:
-            title = (group.get("title") or "").strip()
-            if title:
-                add_row([title, "", "", ""], min_height=700, first_bold=True)
+    def fill_group_table(table, groups: List[Dict[str, Any]], *, total_prefix: str, header_title: str) -> None:
+        set_header(table, header_title)
+        clear_data_rows(table)
+        pos = 0
+        if not groups:
+            add_row(table, ["Keine Positionen in diesem Bereich.", "", "", ""], min_height=800)
+            return
+        for group in groups:
             for item in group.get("items") or []:
                 pos += 1
                 name = (item.get("name") or "").strip() or f"Position {pos}"
@@ -355,29 +406,80 @@ def apply_zusammenfassung_table(
                 if desc:
                     lines.append(desc)
                 lines.append("")
-                add_row([lines, "", "", ""], min_height=1500, first_bold=True)
-            if group.get("total") is not None:
+                add_row(table, [lines, "", "", ""], min_height=1500, first_bold=True)
+            total = group.get("total")
+            title = (group.get("title") or "").strip()
+            if total_prefix == "A":
+                label = "Total A · Softwarelizenzen"
+            elif total_prefix == "B":
+                label = "Total B · IT-Aufwand"
+            else:
+                label = f"Total {title}".strip() or "Total"
+            if total is not None:
                 add_row(
-                    [
-                        f"Total {title}".strip(),
-                        "",
-                        "",
-                        _money(group.get("total"), group.get("currency") or "CHF"),
-                    ],
-                    min_height=700,
+                    table,
+                    [label, "", "", _money(total, group.get("currency") or "CHF")],
+                    min_height=750,
                     first_bold=True,
                 )
 
+    buckets = classify_groups()
+    # Tabelle 1: bestehende Zusammenfassung → Softwarelizenzen
+    fill_group_table(
+        z_table,
+        buckets["license"],
+        total_prefix="A",
+        header_title="Zusammenfassung – Softwarelizenzen",
+    )
+
+    # Tabelle 2: Kopie mit gleichem gelben Kopf → IT-Aufwand
+    z_tbl = z_table._tbl
+    it_tbl = deepcopy(z_tbl)
+    # Nach der ersten Zusammenfassung einfügen (+ Leerabsatz dazwischen)
+    parent = z_tbl.getparent()
+    insert_at = list(parent).index(z_tbl) + 1
+    spacer = OxmlElement("w:p")
+    parent.insert(insert_at, spacer)
+    parent.insert(insert_at + 1, it_tbl)
+
+    # python-docx Table-Wrapper für die Kopie
+    from docx.table import Table
+
+    it_table = Table(it_tbl, z_table._parent)
+    # Headerzeile der Kopie ggf. ersetzen falls beim Clear beschädigt
+    if not it_table.rows:
+        it_tbl.append(deepcopy(header_tr_template))
+        it_table = Table(it_tbl, z_table._parent)
+    fill_group_table(
+        it_table,
+        buckets["it"],
+        total_prefix="B",
+        header_title="Zusammenfassung – IT-Aufwand",
+    )
+
+    # Gesamttotal als eigene Mini-Tabelle (gelb/fett hervorgehoben)
+    grand_tbl = deepcopy(z_tbl)
+    # Nur Kopf + eine Datenzeile behalten
+    # Zuerst leeren und neu füllen über Table-API
+    parent.insert(insert_at + 2, OxmlElement("w:p"))
+    parent.insert(insert_at + 3, grand_tbl)
+    grand_table = Table(grand_tbl, z_table._parent)
+    set_header(grand_table, "Gesamttotal")
+    clear_data_rows(grand_table)
+
     if subtotal_chf is not None and discount_chf:
-        add_row(["Zwischentotal", "", "", _money(subtotal_chf, "CHF")], min_height=600, first_bold=True)
-        add_row(["Projektrabatt", "", "", f"− {_money(discount_chf, 'CHF')}"], min_height=600)
+        add_row(grand_table, ["Zwischentotal", "", "", _money(subtotal_chf, "CHF")], min_height=600, first_bold=True)
+        add_row(grand_table, ["Projektrabatt", "", "", f"− {_money(discount_chf, 'CHF')}"], min_height=600)
 
     if grand_total_chf is not None:
         add_row(
+            grand_table,
             ["Total netto exkl. MwSt.", "", "", _money(grand_total_chf, "CHF")],
-            min_height=800,
+            min_height=900,
             first_bold=True,
         )
+    else:
+        add_row(grand_table, ["Total netto exkl. MwSt.", "", "", "—"], min_height=900, first_bold=True)
 
     out = io.BytesIO()
     doc.save(out)
