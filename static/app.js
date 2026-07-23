@@ -106,7 +106,11 @@
 
   function formatSsiContactMeta(contact) {
     if (!contact) return "";
-    return [contact.title, contact.email, contact.phone].filter(Boolean).join(" · ");
+    const bits = [];
+    if (contact.title) bits.push(contact.title);
+    if (contact.email) bits.push(contact.email);
+    if (contact.phone) bits.push(contact.phone);
+    return bits.join(" · ");
   }
 
   function fillSsiContactSelect(selectEl, selectedId) {
@@ -960,16 +964,34 @@
     const sig1 = sigs[0] || {};
     const sig2 = sigs[1] || {};
     const ssiList = doc.ssiContacts || [];
-    const ssi1 = ssiList[0] || {};
-    const ssi2 = ssiList[1] || {};
-    const ssi1Name = ssi1.name || doc.meta.preparedBy || sig1.name || "—";
-    const ssi1Pos = ssi1.title || sig1.title || sig1.role || "";
-    const ssi1Mail = ssi1.email || sig1.email || "";
-    const ssi1Tel = ssi1.phone || sig1.phone || "";
-    const ssi2Name = ssi2.name || sig2.name || "";
-    const ssi2Pos = ssi2.title || sig2.title || sig2.role || "";
-    const ssi2Mail = ssi2.email || sig2.email || "";
-    const ssi2Tel = ssi2.phone || sig2.phone || "";
+    const resolvePreviewContact = (raw, fallbackSig) => {
+      const base = raw && (raw.name || raw.id) ? raw : (fallbackSig || {});
+      const fromCatalog =
+        ssiContactById(base.id)
+        || (state.ssiContacts?.contacts || []).find(
+          (c) => c.name && base.name && c.name === base.name,
+        )
+        || null;
+      const merged = { ...(fromCatalog || {}), ...(base || {}) };
+      return {
+        name: merged.name || "",
+        title: merged.title || "",
+        role: merged.role || "",
+        email: merged.email || "",
+        phone: merged.phone || "",
+      };
+    };
+    const ssi1 = resolvePreviewContact(ssiList[0], sig1);
+    const ssi2 = resolvePreviewContact(ssiList[1], sig2);
+    // Kein Mix: wenn Name gesetzt ist, Titel/Mail nur von derselben Person
+    const ssi1Name = ssi1.name || doc.meta.preparedBy || "—";
+    const ssi1Pos = ssi1.name || doc.meta.preparedBy ? ssi1.title : "";
+    const ssi1Mail = ssi1.name || doc.meta.preparedBy ? ssi1.email : "";
+    const ssi1Tel = ssi1.name || doc.meta.preparedBy ? ssi1.phone : "";
+    const ssi2Name = ssi2.name || "";
+    const ssi2Pos = ssi2.name ? ssi2.title : "";
+    const ssi2Mail = ssi2.name ? ssi2.email : "";
+    const ssi2Tel = ssi2.name ? ssi2.phone : "";
 
     root.innerHTML = `
       <div class="offer-sheet offer-cover-page">

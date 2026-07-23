@@ -84,11 +84,22 @@ def _ssi_contact_by_id(contact_id: Optional[str]) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _ssi_contact_by_name(name: Optional[str]) -> Optional[Dict[str, Any]]:
+    needle = (name or "").strip().lower()
+    if not needle:
+        return None
+    for row in load_ssi_contacts().get("contacts") or []:
+        if str(row.get("name") or "").strip().lower() == needle:
+            return dict(row)
+    return None
+
+
 def resolve_ssi_contacts(
     contact1_id: Optional[str] = None,
     contact2_id: Optional[str] = None,
     *,
     use_defaults: bool = True,
+    prepared_by: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     data = load_ssi_contacts()
     defaults = (data.get("meta") or {}).get("defaults") or {}
@@ -96,6 +107,9 @@ def resolve_ssi_contacts(
     id2 = (contact2_id or "").strip() or (defaults.get("contact2Id") if use_defaults else "")
     c1 = _ssi_contact_by_id(id1) or {}
     c2 = _ssi_contact_by_id(id2) or {}
+    # Falls nur „Erstellt von“/Name ohne ID: Stammdaten (E-Mail/Funktion) nachziehen
+    if not c1.get("id") and prepared_by:
+        c1 = _ssi_contact_by_name(prepared_by) or c1
     return [c1, c2]
 
 
@@ -1055,10 +1069,18 @@ def compose_offer(payload: ComposeOfferRequest):
         or it_cfg.get("ssiContact2Id")
         or ""
     )
-    ssi_contacts = resolve_ssi_contacts(contact1_id, contact2_id)
-    prepared_by = (
+    prepared_hint = (
         lic_cfg.get("preparedBy")
         or it_cfg.get("preparedBy")
+        or ""
+    )
+    ssi_contacts = resolve_ssi_contacts(
+        contact1_id,
+        contact2_id,
+        prepared_by=prepared_hint,
+    )
+    prepared_by = (
+        prepared_hint
         or (ssi_contacts[0].get("name") if ssi_contacts else "")
         or ""
     )

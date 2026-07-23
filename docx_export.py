@@ -14,6 +14,7 @@ from docxtpl import DocxTemplate
 
 BASE_DIR = Path(__file__).resolve().parent
 FIELD_MAP_FILE = BASE_DIR / "data" / "docx_field_map.json"
+SSI_CONTACTS_FILE = BASE_DIR / "data" / "ssi_contacts.json"
 
 # Word-Inhaltssteuerelemente (ComboBox / Text) in Angebot Logimat DE.docx
 _SDT_TEXT_MAP = {
@@ -61,6 +62,31 @@ def ensure_annex_template() -> Path:
 def load_field_map() -> Dict[str, Any]:
     if FIELD_MAP_FILE.exists():
         return json.loads(FIELD_MAP_FILE.read_text(encoding="utf-8"))
+    return {}
+
+
+def _load_ssi_contacts_catalog() -> List[Dict[str, Any]]:
+    if not SSI_CONTACTS_FILE.exists():
+        return []
+    try:
+        data = json.loads(SSI_CONTACTS_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    return list(data.get("contacts") or [])
+
+
+def _lookup_ssi_contact(
+    *, contact_id: str = "", name: str = ""
+) -> Dict[str, Any]:
+    cid = (contact_id or "").strip()
+    needle = (name or "").strip().lower()
+    for row in _load_ssi_contacts_catalog():
+        if cid and row.get("id") == cid:
+            return dict(row)
+    if needle:
+        for row in _load_ssi_contacts_catalog():
+            if str(row.get("name") or "").strip().lower() == needle:
+                return dict(row)
     return {}
 
 
@@ -304,32 +330,62 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
 
     addr = _split_swiss_address(customer.get("address", ""))
     prepared_by = (meta.get("preparedBy") or "").strip()
-    # Cover + Unterschriften: ausgewählte SSI-Kontakte (sonst Fallbacks)
+    # Cover + Unterschriften: nur die gewählte Person — kein Mix mit Default-Signaturen
     ssi_contacts = offer.get("ssiContacts") or meta.get("ssiContacts") or []
-    ssi1 = ssi_contacts[0] if len(ssi_contacts) > 0 else {}
-    ssi2 = ssi_contacts[1] if len(ssi_contacts) > 1 else {}
-    ssi1_name = (ssi1.get("name") or prepared_by or sig1.get("name") or "").strip()
-    ssi1_pos = (ssi1.get("title") or sig1.get("title") or sig1.get("role") or "").strip()
-    ssi1_mail = (ssi1.get("email") or sig1.get("email") or "").strip()
-    ssi1_tel = (ssi1.get("phone") or sig1.get("phone") or "").strip()
-    ssi2_name = (ssi2.get("name") or sig2.get("name") or "").strip()
-    ssi2_pos = (ssi2.get("title") or sig2.get("title") or sig2.get("role") or "").strip()
-    ssi2_mail = (ssi2.get("email") or sig2.get("email") or "").strip()
-    ssi2_tel = (ssi2.get("phone") or sig2.get("phone") or "").strip()
-    # Signaturen: dieselben zwei Personen (Auswahl im Kalkulator)
-    sig1_name = ssi1_name or (sig1.get("name") or "")
-    sig1_title = ssi1_pos or (sig1.get("title") or "")
-    sig1_role = (ssi1.get("role") or sig1.get("role") or "")
-    sig2_name = ssi2_name or (sig2.get("name") or "")
-    sig2_title = ssi2_pos or (sig2.get("title") or "")
-    sig2_role = (ssi2.get("role") or sig2.get("role") or "")
+    ssi1 = dict(ssi_contacts[0] if len(ssi_contacts) > 0 else {})
+    ssi2 = dict(ssi_contacts[1] if len(ssi_contacts) > 1 else {})
+
+    # Nachschlagen anhand ID/Name, falls Angebot ohne vollständige Stammdaten kommt
+    def _enrich(contact: Dict[str, Any], *, name_hint: str = "") -> Dict[str, Any]:
+        if contact.get("email") and contact.get("name"):
+            return contact
+        found = _lookup_ssi_contact(
+            contact_id=str(contact.get("id") or ""),
+            name=str(contact.get("name") or name_hint or ""),
+        )
+        if found:
+            merged = dict(found)
+            merged.update({k: v for k, v in contact.items() if v})
+            return merged
+        return contact
+
+    ssi1 = _enrich(ssi1, name_hint=prepared_by)
+    ssi2 = _enrich(ssi2)
+
+    def _fields(primary: Dict[str, Any], *, name_fallback: str = "") -> Dict[str, str]:
+        """Nur Felder der gewählten Person — kein Fallback auf andere Signatur."""
+        name = (primary.get("name") or name_fallback or "").strip()
+        if not name and not primary.get("id"):
+            return {"name": "", "title": "", "role": "", "email": "", "phone": ""}
+        return {
+            "name": name,
+            "title": (primary.get("title") or "").strip(),
+            "role": (primary.get("role") or "").strip(),
+            "email": (primary.get("email") or "").strip(),
+            "phone": (primary.get("phone") or "").strip(),
+        }
+
+    f1 = _fields(ssi1, name_fallback=prepared_by)
+    f2 = _fields(ssi2)
+    # Nur wenn gar keine SSI-Auswahl vorhanden: klassische Signaturen aus Bedingungen
+    if not f1["name"] and not f2["name"]:
+        f1 = _fields(sig1)
+        f2 = _fields(sig2)
+
+    ssi1_name, ssi1_pos, ssi1_mail, ssi1_tel = f1["name"], f1["title"], f1["email"], f1["phone"]
+    ssi2_name, ssi2_pos, ssi2_mail, ssi2_tel = f2["name"], f2["title"], f2["email"], f2["phone"]
+    sig1_name, sig1_title, sig1_role = f1["name"], f1["title"], f1["role"]
+    sig2_name, sig2_title, sig2_role = f2["name"], f2["title"], f2["role"]
+    if prepared_by == "" and ssi1_name:
+        prepared_by = ssi1_name
 
     def _details(pos: str, email: str, phone: str) -> str:
         parts = [p for p in [pos, email, phone] if p]
         return "\n".join(parts)
 
-    def _sig_details(title: str, role: str) -> str:
-        parts = [p for p in [title, role] if p]
+    def _sig_details(title: str, role: str, email: str = "") -> str:
+        # Funktion + E-Mail mitziehen (Titel kann später nachgepflegt werden)
+        parts = [p for p in [title, role, email] if p]
         return "\n".join(parts)
 
     return {
@@ -396,11 +452,11 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "signatur_1_name": sig1_name,
         "signatur_1_titel": sig1_title,
         "signatur_1_rolle": sig1_role,
-        "signatur_1_details": _sig_details(sig1_title, sig1_role),
+        "signatur_1_details": _sig_details(sig1_title, sig1_role, ssi1_mail),
         "signatur_2_name": sig2_name,
         "signatur_2_titel": sig2_title,
         "signatur_2_rolle": sig2_role,
-        "signatur_2_details": _sig_details(sig2_title, sig2_role),
+        "signatur_2_details": _sig_details(sig2_title, sig2_role, ssi2_mail),
     }
 
 
