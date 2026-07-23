@@ -439,6 +439,148 @@
         document.getElementById("btnPrintOffer").disabled = !document.querySelector(".offer-sheet");
       }
     }
+    updateSessionChrome();
+  }
+
+  function hasOpenOfferSession() {
+    return Boolean(state.editingFromOfferId || state.offerDocument || state.savedOfferId);
+  }
+
+  function updateSessionChrome() {
+    const editing = Boolean(state.editingFromOfferId);
+    const open = hasOpenOfferSession();
+    const chip = document.getElementById("editModeChip");
+    const chipText = document.getElementById("editModeChipText");
+    const banner = document.getElementById("offerSessionBanner");
+    const leaveBtn = document.getElementById("btnLeaveOffer");
+
+    if (chip) {
+      chip.hidden = !editing;
+      if (chipText && editing) {
+        chipText.textContent = `Bearbeitung: ${state.editingFromOfferId}`;
+      }
+    }
+
+    if (leaveBtn) {
+      leaveBtn.hidden = !open;
+      leaveBtn.textContent = editing ? "Bearbeitung abbrechen" : "Schliessen";
+      leaveBtn.title = editing
+        ? "Bearbeitung verwerfen und Formulare zurücksetzen"
+        : "Angebotsansicht schliessen und zum Archiv";
+    }
+
+    if (banner) {
+      if (editing) {
+        banner.hidden = false;
+        banner.innerHTML = `
+          <div>
+            Bearbeitung von <strong>${escapeHtml(state.editingFromOfferId)}</strong> —
+            „Angebot erzeugen“ speichert als nächste Version (A2, A3, …).
+          </div>
+          <div class="session-banner-actions">
+            <button type="button" class="btn danger btn-compact" data-leave-offer="cancel">
+              Bearbeitung abbrechen
+            </button>
+          </div>`;
+      } else if (state.offerDocument) {
+        const title = state.offerDocument.meta?.archiveTitle
+          || state.offerDocument.meta?.offerNumber
+          || "Angebot";
+        banner.hidden = false;
+        banner.innerHTML = `
+          <div>Geöffnet: <strong>${escapeHtml(title)}</strong></div>
+          <div class="session-banner-actions">
+            <button type="button" class="btn btn-compact" data-leave-offer="close">
+              Schliessen
+            </button>
+          </div>`;
+      } else {
+        banner.hidden = true;
+        banner.innerHTML = "";
+      }
+    }
+  }
+
+  function clearOfferPreview() {
+    state.offerDocument = null;
+    state.savedOfferId = null;
+    const root = document.getElementById("offerDocument");
+    if (root) {
+      root.innerHTML = '<p class="empty-state">Noch kein Angebot erzeugt. Lizenz/IT konfigurieren und „Angebot erzeugen“ wählen.</p>';
+    }
+    ["btnPrintOffer", "btnSaveOfferDoc", "btnExcelOfferDoc", "btnWordOfferDoc", "btnPdfOfferDoc"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    });
+  }
+
+  function resetCalculatorForms() {
+    licenseForm?.reset();
+    itForm?.reset();
+    state.licenseOffer = null;
+    state.itOffer = null;
+    state.savedLicenseId = null;
+    state.savedItId = null;
+
+    const product = state.licenseCatalog?.product || {};
+    setFormValue(licenseForm, "licenseMarginPercent", product.licenseMarginPercent ?? 28);
+    setFormValue(licenseForm, "eurToChfRate", product.eurToChfRate ?? 0.93);
+    setFormValue(licenseForm, "instanceCount", 1);
+    setFormValue(licenseForm, "extraOpeningClients", 0);
+    setFormValue(licenseForm, "extraAdminClients", 0);
+    setFormValue(licenseForm, "mobileTerminalClients", 0);
+    setFormValue(licenseForm, "thirdPartyVlmTypes", 0);
+    setFormValue(licenseForm, "testInstances", 0);
+    setFormValue(licenseForm, "upgradeYears", 0);
+
+    const rates = state.itCatalog?.rates || {};
+    setFormValue(itForm, "itMarginPercent", rates.marginPercent ?? 28);
+    setFormValue(itForm, "deviceCount", 1);
+    setFormValue(itForm, "zoneCount", 1);
+    setFormValue(itForm, "openingCount", 1);
+    setFormValue(itForm, "trips", 0);
+    setFormValue(itForm, "travelHoursPerTrip", 0);
+    setFormValue(itForm, "kmPerTrip", 0);
+    setFormValue(itForm, "overnightCount", 0);
+    setFormValue(itForm, "mealCount", 0);
+
+    renderInstances();
+    renderAddons();
+    updateClientHints();
+    renderItOptions();
+    renderItExtensions();
+    initSsiContactPickers();
+    const discPct = document.getElementById("offerDiscountPercent");
+    const discAmt = document.getElementById("offerDiscountAmount");
+    if (discPct) discPct.value = "0";
+    if (discAmt) discAmt.value = "0";
+    updateInternalContributionBox();
+  }
+
+  async function leaveOfferSession(mode = "auto") {
+    const editing = Boolean(state.editingFromOfferId);
+    const effective = mode === "auto" ? (editing ? "cancel" : "close") : mode;
+
+    if (effective === "cancel") {
+      if (!confirm(
+        "Bearbeitung wirklich abbrechen?\n\nFormulare werden geleert, die Angebotsvorschau geschlossen. Bereits gespeicherte Archiv-Versionen bleiben erhalten."
+      )) {
+        return;
+      }
+      state.editingFromOfferId = null;
+      clearOfferPreview();
+      resetCalculatorForms();
+      await Promise.all([recalcLicense(), recalcIt()]);
+      updateSessionChrome();
+      switchView("archive");
+      return;
+    }
+
+    // Nur Ansicht schliessen — Formulare behalten
+    state.editingFromOfferId = null;
+    clearOfferPreview();
+    updateSessionChrome();
+    switchView("archive");
   }
 
   function escapeHtml(value) {
@@ -541,6 +683,7 @@
       document.getElementById("btnExcelOfferDoc").disabled = !state.savedOfferId;
       document.getElementById("btnWordOfferDoc").disabled = !state.savedOfferId;
       document.getElementById("btnPdfOfferDoc").disabled = !state.savedOfferId;
+      updateSessionChrome();
       switchView("offer");
       if (notify || previousId) {
         const title = doc.meta.archiveTitle || doc.meta.offerNumber;
@@ -673,6 +816,7 @@
       await Promise.all([recalcLicense(), recalcIt()]);
       switchView("license");
       alert(`Lizenzkalkulation geladen: ${state.editingFromOfferId}\nAnpassen und danach unter „Angebot“ neu erzeugen.`);
+      updateSessionChrome();
       return;
     }
 
@@ -681,6 +825,7 @@
       await recalcIt();
       switchView("it");
       alert(`IT-Kalkulation geladen: ${state.editingFromOfferId}\nAnpassen und danach unter „Angebot“ neu erzeugen.`);
+      updateSessionChrome();
       return;
     }
 
@@ -750,8 +895,10 @@
       switchView("license");
       alert(
         `Gesamtangebot geladen: ${state.editingFromOfferId}\n` +
-        `Jetzt bearbeiten (Lizenz/IT), danach „Angebot erzeugen“ für eine neue Version.`
+        `Jetzt bearbeiten (Lizenz/IT), danach „Angebot erzeugen“ für eine neue Version.\n` +
+        `Abbrechen: oben rechts oder unter „Angebot“.`
       );
+      updateSessionChrome();
       return;
     }
 
@@ -769,6 +916,7 @@
       document.getElementById("btnExcelOfferDoc").disabled = !state.savedOfferId;
       document.getElementById("btnWordOfferDoc").disabled = !state.savedOfferId;
       document.getElementById("btnPdfOfferDoc").disabled = !state.savedOfferId;
+      updateSessionChrome();
       switchView("offer");
       return;
     }
@@ -1827,6 +1975,17 @@
     document.getElementById("btnPrintOffer").addEventListener("click", () => {
       switchView("offer");
       window.print();
+    });
+    document.getElementById("btnLeaveOffer")?.addEventListener("click", () => {
+      leaveOfferSession("auto");
+    });
+    document.getElementById("btnCancelEditTop")?.addEventListener("click", () => {
+      leaveOfferSession("cancel");
+    });
+    document.getElementById("offerSessionBanner")?.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-leave-offer]");
+      if (!btn) return;
+      leaveOfferSession(btn.dataset.leaveOffer || "auto");
     });
   }
 
