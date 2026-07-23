@@ -15,43 +15,43 @@
   },
   "functionCatalog": {
     "storage_demands": {
-      "name": "Storage Demands",
-      "description": "Auftragsbasierte Einlagerung: Storage Demands anlegen, freigeben, aktivieren und am Touch Client / Desktop abarbeiten.",
+      "name": "Einlagerbedarfe",
+      "description": "Diese Funktion ermöglicht die Erstellung von Einlagerbedarfen mittels Touch-Client.",
       "manualRefs": ["User Manual 6.2.1, 6.2.5.1"]
     },
     "picking_demands": {
-      "name": "Picking Demands",
-      "description": "Auftragsbasierte Kommissionierung: Picking Demands erstellen, freigeben, aktivieren, splitten und finalisieren.",
+      "name": "Kommissionierbedarfe",
+      "description": "Diese Funktion ermöglicht die Erstellung von Kommissionierbedarfen mittels Touch-Client.",
       "manualRefs": ["User Manual 6.2.2, 6.2.5.2, 6.4"]
     },
     "manual_transport": {
-      "name": "Manual Transport",
-      "description": "Manuelle Tablaroperationen am Touch: Tray anfordern/zurückgeben, an anderes Access Opening senden, Einlagern/Kommissionieren ohne Auftrag.",
+      "name": "Handtransport",
+      "description": "Diese Funktion ermöglicht den Handbetrieb des VLM-Geräts mittels der Software WAMAS Lift & Store (WAMAS LogiMat), indem bestimmte Tablare entnommen werden, um sie manuell zu öffnen.",
       "manualRefs": ["User Manual 6.1"]
     },
     "large_item_support": {
-      "name": "Large Item Support",
-      "description": "Unterstützung großer Artikel (direkt auf dem Tablar, ohne Box). Large Items sind für External Storage und Mobile Terminal eingeschränkt.",
+      "name": "Unterstützung bei Grossteilen",
+      "description": "Diese Funktion ermöglicht die Lagerung von Grossteilen. Das System sucht ein Tablar mit ausreichend Platz und weist den Benutzer an, die Packung an der richtigen Position einzulagern.",
       "manualRefs": ["User Manual 5.1 / 6.1.4.1"]
     },
     "restore_goods_after_picking": {
-      "name": "Restore Goods After Picking",
-      "description": "Rücklagerung / Markierung externer Loading Units zur Wiedereinlagerung nach Kommissionierung (Restorage).",
+      "name": "Waren nach der Kommissionierung rücklagern",
+      "description": "Diese Funktion ermöglicht es, Zielladeeinheiten zurück auf Tablare zu lagern bzw. abzustellen und den Auftrag zu einem späteren Zeitpunkt fortzusetzen. Besonders hilfreich bei Aufträgen mit vielen Auftragspositionen.",
       "manualRefs": ["User Manual 6.7.1.3"]
     },
     "light_control": {
-      "name": "Light Control",
-      "description": "Ansteuerung der Lift-Beleuchtung (LogiLight), inkl. Lighting Mode und Auto-Off-Parametern am Access Opening.",
+      "name": "Lichtsteuerung",
+      "description": "Diese Funktion ermöglicht dem System, das Beleuchtungssystem in Abhängigkeit der aktuellen Öffnungen und vom Login-Status des Benutzers zu steuern.",
       "manualRefs": ["Administrator Manual 3.1.1"]
     },
     "order_templates": {
-      "name": "Order Templates",
-      "description": "Demand Templates für Storage-/Picking-Demands inkl. Zeilen- und External-Reference-Vorlagen zur schnellen Auftragserzeugung.",
+      "name": "Auftragsvorlagen",
+      "description": "Diese Funktion ermöglicht die Definition von Vorlagen, um Bedarfe inklusive Auftragspositionen schneller zu erstellen — per Tastendruck oder Barcode-Scan.",
       "manualRefs": ["User Manual 5.3"]
     },
     "order_handling": {
-      "name": "Order Handling",
-      "description": "Erweiterte Auftragssteuerung: Release/Activate, Split, Suspend/Resume, Takeover, Mengenkorrektur und organisatorisches Finalisieren.",
+      "name": "Auftragsabwicklung",
+      "description": "Diese Funktion ermöglicht es WAMAS Lift & Store (WAMAS LogiMat), sich mittels ERP- oder WCS-Schnittstellen mit anderen Systempartnern zur Datenübertragung zu verbinden.",
       "manualRefs": ["User Manual 6.2, 6.4"]
     }
   },
@@ -70,8 +70,8 @@
         "restore_goods_after_picking",
         "light_control"
       ],
-      "description": "Basisinstanz für SSI LOGIMAT-Betrieb mit Storage-/Picking-Demands, manuellen Transporten und Light Control. Inkl. 1 Opening Client und 1 Admin Client.",
-      "functionalSummary": "Geeignet für Standalone-Betrieb mit geführten Touch-Prozessen und Desktop-Administration ohne Order Templates und ohne erweiterte Order-Handling-Funktionen."
+      "description": "Basis-Instanz für den Betrieb mit SSI LOGIMAT: Einlager- und Kommissionierbedarfe am Touch-Client, Handtransport, Grossteil-Unterstützung, Rücklagerung nach Kommissionierung sowie Lichtsteuerung. Inklusive 1 Opening Client und 1 Admin Client.",
+      "functionalSummary": "Geeignet für den Standalone-Betrieb mit geführten Touch-Prozessen und Desktop-Administration — ohne Auftragsvorlagen und ohne Auftragsabwicklung über ERP-/WCS-Schnittstellen."
     },
     {
       "id": "advanced",
@@ -89,19 +89,19 @@
         "order_templates",
         "order_handling"
       ],
-      "description": "Advanced-Instanz inkl. Order Templates und Order Handling sowie 1 Opening Client und 1 Admin Client. Voraussetzung für Mobile Terminal, Put2Light, External Storage und Picking Trolley.",
-      "functionalSummary": "Für Anlagen mit wiederkehrenden Auftragsmustern, erweiterter Auftragssteuerung und optionalen Advanced-Add-ons."
+      "description": "Advanced-Instanz mit dem Funktionsumfang der Basis-Instanz zuzüglich Auftragsvorlagen und Auftragsabwicklung (ERP-/WCS-Anbindung). Inklusive 1 Opening Client und 1 Admin Client. Voraussetzung für Mobile Terminal, Put2Light, externe Lagerplätze und Kommissionierwagen.",
+      "functionalSummary": "Für Anlagen mit wiederkehrenden Auftragsmustern, Schnittstellen zu ERP/WCS und optionalen Advanced-Add-ons."
     }
   ],
   "addons": [
     {
       "id": "advanced_security",
-      "name": "Advanced Security",
+      "name": "Erweiterte Sicherheit",
       "price": 350,
       "availableFor": ["basic", "advanced"],
       "sllUnits": 1,
-      "description": "Erweiterte Sicherheitsfunktionen rund um Benutzerzugriff und Nachvollziehbarkeit.",
-      "functionalDescription": "Ergänzt die Benutzerverwaltung um strengere Absicherung: User Locks, Session-Monitoring, Login-Protokoll und Audit Log für nachvollziehbare Änderungen und Zugriffe.",
+      "description": "Strikte Zugangsregeln für bestimmte Artikel.",
+      "functionalDescription": "Diese Funktion ermöglicht die Definition von strikten Zugangsregeln für bestimmte Artikel, sodass nur bestimmte Benutzer auf Kisten oder Tablare zugreifen können, in denen sich diese Artikel befinden.",
       "manualRefs": ["Administrator Manual 3.3.8–3.3.10"]
     },
     {
@@ -110,142 +110,152 @@
       "price": 350,
       "availableFor": ["basic", "advanced"],
       "sllUnits": 1,
-      "description": "Geschwindigkeits- und Bewegungsparameter für Artikel/Tablare.",
-      "functionalDescription": "Verwaltung von Velocity-Parametern (z. B. max. horizontale/vertikale Geschwindigkeit) und unterstützende ABC-/Einlagerstrategien zur Optimierung von Bewegungen und Lagerplatzwahl.",
+      "description": "Bewegungsbeschränkungen für ausgewählte Artikel an die SPS.",
+      "functionalDescription": "Diese Funktion ermöglicht die Spezifikation von speziellen Bewegungsbeschränkungen für ausgewählte Artikel, die an die SPS weitergegeben werden, wenn ein benötigter Tablar einen solchen Artikel enthält.",
       "manualRefs": ["User Manual 5.1 (WLS Item)", "Administrator Manual 3.1.10.3, 3.1.17"]
     },
     {
       "id": "tray_weight_control",
-      "name": "Tray Weight Control",
+      "name": "Kontrolle des Tablargewichts",
       "price": 350,
       "availableFor": ["basic", "advanced"],
       "sllUnits": 1,
-      "description": "Gewichtskontrolle von Tablaren über angebundene Waagen.",
-      "functionalDescription": "Zuordnung von Scales an Access Openings, Anzeige/Prüfung des Tray Weights und Nutzung von Scale Operations zur Mengen-/Gewichtserfassung.",
+      "description": "Gewichtsdaten für komplette Tablare bei der Einlagerung.",
+      "functionalDescription": "Diese Funktion ermöglicht den Zugang zu Informationen für die Berechnung von Gewichtsdaten für komplette Tablare während der Einlagerungsvorgänge.",
       "manualRefs": ["User Manual 5.7, 6.4.13", "Administrator Manual 3.12.8"]
     },
     {
       "id": "rfid_login",
-      "name": "RFID Login",
+      "name": "RFID-Login",
       "price": 350,
       "availableFor": ["basic", "advanced"],
       "sllUnits": 1,
-      "description": "Anmeldung am Touch Client per RFID.",
-      "functionalDescription": "Login am Touch Client über RFID-Reader und Security Token statt manueller Benutzereingabe – schneller Schichtwechsel und weniger Fehleingaben.",
+      "description": "Authentifizierung am Touch-Client per RFID-Karte.",
+      "functionalDescription": "Diese Funktion ermöglicht die leichtere Authentifizierung auf Touch-Clients mittels einer speziellen RFID-Karte, die bereits in der Anwendung registriert wurde.",
       "manualRefs": ["User Manual 2.1.3"]
     },
     {
       "id": "advanced_permission",
-      "name": "Advanced Permission",
+      "name": "Erweiterte Berechtigungen",
       "price": 350,
       "availableFor": ["basic", "advanced"],
       "sllUnits": 1,
-      "description": "Feingranulare Rechte- und Rollensteuerung.",
-      "functionalDescription": "Application Permission Profiles mit getrennten Zugriffsrechten für Desktop, Mobile, Touch und Perspectives sowie Rollen-/Area-Profile für differenzierte Benutzerrechte.",
+      "description": "Fein abgestufte Zugriffssteuerung über Profile.",
+      "functionalDescription": "Diese Funktion ermöglicht die Konfiguration der fein abgestuften Zugriffssteuerung durch die Erstellung von Profilen, die die Vorgänge einschränken können, die jeder Bediener verwenden kann.",
       "manualRefs": ["Administrator Manual 3.3.3–3.3.6"]
     },
     {
       "id": "printing_support",
-      "name": "Printing Support",
+      "name": "Druckunterstützung",
       "price": 350,
       "availableFor": ["basic", "advanced"],
       "sllUnits": 1,
-      "description": "Dokumenten- und Etikettendruck.",
-      "functionalDescription": "Druck von Artikel-, LU- und Lagerplatzetiketten sowie Lieferscheinen; Printer Management, Document Types/Layouts und Reprint aus dem Archiv.",
+      "description": "Druck von Etiketten und Lieferscheinen.",
+      "functionalDescription": "Diese Funktion ermöglicht das Drucken von bestimmten Dokumenten für die Kommissionierungs-/Einlagerungsetiketten sowie von Lieferscheinen.",
       "manualRefs": ["User Manual 6.8", "Administrator Manual 3.7–3.8"]
     },
     {
       "id": "put2light",
-      "name": "Put 2 Light Support",
+      "name": "Put2Light-Unterstützung",
       "price": 500,
       "availableFor": ["advanced"],
       "sllUnits": 1,
-      "description": "Visuelle Unterstützung beim Einlagern/Bereitstellen (Put-to-Light).",
-      "functionalDescription": "Put-to-Light-Unterstützung zur geführten Einlagerung/Zuordnung – reduziert Fehlgriffe und beschleunigt Put-Prozesse an der Access Opening / Zielposition.",
+      "description": "Put2Light für die Verteilung auf beleuchtete Zielplätze.",
+      "functionalDescription": "Diese Funktion ermöglicht die Verwendung von Put2Light-Systemen für die einfachere und schnellere Verteilung von Artikeln aus mehreren Aufträgen an beleuchtete Zielplätze.",
       "manualRefs": ["Administrator Manual 3.1.1 (Light options)", "Product feature Put 2 Light"]
     },
     {
       "id": "external_storage",
-      "name": "External Storage Locations",
+      "name": "Externe Lagerplätze",
       "price": 1000,
       "availableFor": ["advanced"],
       "sllUnits": 1,
-      "description": "Verwaltung externer Lagerplätze außerhalb des Lifts.",
-      "functionalDescription": "External Storage Locations/Groups pflegen, Bestände von/zu externen Plätzen bewegen, Import von Stock Objects und Nutzung in Replenishment-/Mobile-Prozessen.",
+      "description": "Verwaltung externer Lagerplätze für Mobile Terminals.",
+      "functionalDescription": "Diese Funktion ermöglicht die Verwaltung von externen Lagerplätzen, die für Einlagerungs- und Kommissioniervorgänge mittels Mobilterminals verwendet werden können.",
       "manualRefs": ["Administrator Manual 3.1.14–3.1.15", "User Manual 4 / 6.3"]
     },
     {
       "id": "picking_trolley",
-      "name": "Picking Trolley Support",
+      "name": "Unterstützung durch Kommissionierwagen",
       "price": 1000,
       "availableFor": ["advanced"],
       "sllUnits": 1,
-      "description": "Kommissionierwagen-Prozesse.",
-      "functionalDescription": "Picking Trolleys anlegen, Picking Demands zuweisen, Loading Units nachfüllen, Benutzer zuordnen und Trolleys finalisieren – für batch-/wagenbasierte Kommissionierung.",
+      "description": "Management und Bedienung von Kommissionierwagen.",
+      "functionalDescription": "Diese Funktion ermöglicht Management, Administration und Bedienung von Kommissionierwagen in WAMAS Lift & Store (WAMAS LogiMat).",
       "manualRefs": ["User Manual 5.5", "Administrator Manual 3.1.18"]
     }
   ],
   "clientLicenses": [
     {
       "id": "extra_opening",
-      "name": "Additional Opening Client",
+      "name": "Zusätzlicher Opening Client",
       "price": 600,
       "availableFor": ["basic", "advanced"],
       "sllUnitsPerQty": 1,
       "description": "Zusätzlicher Opening Client (über die 1 inklusive hinaus).",
-      "functionalDescription": "Weiterer Touch-Client an einer Access Opening für parallele Bedienung (Einlagerung, Kommissionierung, Inventur, Tray Operations).",
+      "functionalDescription": "Weiterer Touch-Client an einer Access Opening für parallele Bedienung (Einlagerung, Kommissionierung, Inventur, Tablaroperationen). 1 Opening-Client-Lizenz ist in der Instanz-Lizenz enthalten.",
       "manualRefs": ["User Manual Kap. 2, 6"]
     },
     {
       "id": "extra_admin",
-      "name": "Additional Admin Client",
+      "name": "Zusätzlicher Admin Client",
       "price": 1000,
       "availableFor": ["basic", "advanced"],
       "sllUnitsPerQty": 1,
       "description": "Zusätzlicher Admin Client (über die 1 inklusive hinaus).",
-      "functionalDescription": "Weiterer Desktop-Client für Stammdaten, Auftragsadministration, Monitoring, Schnittstellen und Systemkonfiguration.",
+      "functionalDescription": "Client-Lizenz für die Verwaltung der Software WAMAS Lift & Store (WAMAS LogiMat). 1 Admin-Client-Lizenz ist in der Instanz-Lizenz enthalten; hier zusätzliche parallele Admin-Clients.",
       "manualRefs": ["User Manual Kap. 3", "Administrator Manual Kap. 3"]
     },
     {
       "id": "mobile_terminal",
-      "name": "Mobile Terminal Client",
+      "name": "Mobilterminal-Client",
       "price": 600,
       "availableFor": ["advanced"],
       "sllUnitsPerQty": 1,
-      "description": "Lizenz pro Mobile Terminal Client.",
-      "functionalDescription": "Mobiler Client für Prozesse im Lager: Einlagern, Kommissionieren, Inventur, Bestandsverteilung und Infodialoge per Scanner/Touch/Keypad.",
+      "description": "Client-Lizenz für die gleichzeitige Nutzung von Mobilterminal-Clients.",
+      "functionalDescription": "Client-Lizenz für die gleichzeitige Nutzung von Mobilterminal-Clients, um externe Lagerplätze in WAMAS Lift & Store (WAMAS LogiMat) zu bedienen.",
       "manualRefs": ["User Manual Kap. 4, 6.3"]
     },
     {
       "id": "third_party_vlm",
-      "name": "Connected 3rd Party VLM Type",
+      "name": "Angeschlossener VLM-Typ von Fremdanbietern",
       "price": 1000,
       "availableFor": ["basic", "advanced"],
       "sllUnitsPerQty": 1,
-      "description": "Lizenz pro angebundenem Fremd-VLM-Typ.",
-      "functionalDescription": "Anbindung eines Vertical Lift Module-Typs eines Drittanbieters an WAMAS Lift & Store (neben SSI LOGIMAT) inkl. Geräte-/Kommunikationskonfiguration.",
+      "description": "Client-Lizenz für VLMs von Fremdanbietern.",
+      "functionalDescription": "Client-Lizenz für die Kontrolle und Integration von VLMs von Fremdanbietern wie Kardex, Hänel, Modula, Shark/HLL.",
       "manualRefs": ["Administrator Manual 3.1.1 / 3.9"]
     }
   ],
   "misc": [
     {
       "id": "test_instance",
-      "name": "Test Instance",
+      "name": "Testinstanz",
       "price": 1300,
-      "unit": "Instance",
+      "unit": "Instanz",
       "sllUnitsPerQty": 1,
-      "description": "Testinstanz (Basic oder Advanced).",
-      "functionalDescription": "Separate Instanz für Test, Schulung oder Abnahme – ohne Produktivbetrieb zu beeinträchtigen."
+      "description": "Unbegrenzt gültige Testlizenz basierend auf der bestehenden Konfiguration.",
+      "functionalDescription": "Diese Lizenz ist unbegrenzt gültig und ermöglicht die gleichen Funktionen wie die für die Produktionsumgebung gekauften. Sie dient als Testumgebung basierend auf einer bestehenden Konfiguration. Dies ist kein Verkaufsmuster — eine WAMAS-Demoversion zu Demonstrationszwecken kann beim Product Management WAMAS angefordert werden."
     },
     {
       "id": "upgrade_fee",
-      "name": "Upgrade Fee (jährlich)",
+      "name": "Upgrade-Gebühren",
       "price": 300,
       "unit": "Jahr",
       "sllUnitsPerQty": 0,
       "recurring": true,
-      "description": "Upgrade Fee pro Jahr, beginnend nach Ablauf der Warranty.",
-      "functionalDescription": "Jährliche Gebühr für Software-Upgrades nach Ende der Warranty-Periode."
+      "description": "Pro angefangenem Jahr ab Ende der Gewährleistung.",
+      "functionalDescription": "Diese Lizenzposition wird pro angefangenem Jahr ab dem Ende der Gewährleistung der Anlage berechnet. Für weitere Informationen kontaktieren Sie Product Management WAMAS."
+    },
+    {
+      "id": "wamas_driver",
+      "name": "WAMAS Driver",
+      "price": 0,
+      "unit": "Lizenz",
+      "sllUnitsPerQty": 0,
+      "selectable": false,
+      "description": "Kommunikation der Software direkt mit der SPS.",
+      "functionalDescription": "Diese Lizenz ermöglicht es der Software, direkt mit der SPS zu kommunizieren. Zum Beispiel soll Maschine A1 Tablar Nr. 101 zu Öffnung 1 anfordern. Die Driver-Software enthält weder Bestands- noch Standortinformationen und bietet auch keine Bedienerführung."
     }
   ],
   "quantityDiscounts": [
@@ -254,5 +264,5 @@
     { "minSll": 11, "maxSll": 19, "percent": 15, "label": "11–20 SLL → 15%" },
     { "minSll": 20, "maxSll": null, "percent": 25, "label": "20+ SLL → 25%" }
   ],
-  "sllDefinition": "SLL = Summe aller Lizenzeinheiten: Instance-Anzahl + gewählte Add-ons (× Instances) + Client-Lizenzen (Menge) + Test Instances. Upgrade Fee zählt nicht als SLL."
+  "sllDefinition": "SLL = Summe aller Lizenzeinheiten: Instance-Anzahl + gewählte Add-ons (× Instances) + Client-Lizenzen (Menge) + Testinstanzen. Upgrade-Gebühren zählen nicht als SLL."
 }

@@ -69,8 +69,8 @@
     },
     {
       "id": "rfid",
-      "name": "RFID",
-      "description": "Einrichtung RFID-Login / RFID-Leser. Hardware durch Kunden.",
+      "name": "RFID-Login",
+      "description": "Einrichtung RFID-Login / RFID-Leser für die Authentifizierung am Touch-Client. Hardware durch Kunden.",
       "offerBullets": ["Einrichtung RFID-Leser", "Konfiguration"]
     },
     {
@@ -87,8 +87,8 @@
     },
     {
       "id": "pickLabel",
-      "name": "Picketikette",
-      "description": "Einrichtung und Konfiguration Picketikette und Drucker. Hardware/Druckserver durch Kunden.",
+      "name": "Druckunterstützung / Picketikette",
+      "description": "Einrichtung und Konfiguration von Kommissionierungs-/Einlagerungsetiketten sowie Drucker. Hardware/Druckserver durch Kunden.",
       "offerBullets": ["Einrichtung Picketikette", "Konfiguration Drucker"]
     },
     {
@@ -100,8 +100,8 @@
     },
     {
       "id": "advancedSecurity",
-      "name": "Advanced Security",
-      "description": "Konzeption und Schulung Advanced Security.",
+      "name": "Erweiterte Sicherheit",
+      "description": "Konzeption und Schulung Erweiterte Sicherheit (strikte Zugangsregeln für Artikel/Tablare).",
       "offerBullets": ["Konzeption", "Schulung"]
     }
   ],

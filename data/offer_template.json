@@ -148,44 +148,44 @@
   "machineOptionsLead": "WAMAS Lift & Store deckt folgende Maschinenoptionen im Funktionsumfang ab:",
   "optionTexts": {
     "advanced_security": {
-      "title": "Advanced Security*",
-      "text": "Kontrollierter Zugriff auf einzelne Tablare und Artikel durch Vergabe von Benutzerrechten."
+      "title": "Erweiterte Sicherheit*",
+      "text": "Diese Funktion ermöglicht die Definition von strikten Zugangsregeln für bestimmte Artikel, sodass nur bestimmte Benutzer auf Kisten oder Tablare zugreifen können, in denen sich diese Artikel befinden."
     },
     "tray_weight_control": {
-      "title": "Tray Weight Control",
-      "text": "Visuelle Überwachung der Tablarbeladung durch Summieren der Artikelgewichte lt. Artikel-Stammdaten."
+      "title": "Kontrolle des Tablargewichts",
+      "text": "Diese Funktion ermöglicht den Zugang zu Informationen für die Berechnung von Gewichtsdaten für komplette Tablare während der Einlagerungsvorgänge."
     },
     "rfid_login": {
-      "title": "RFID Login",
-      "text": "Automatisches Einloggen am Bedienterminal mittels RFID-Karte (RFID-Kartenlesegerät nötig)."
+      "title": "RFID-Login",
+      "text": "Diese Funktion ermöglicht die leichtere Authentifizierung auf Touch-Clients mittels einer speziellen RFID-Karte, die bereits in der Anwendung registriert wurde."
     },
     "printing_support": {
-      "title": "Printing Support / Druckfunktionen",
-      "text": "Erweiterte Druckunterstützung für Etiketten und Dokumente."
+      "title": "Druckunterstützung",
+      "text": "Diese Funktion ermöglicht das Drucken von bestimmten Dokumenten für die Kommissionierungs-/Einlagerungsetiketten sowie von Lieferscheinen."
     },
     "external_storage": {
       "title": "Externe Lagerplätze",
-      "text": "Verwaltung von Lagerplätzen ausserhalb des LOGIMAT inkl. mobiler Prozesse."
+      "text": "Diese Funktion ermöglicht die Verwaltung von externen Lagerplätzen, die für Einlagerungs- und Kommissioniervorgänge mittels Mobilterminals verwendet werden können."
     },
     "picking_trolley": {
-      "title": "Picking Trolley Support",
-      "text": "Unterstützung von Kommissionierwagen-Prozessen."
+      "title": "Unterstützung durch Kommissionierwagen",
+      "text": "Diese Funktion ermöglicht Management, Administration und Bedienung von Kommissionierwagen in WAMAS Lift & Store (WAMAS LogiMat)."
     },
     "put2light": {
-      "title": "Put 2 Light Support",
-      "text": "Visuelle Unterstützung beim Einlagern/Bereitstellen."
+      "title": "Put2Light-Unterstützung",
+      "text": "Diese Funktion ermöglicht die Verwendung von Put2Light-Systemen für die einfachere und schnellere Verteilung von Artikeln aus mehreren Aufträgen an beleuchtete Zielplätze."
     },
     "velocity_management": {
       "title": "Velocity Management",
-      "text": "Geschwindigkeits- und Bewegungsparameter zur Prozessoptimierung."
+      "text": "Diese Funktion ermöglicht die Spezifikation von speziellen Bewegungsbeschränkungen für ausgewählte Artikel, die an die SPS weitergegeben werden, wenn ein benötigter Tablar einen solchen Artikel enthält."
     },
     "advanced_permission": {
-      "title": "Advanced Permission",
-      "text": "Feingranulare Rechte- und Rollensteuerung für Desktop, Mobile und Touch."
+      "title": "Erweiterte Berechtigungen",
+      "text": "Diese Funktion ermöglicht die Konfiguration der fein abgestuften Zugriffssteuerung durch die Erstellung von Profilen, die die Vorgänge einschränken können, die jeder Bediener verwenden kann."
     },
     "logilight": {
-      "title": "LOGILIGHT Control",
-      "text": "Automatische Beleuchtung der aktiven Bedienöffnung."
+      "title": "Lichtsteuerung",
+      "text": "Diese Funktion ermöglicht dem System, das Beleuchtungssystem in Abhängigkeit der aktuellen Öffnungen und vom Login-Status des Benutzers zu steuern."
     }
   },
   "hardwareOptions": [
