@@ -1009,6 +1009,23 @@
       </div>
 
       <div class="offer-sheet offer-body-sheet">
+        <table class="offer-paged">
+          <thead>
+            <tr>
+              <td>
+                <header class="offer-page-header">
+                  <div class="offer-page-header-text">
+                    <strong>SSI SCHÄFER</strong>
+                    <span>WAMAS® Lift &amp; Store · ${escapeHtml(doc.meta.offerNumber || "Angebot")}</span>
+                  </div>
+                  <img class="offer-page-header-logo" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
+                </header>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="offer-paged-body">
         <div class="offer-annex-start">
           <p class="offer-doc-label">${escapeHtml(doc.content.annexLabel || "Anhang zur Software")}</p>
           <h2>Leistungsbeschreibung WAMAS® Lift &amp; Store</h2>
@@ -1157,6 +1174,20 @@
           </div>
           <img class="offer-logo-ssi offer-logo-ssi-sm" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
         </div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>
+                <footer class="offer-page-footer">
+                  <span class="offer-page-footer-left">SSI SCHÄFER AG · ${escapeHtml(doc.meta.offerNumber || "")}</span>
+                  <span class="offer-page-footer-right offer-page-number"></span>
+                </footer>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     `;
     // Cover in den Sichtbereich holen (Titelseite steht über dem Inhalt)

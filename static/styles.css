@@ -797,6 +797,110 @@ textarea:focus {
   line-height: 1.4;
 }
 
+/* Repeating page chrome (header/footer) for multi-page body */
+.offer-paged {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.offer-paged > thead {
+  display: table-header-group;
+}
+
+.offer-paged > tfoot {
+  display: table-footer-group;
+}
+
+.offer-paged > thead > tr > td,
+.offer-paged > tbody > tr > td,
+.offer-paged > tfoot > tr > td {
+  border: 0;
+  padding: 0;
+  vertical-align: top;
+}
+
+.offer-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0 0.55rem;
+  margin: 0 0 1rem;
+  border-bottom: 3px solid var(--ssi-yellow);
+}
+
+.offer-page-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.offer-page-header-text strong {
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ssi-black);
+}
+
+.offer-page-header-text span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
+}
+
+.offer-page-header-logo {
+  width: 38mm;
+  max-width: 38mm;
+  height: auto;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.offer-page-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--ssi-line);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
+}
+
+.offer-page-footer-right::after {
+  content: "Seite";
+}
+
+.offer-paged-body {
+  orphans: 3;
+  widows: 3;
+}
+
+.offer-section > h2,
+.offer-section > h3,
+.offer-annex-start > h2,
+.offer-toc > h2,
+.offer-terms-section > h3 {
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+.offer-fn,
+.offer-figure,
+.offer-hw-grid > *,
+.offer-client,
+.offer-totals-box,
+.offer-price-card,
+.offer-terms-sub,
+.offer-signatory {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .offer-cover {
   margin: 0 0 1.25rem;
 }
@@ -1700,11 +1804,27 @@ textarea:focus {
 
 @page {
   size: A4 portrait;
-  margin: 12mm 14mm 14mm;
+  margin: 12mm 14mm 16mm;
 }
 
 @page :first {
   margin: 0;
+}
+
+/* Page numbers where the print engine supports margin boxes (e.g. Firefox) */
+@page {
+  @bottom-right {
+    content: "Seite " counter(page);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 8pt;
+    color: #5a5a5a;
+  }
+}
+
+@page :first {
+  @bottom-right {
+    content: none;
+  }
 }
 
 @media print {
@@ -1795,8 +1915,44 @@ textarea:focus {
   }
 
   .offer-body-sheet {
-    padding: 12mm 14mm 14mm !important;
+    padding: 0 !important;
     margin: 0 !important;
+  }
+
+  .offer-paged {
+    width: 100%;
+  }
+
+  .offer-paged > thead {
+    display: table-header-group;
+  }
+
+  .offer-paged > tfoot {
+    display: table-footer-group;
+  }
+
+  .offer-page-header {
+    padding: 0 0 3mm;
+    margin: 0 0 5mm;
+    border-bottom: 2.5pt solid #ffed00;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .offer-page-header-logo {
+    width: 32mm !important;
+    max-width: 32mm !important;
+  }
+
+  .offer-page-footer {
+    margin-top: 4mm;
+    padding-top: 2.5mm;
+  }
+
+  /* Hide static "Seite" label when margin-box numbering is available;
+     keep a subtle footer line either way. */
+  .offer-page-footer-right::after {
+    content: none;
   }
 
   .offer-cover-band h1 {
@@ -1805,6 +1961,13 @@ textarea:focus {
 
   .offer-section h2 {
     font-size: 12pt;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .offer-section h3 {
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   .offer-price-table,
@@ -1839,13 +2002,34 @@ textarea:focus {
     page-break-after: auto;
   }
 
+  /* Keep blocks together; allow long sections to continue cleanly */
   .offer-fn,
   .offer-figure,
   .offer-price-card,
   .offer-totals-box,
+  .offer-client,
+  .offer-terms-sub,
+  .offer-signatory,
+  .offer-hw-grid > *,
   tr {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Avoid a heading alone at the bottom of a page */
+  h2 + p,
+  h2 + div,
+  h3 + p,
+  h3 + div,
+  h3 + ul {
+    break-before: avoid-page;
+    page-break-before: avoid;
   }
 
   img {
