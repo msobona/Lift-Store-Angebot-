@@ -840,12 +840,6 @@ textarea:focus {
   print-color-adjust: exact;
 }
 
-/* Print-only running chrome (fixed; space reserved via @page margins) */
-.offer-print-running-header,
-.offer-print-running-footer {
-  display: none;
-}
-
 .offer-section > h2,
 .offer-section > h3,
 .offer-annex-start > h2,
@@ -1871,8 +1865,6 @@ textarea:focus {
     overflow: hidden !important;
     page-break-after: always;
     break-after: page;
-    position: relative;
-    z-index: 20;
   }
 
   .offer-cover-hero {
