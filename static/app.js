@@ -1142,6 +1142,7 @@
           <img class="offer-cover-bg" src="/static/assets/offer-cover-logimat.jpg?v=20260723cover" alt="" />
           <div class="offer-cover-shade" aria-hidden="true"></div>
           <img class="offer-cover-logo" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
+          <img class="offer-cover-wamas" src="/static/assets/SSI_WAMAS.png?v=20260723wamas" alt="WAMAS" />
           <div class="offer-cover-titleblock">
             <h1>${escapeHtml((doc.content.title || "Angebot WAMAS® Lift & Store").replace("Lift & Store", "Lift Store"))}</h1>
             <p class="offer-cover-date">${escapeHtml(offerDate)}</p>

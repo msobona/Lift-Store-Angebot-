@@ -965,9 +965,21 @@ textarea:focus {
   box-sizing: border-box;
 }
 
+/* WAMAS software mark — top-left brand plate (SSI stays top-right) */
+.offer-cover-wamas {
+  position: absolute;
+  left: 10mm;
+  top: 8mm;
+  width: 58mm;
+  height: auto;
+  z-index: 3;
+  display: block;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+
 .offer-cover-titleblock {
   position: absolute;
-  top: 16mm;
+  top: 42mm;
   left: 10mm;
   right: 60mm;
   z-index: 3;
@@ -2201,6 +2213,16 @@ textarea:focus {
     height: auto !important;
     background: #fff !important;
     padding: 2mm !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .offer-cover-wamas {
+    max-width: 54mm !important;
+    width: 54mm !important;
+    height: auto !important;
+    left: 10mm !important;
+    top: 8mm !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
