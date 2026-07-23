@@ -451,52 +451,28 @@
     const open = hasOpenOfferSession();
     const chip = document.getElementById("editModeChip");
     const chipText = document.getElementById("editModeChipText");
-    const banner = document.getElementById("offerSessionBanner");
-    const leaveBtn = document.getElementById("btnLeaveOffer");
+    const topBtn = document.getElementById("btnCancelEditTop");
 
-    if (chip) {
-      chip.hidden = !editing;
-      if (chipText && editing) {
-        chipText.textContent = `Bearbeitung: ${state.editingFromOfferId}`;
+    if (!chip) return;
+
+    chip.hidden = !open;
+    if (!open) return;
+
+    if (editing) {
+      if (chipText) chipText.textContent = `Bearbeitung: ${state.editingFromOfferId}`;
+      if (topBtn) {
+        topBtn.textContent = "Abbrechen";
+        topBtn.title = "Bearbeitung verwerfen und Formulare zurücksetzen";
       }
-    }
-
-    if (leaveBtn) {
-      leaveBtn.hidden = !open;
-      leaveBtn.textContent = editing ? "Bearbeitung abbrechen" : "Schliessen";
-      leaveBtn.title = editing
-        ? "Bearbeitung verwerfen und Formulare zurücksetzen"
-        : "Angebotsansicht schliessen und zum Archiv";
-    }
-
-    if (banner) {
-      if (editing) {
-        banner.hidden = false;
-        banner.innerHTML = `
-          <div>
-            Bearbeitung von <strong>${escapeHtml(state.editingFromOfferId)}</strong> —
-            „Angebot erzeugen“ speichert als nächste Version (A2, A3, …).
-          </div>
-          <div class="session-banner-actions">
-            <button type="button" class="btn danger btn-compact" data-leave-offer="cancel">
-              Bearbeitung abbrechen
-            </button>
-          </div>`;
-      } else if (state.offerDocument) {
-        const title = state.offerDocument.meta?.archiveTitle
-          || state.offerDocument.meta?.offerNumber
-          || "Angebot";
-        banner.hidden = false;
-        banner.innerHTML = `
-          <div>Geöffnet: <strong>${escapeHtml(title)}</strong></div>
-          <div class="session-banner-actions">
-            <button type="button" class="btn btn-compact" data-leave-offer="close">
-              Schliessen
-            </button>
-          </div>`;
-      } else {
-        banner.hidden = true;
-        banner.innerHTML = "";
+    } else {
+      const title = state.offerDocument?.meta?.archiveTitle
+        || state.offerDocument?.meta?.offerNumber
+        || state.savedOfferId
+        || "Angebot";
+      if (chipText) chipText.textContent = `Geöffnet: ${title}`;
+      if (topBtn) {
+        topBtn.textContent = "Schliessen";
+        topBtn.title = "Angebotsansicht schliessen und zum Archiv";
       }
     }
   }
@@ -1980,7 +1956,7 @@
       leaveOfferSession("auto");
     });
     document.getElementById("btnCancelEditTop")?.addEventListener("click", () => {
-      leaveOfferSession("cancel");
+      leaveOfferSession("auto");
     });
     document.getElementById("offerSessionBanner")?.addEventListener("click", (event) => {
       const btn = event.target.closest("[data-leave-offer]");

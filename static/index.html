@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260723leave" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260723topcancel" />
 </head>
 <body>
   <header class="topbar">
@@ -22,7 +22,7 @@
       <button type="button" class="nav-link" data-view="archive">Archiv</button>
     </nav>
     <div id="editModeChip" class="edit-mode-chip no-print" hidden>
-      <span id="editModeChipText">Bearbeitung</span>
+      <span id="editModeChipText">Angebot</span>
       <button type="button" class="btn danger btn-compact" id="btnCancelEditTop">Abbrechen</button>
     </div>
     <div class="ssi-badge">
@@ -359,7 +359,6 @@
             </label>
           </div>
           <div id="internalContributionBox" class="internal-db-box no-print" aria-live="polite"></div>
-          <div id="offerSessionBanner" class="session-banner no-print" hidden></div>
           <div class="form-actions" style="margin:0">
             <button type="button" class="btn primary" id="btnComposeOffer">Angebot erzeugen</button>
             <button type="button" class="btn" id="btnSaveOfferDoc" disabled>Speichern</button>
@@ -367,7 +366,6 @@
             <button type="button" class="btn primary" id="btnPdfOfferDoc" disabled>PDF 1:1 (aus Word)</button>
             <button type="button" class="btn" id="btnExcelOfferDoc" disabled>Excel Preisliste</button>
             <button type="button" class="btn" id="btnPrintOffer" disabled>Bildschirm-Vorschau drucken</button>
-            <button type="button" class="btn danger" id="btnLeaveOffer" hidden>Schliessen</button>
           </div>
         </div>
       </div>
@@ -399,6 +397,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260723leave"></script>
+  <script src="/static/app.js?v=20260723topcancel"></script>
 </body>
 </html>
