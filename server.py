@@ -151,7 +151,39 @@ _UMLAUT_MAP = str.maketrans(
         "ß": "ss",
     }
 )
-_REVISION_RE = re.compile(r"^(?P<slug>.+)-(?P<letter>[A-Za-z])(?P<num>\d+)$")
+_REVISION_RE_LEGACY = re.compile(r"^(?P<slug>.+)-(?P<letter>[A-Za-z])(?P<num>\d+)$")
+_REVISION_RE_INDEX = re.compile(r"^(?P<slug>.+)-(?:Index-)?(?P<letter>[A-Za-z]+)$", re.IGNORECASE)
+
+
+def ordinal_to_index_letter(n: int) -> str:
+    """1→A, 2→B, … 26→Z, 27→AA (Excel-Spaltenstil)."""
+    try:
+        n = int(n)
+    except (TypeError, ValueError):
+        n = 1
+    if n < 1:
+        n = 1
+    out: List[str] = []
+    while n > 0:
+        n, rem = divmod(n - 1, 26)
+        out.append(chr(ord("A") + rem))
+    return "".join(reversed(out))
+
+
+def index_letter_to_ordinal(letter: Any) -> int:
+    """A→1, B→2, … Z→26, AA→27."""
+    raw = re.sub(r"[^A-Za-z]", "", str(letter or "").upper())
+    if not raw:
+        return 0
+    total = 0
+    for ch in raw:
+        total = total * 26 + (ord(ch) - ord("A") + 1)
+    return total
+
+
+def format_index_label(letter: str) -> str:
+    letter = re.sub(r"[^A-Za-z]", "", str(letter or "A").upper()) or "A"
+    return f"Index {letter}"
 
 
 def slugify_project(value: Any, fallback: str = "Angebot") -> str:
@@ -178,15 +210,57 @@ def project_series_label(customer: Optional[Dict[str, Any]]) -> str:
 
 
 def parse_revision_code(offer_number: Any) -> Optional[Dict[str, Any]]:
-    """Liest {slug}-A12 aus Angebotsnummer."""
-    m = _REVISION_RE.match(str(offer_number or "").strip())
-    if not m:
+    """Liest Versionscode aus Angebotsnummer.
+
+    Neu: {slug}-A / {slug}-Index-B
+    Alt:  {slug}-A12  (Nummer = Sequenz → Index-Buchstabe)
+    """
+    raw = str(offer_number or "").strip()
+    if not raw:
         return None
-    return {
-        "slug": m.group("slug"),
-        "letter": m.group("letter").upper(),
-        "number": int(m.group("num")),
-    }
+    m_legacy = _REVISION_RE_LEGACY.match(raw)
+    if m_legacy:
+        ordinal = int(m_legacy.group("num"))
+        return {
+            "slug": m_legacy.group("slug"),
+            "letter": ordinal_to_index_letter(ordinal),
+            "ordinal": ordinal,
+            "legacy": True,
+        }
+    m_idx = _REVISION_RE_INDEX.match(raw)
+    if m_idx:
+        letter = m_idx.group("letter").upper()
+        return {
+            "slug": m_idx.group("slug"),
+            "letter": letter,
+            "ordinal": index_letter_to_ordinal(letter),
+            "legacy": False,
+        }
+    return None
+
+
+def _revision_ordinal_from_meta(meta: Dict[str, Any], offer_number: Any = None) -> int:
+    """Ermittelt Sequenz-Ordinal (1=A, 2=B, …) aus Meta oder Angebotsnummer."""
+    parsed = parse_revision_code(offer_number or meta.get("offerNumber"))
+    if parsed:
+        return int(parsed["ordinal"])
+    code = str(meta.get("revisionCode") or "").strip()
+    m_label = re.match(r"^(?:Index\s+)?([A-Za-z]+)$", code, flags=re.IGNORECASE)
+    if m_label and not re.search(r"\d", code):
+        return index_letter_to_ordinal(m_label.group(1))
+    m_leg = re.match(r"^([A-Za-z])(\d+)$", code)
+    if m_leg:
+        return int(m_leg.group(2))
+    num = meta.get("revisionNumber")
+    if num is not None:
+        try:
+            return int(num)
+        except (TypeError, ValueError):
+            pass
+    idx = meta.get("revisionIndex")
+    if isinstance(idx, str) and re.fullmatch(r"[A-Za-z]+", idx.strip()):
+        return index_letter_to_ordinal(idx.strip())
+    return 0
 
 
 def _iter_saved_offers() -> List[Dict[str, Any]]:
@@ -203,18 +277,19 @@ def allocate_project_offer_number(
     customer: Optional[Dict[str, Any]],
     *,
     based_on: Optional[str] = None,
-    revision_letter: str = "A",
+    revision_letter: str = "A",  # unused; kept for call-site compatibility
 ) -> Dict[str, Any]:
     """
-    Vergibt Angebotsnummer: {Projekt}-A1, bei Bearbeitung {Projekt}-A2, …
-    Serie = Projektname (Fallback Firma). Index-Buchstabe A + fortlaufende Nummer.
+    Vergibt Angebotsnummer: {Projekt}-A, bei Bearbeitung {Projekt}-B, …
+
+    Anzeige als «Index A», «Index B», «Index C». Alte Nummern {Projekt}-A1/-A2
+    werden für die Sequenz weitergezählt (A3 → nächster Index D).
     """
-    letter = (revision_letter or "A").upper()[:1] or "A"
+    del revision_letter  # früher fester Buchstabe A + Nummer
     label = project_series_label(customer)
     slug = slugify_project(label)
-    max_n = 0
+    max_ord = 0
 
-    # Bestehende Versionen derselben Serie (Slug oder gleicher Projektname)
     for data in _iter_saved_offers():
         if (data.get("kind") or "") != "offer_document":
             continue
@@ -231,48 +306,46 @@ def allocate_project_offer_number(
             same_series = True
         if not same_series:
             continue
-        n = meta.get("revisionNumber")
-        if n is None and parsed:
-            n = parsed["number"]
-        try:
-            max_n = max(max_n, int(n or 0))
-        except (TypeError, ValueError):
-            pass
+        max_ord = max(
+            max_ord,
+            _revision_ordinal_from_meta(meta, meta.get("offerNumber") or data.get("id")),
+        )
 
-    # Falls Vorgänger bekannt und höhere Nummer hat
     if based_on:
         base_path = offer_path(based_on)
         if base_path.exists():
             try:
                 base = json.loads(base_path.read_text(encoding="utf-8"))
                 bmeta = base.get("meta") or {}
-                bn = bmeta.get("revisionNumber")
-                if bn is None:
-                    parsed_base = parse_revision_code(bmeta.get("offerNumber") or based_on)
-                    bn = parsed_base["number"] if parsed_base else 0
-                max_n = max(max_n, int(bn or 0))
+                max_ord = max(
+                    max_ord,
+                    _revision_ordinal_from_meta(bmeta, bmeta.get("offerNumber") or based_on),
+                )
             except Exception:
                 pass
         else:
             parsed_base = parse_revision_code(based_on)
             if parsed_base and parsed_base["slug"] == slug:
-                max_n = max(max_n, parsed_base["number"])
+                max_ord = max(max_ord, int(parsed_base["ordinal"]))
 
-    next_n = max_n + 1
-    offer_number = f"{slug}-{letter}{next_n}"
-    # Kollision (Dateiname) vermeiden
+    next_ord = max_ord + 1
+    letter = ordinal_to_index_letter(next_ord)
+    index_label = format_index_label(letter)
+    offer_number = f"{slug}-{letter}"
     while offer_path(offer_number).exists():
-        next_n += 1
-        offer_number = f"{slug}-{letter}{next_n}"
+        next_ord += 1
+        letter = ordinal_to_index_letter(next_ord)
+        index_label = format_index_label(letter)
+        offer_number = f"{slug}-{letter}"
 
     return {
         "offerNumber": offer_number,
         "projectLabel": label,
         "projectSlug": slug,
         "revisionIndex": letter,
-        "revisionNumber": next_n,
-        "revisionCode": f"{letter}{next_n}",
-        "archiveTitle": f"{label} {letter}{next_n}",
+        "revisionNumber": next_ord,
+        "revisionCode": index_label,
+        "archiveTitle": f"{label} {index_label}",
     }
 
 
@@ -1814,7 +1887,17 @@ def api_list_offers():
                 revision_code = meta.get("revisionCode")
                 if not revision_code:
                     parsed = parse_revision_code(meta.get("offerNumber") or path.stem)
-                    revision_code = parsed["letter"] + str(parsed["number"]) if parsed else ""
+                    if parsed:
+                        revision_code = format_index_label(parsed["letter"])
+                    else:
+                        revision_code = ""
+                # Legacy-Anzeige A3 → Index C
+                elif re.fullmatch(r"[A-Za-z]\d+", str(revision_code).strip()):
+                    m_leg = re.match(r"^([A-Za-z])(\d+)$", str(revision_code).strip())
+                    if m_leg:
+                        revision_code = format_index_label(ordinal_to_index_letter(int(m_leg.group(2))))
+                elif re.fullmatch(r"[A-Za-z]+", str(revision_code).strip()) and not str(revision_code).lower().startswith("index"):
+                    revision_code = format_index_label(str(revision_code).strip())
                 archive_title = meta.get("archiveTitle") or (
                     f"{project_name} {revision_code}".strip()
                     if project_name or revision_code

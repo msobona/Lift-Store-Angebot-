@@ -1822,7 +1822,12 @@
         ? (o.amount || "—")
         : money(o.amount, o.currency || "CHF");
       const projectTitle = (o.projectName || "").trim()
-        || (o.kind === "offer_document" ? (o.archiveTitle || "").replace(/\s+[A-Za-z]\d+\s*$/, "").trim() : "")
+        || (o.kind === "offer_document"
+          ? (o.archiveTitle || "")
+              .replace(/\s+Index\s+[A-Za-z]+\s*$/i, "")
+              .replace(/\s+[A-Za-z]\d+\s*$/, "")
+              .trim()
+          : "")
         || o.offerNumber;
       const revBadge = o.revisionCode
         ? `<span class="archive-rev" title="Version">${escapeHtml(o.revisionCode)}</span>`
