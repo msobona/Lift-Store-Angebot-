@@ -95,7 +95,7 @@ def _money(value: Any, currency: str = "CHF") -> str:
         amount = float(value or 0)
     except (TypeError, ValueError):
         amount = 0.0
-    # Immer 2 Dezimalstellen (Verkaufspreise wurden in der Kalkulation aufgerundet)
+    # Immer 2 Dezimalstellen (Verkaufspreise in der Kalkulation auf ganze CHF aufgerundet)
     formatted = f"{amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", "'")
     return f"{currency} {formatted}"
 

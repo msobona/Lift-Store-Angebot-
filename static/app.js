@@ -27,7 +27,7 @@
   const roundSellChf = (value) => {
     const n = Number(value || 0);
     if (!Number.isFinite(n) || n <= 0) return 0;
-    return Math.ceil(n * 100 - 1e-9) / 100;
+    return Math.ceil(n - 1e-9);
   };
 
   const money = (value, currency = "CHF") => {
@@ -62,7 +62,7 @@
 
   function icEurToSellChf(eurAmount) {
     const { marginPercent, eurToChfRate } = licensePricing();
-    // Erst Kurs EUR→CHF (Einkauf CHF), dann Marge → auf 2 Stellen aufrunden
+    // Erst Kurs EUR→CHF (Einkauf CHF), dann Marge → auf ganze CHF aufrunden
     const costChf = Number(eurAmount || 0) * eurToChfRate;
     return roundSellChf(costChf * (1 + marginPercent / 100));
   }

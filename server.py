@@ -133,10 +133,10 @@ def offer_path(offer_id: str) -> Path:
 
 
 def round_sell_chf(value: Any) -> float:
-    """Verkaufspreise: immer auf 2 Dezimalstellen (Rappen) aufrunden.
+    """Verkaufspreise: immer auf ganze CHF aufrunden (z. B. 2618.89 → 2619.00).
 
     Aufrunden in der Kalkulation, damit Positionspreise und Totale im Angebot
-    mathematisch sauber und mit zwei Stellen ausgewiesen werden können.
+    als glatte Frankenbeträge (mit zwei Stellen .00) ausgewiesen werden.
     """
     try:
         x = float(value or 0)
@@ -144,8 +144,8 @@ def round_sell_chf(value: Any) -> float:
         return 0.0
     if x <= 0:
         return 0.0
-    # -1e-9 vermeidet Floating-Point-Artefakte (z. B. 10.10 * 100 = 1010.0000000001)
-    return math.ceil(x * 100.0 - 1e-9) / 100.0
+    # -1e-9 vermeidet Floating-Point-Artefakte (z. B. 10.0 als 9.999999999)
+    return float(math.ceil(x - 1e-9))
 
 
 def round_chf2(value: Any) -> float:
@@ -156,7 +156,7 @@ def round_chf2(value: Any) -> float:
         return 0.0
 
 
-# Historischer Name — Aufrufe erwarten Verkaufspreis-Rundung (aufrunden)
+# Historischer Name — Aufrufe erwarten Verkaufspreis-Rundung (aufrunden auf ganze CHF)
 round_flat_chf = round_sell_chf
 
 
@@ -559,14 +559,14 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         else (product.get("eurToChfRate") or 1)
     )
     margin_factor = 1.0 + (margin_percent / 100.0)
-    # Reihenfolge: IC EUR → Kurs → Einkauf CHF → Marge → Verkauf CHF (2 Stellen, aufgerundet)
+    # Reihenfolge: IC EUR → Kurs → Einkauf CHF → Marge → Verkauf CHF (ganze CHF, aufgerundet)
     cost_chf = round(net * eur_to_chf, 2)
     margin_amount_eur = round(net * (margin_percent / 100.0), 2)
     sell_net_eur = round(net * margin_factor, 2)
     contribution_margin_eur = margin_amount_eur
     vat_rate = float(product.get("vatRate") or 0)
 
-    # Verkaufspreise je Position: auf 2 Stellen aufrunden; Total = Stück × Menge (ebenfalls)
+    # Verkaufspreise je Position: auf ganze CHF aufrunden; Total = Stück × Menge (ebenfalls)
     for line in lines:
         ic_unit = float(line.get("unitPrice") or 0)
         ic_total = float(line.get("total") or 0)
@@ -1303,7 +1303,7 @@ class ComposeOfferRequest(BaseModel):
     # Kommerzielle Anpassung vor Angebotserzeugung (Kundenangebot)
     discountPercent: Optional[float] = Field(None, ge=0, le=100)
     discountAmountChf: Optional[float] = Field(None, ge=0)
-    # Legacy: grosse End-Abrundung (10/50/100) entfernt — Verkaufspreise auf 2 Stellen aufgerundet
+    # Legacy: grosse End-Abrundung (10/50/100) entfernt — Verkaufspreise auf ganze CHF aufgerundet
     roundTo: Optional[int] = Field(None, ge=0)
     # SSI-Ansprechpartner (Cover) und Unterschriften (letzte Seite) — getrennt
     ssiContact1Id: Optional[str] = None
@@ -1656,7 +1656,7 @@ def compose_offer(payload: ComposeOfferRequest):
             }
         )
 
-    # Projektrabatt auf Gesamttotal (Positionspreise bereits auf 2 Stellen aufgerundet)
+    # Projektrabatt auf Gesamttotal (Positionspreise bereits auf ganze CHF aufgerundet)
     adj_notes: List[str] = []
     discount_percent = float(payload.discountPercent or 0)
     discount_amount_chf = round_chf2(payload.discountAmountChf or 0)
