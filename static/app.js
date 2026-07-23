@@ -872,7 +872,7 @@
       alert(
         `Gesamtangebot geladen: ${state.editingFromOfferId}\n` +
         `Jetzt bearbeiten (Lizenz/IT), danach „Angebot erzeugen“ für eine neue Version.\n` +
-        `Abbrechen: oben rechts oder unter „Angebot“.`
+        `Abbrechen: oben rechts.`
       );
       updateSessionChrome();
       return;
@@ -1952,16 +1952,8 @@
       switchView("offer");
       window.print();
     });
-    document.getElementById("btnLeaveOffer")?.addEventListener("click", () => {
-      leaveOfferSession("auto");
-    });
     document.getElementById("btnCancelEditTop")?.addEventListener("click", () => {
       leaveOfferSession("auto");
-    });
-    document.getElementById("offerSessionBanner")?.addEventListener("click", (event) => {
-      const btn = event.target.closest("[data-leave-offer]");
-      if (!btn) return;
-      leaveOfferSession(btn.dataset.leaveOffer || "auto");
     });
   }
 

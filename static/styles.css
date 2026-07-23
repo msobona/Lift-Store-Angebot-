@@ -108,29 +108,6 @@ body {
   white-space: nowrap;
 }
 
-.session-banner {
-  margin: 0 0 0.85rem;
-  padding: 0.75rem 0.9rem;
-  background: #fff8d6;
-  border-left: 4px solid var(--ssi-yellow-deep);
-  font-size: 0.92rem;
-}
-
-.session-banner[hidden] {
-  display: none !important;
-}
-
-.session-banner strong {
-  font-weight: 700;
-}
-
-.session-banner .session-banner-actions {
-  margin-top: 0.55rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
 .nav-link {
   border: 0;
   background: transparent;
