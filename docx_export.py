@@ -221,8 +221,7 @@ def apply_options_table(
     total_price: str = "",
 ) -> bytes:
     """
-    Optionen-Tabelle dynamisch: 1 Zeile je gewählter Option (+ Totalzeile mit Preis).
-    2 Optionen → 2 Zeilen + Preis; 4 Optionen → 4 Zeilen + Preis.
+    Optionen-Tabelle: nur Verweis — kalkulierte Positionen/Preise stehen in der Zusammenfassung.
     """
     from copy import deepcopy
 
@@ -247,15 +246,12 @@ def apply_options_table(
         return docx_bytes
 
     template_tr = deepcopy(data_rows[0]._tr)
-
-    # Alle Datenzeilen entfernen (Header bleibt)
     for row in data_rows:
         tbl.remove(row._tr)
 
-    def add_row(cell_texts: List[Any], *, min_height: int = 1600, first_bold: bool = False) -> None:
+    def add_row(cell_texts: List[Any], *, min_height: int = 900, first_bold: bool = False) -> None:
         tr = deepcopy(template_tr)
         tcs = tr.findall(qn("w:tc"))
-        # Zelle 0 = Optionstext (breit), letzte Zelle = Preis
         values = list(cell_texts)
         while len(values) < len(tcs):
             values.append("")
@@ -269,22 +265,119 @@ def apply_options_table(
         _set_row_min_height(tr, min_height)
         tbl.append(tr)
 
-    if not options:
-        add_row(["Keine optionalen Softwaremodule gewählt.", "", "", ""], min_height=900)
-    else:
-        for idx, opt in enumerate(options, start=1):
-            title = (opt.get("title") or "").strip() or f"Option {idx}"
-            text = (opt.get("text") or "").strip()
-            lines = [f"{idx}. {title}"]
-            if text:
-                lines.append(text)
-            # Extra Leerzeile für Luft in der Zeile
-            lines.append("")
-            add_row([lines, "", "", ""], min_height=1700, first_bold=True)
+    note = (
+        "Die gewählten Software-Optionen und alle Preise sind ausschliesslich "
+        "unter «Leistungsumfang & Preise» / Zusammenfassung aufgeführt."
+    )
+    add_row([note, "", "", ""], min_height=900)
 
-    # Totalzeile mit Preis
-    price = (total_price or "").strip()
-    add_row([total_label, "", "", price], min_height=700, first_bold=True)
+    out = io.BytesIO()
+    doc.save(out)
+    return out.getvalue()
+
+
+def apply_zusammenfassung_table(
+    docx_bytes: bytes,
+    scope_groups: List[Dict[str, Any]],
+    *,
+    subtotal_chf: Any = None,
+    discount_chf: Any = None,
+    grand_total_chf: Any = None,
+) -> bytes:
+    """
+    Zusammenfassung dynamisch: je Leistungsposition eine Zeile, dann Bereichstotals + Gesamttotal.
+    Nutzt die stabile 4-Spalten-Struktur der Optionen-Tabelle als Zeilenvorlage.
+    """
+    from copy import deepcopy
+
+    from docx import Document
+    from docx.oxml.ns import qn
+
+    doc = Document(io.BytesIO(docx_bytes))
+    z_table = None
+    opt_table = None
+    for candidate in doc.tables:
+        if not candidate.rows:
+            continue
+        header = "".join((candidate.rows[0].cells[0].text or "").split()).lower()
+        if header.startswith("zusammenfassung"):
+            z_table = candidate
+        elif header.startswith("optionen"):
+            opt_table = candidate
+
+    if z_table is None:
+        return docx_bytes
+
+    # Zeilenvorlage: bevorzugt Optionen-Datenzeile (4 konsistente Zellen)
+    template_tr = None
+    if opt_table is not None and len(opt_table.rows) > 1:
+        template_tr = deepcopy(opt_table.rows[1]._tr)
+    elif len(z_table.rows) > 1:
+        # längste Datenzeile der Zusammenfassung
+        best = max(z_table.rows[1:], key=lambda r: len(r._tr.findall(qn("w:tc"))))
+        template_tr = deepcopy(best._tr)
+    if template_tr is None:
+        return docx_bytes
+
+    tbl = z_table._tbl
+    for row in list(z_table.rows)[1:]:
+        tbl.remove(row._tr)
+
+    def add_row(cell_texts: List[Any], *, min_height: int = 1400, first_bold: bool = False) -> None:
+        tr = deepcopy(template_tr)
+        tcs = tr.findall(qn("w:tc"))
+        values = list(cell_texts)
+        while len(values) < len(tcs):
+            values.append("")
+        for i, tc in enumerate(tcs):
+            raw = values[i]
+            if isinstance(raw, (list, tuple)):
+                lines = [str(x) for x in raw]
+            else:
+                lines = str(raw).split("\n") if raw is not None else [""]
+            _set_tc_paragraphs(tc, lines, first_bold=(first_bold and i == 0))
+        _set_row_min_height(tr, min_height)
+        tbl.append(tr)
+
+    pos = 0
+    if not scope_groups:
+        add_row(["Kein Leistungsumfang kalkuliert.", "", "", ""], min_height=800)
+    else:
+        for group in scope_groups:
+            title = (group.get("title") or "").strip()
+            if title:
+                add_row([title, "", "", ""], min_height=700, first_bold=True)
+            for item in group.get("items") or []:
+                pos += 1
+                name = (item.get("name") or "").strip() or f"Position {pos}"
+                desc = (item.get("description") or "").strip()
+                lines = [f"{pos}. {name}"]
+                if desc:
+                    lines.append(desc)
+                lines.append("")
+                add_row([lines, "", "", ""], min_height=1500, first_bold=True)
+            if group.get("total") is not None:
+                add_row(
+                    [
+                        f"Total {title}".strip(),
+                        "",
+                        "",
+                        _money(group.get("total"), group.get("currency") or "CHF"),
+                    ],
+                    min_height=700,
+                    first_bold=True,
+                )
+
+    if subtotal_chf is not None and discount_chf:
+        add_row(["Zwischentotal", "", "", _money(subtotal_chf, "CHF")], min_height=600, first_bold=True)
+        add_row(["Projektrabatt", "", "", f"− {_money(discount_chf, 'CHF')}"], min_height=600)
+
+    if grand_total_chf is not None:
+        add_row(
+            ["Total netto exkl. MwSt.", "", "", _money(grand_total_chf, "CHF")],
+            min_height=800,
+            first_bold=True,
+        )
 
     out = io.BytesIO()
     doc.save(out)
@@ -738,20 +831,25 @@ def build_offer_docx(offer: Dict[str, Any]) -> bytes:
 
     template_path = ensure_annex_template()
     context = build_template_context(offer)
-    options = list((offer.get("content") or {}).get("selectedOptions") or [])
-    # Platzhalter nur als Fallback — die Tabelle wird danach dynamisch gebaut
-    context["optionen_text"] = ""
+    # Optionen-Platzhalter: kein zweites Preistableau — Verweis auf Leistungsumfang
+    context["optionen_text"] = (
+        "Die gewählten Software-Optionen und alle Preise sind ausschliesslich "
+        "unter «Leistungsumfang & Preise» / Zusammenfassung aufgeführt."
+    )
 
     tpl = DocxTemplate(str(template_path))
-    # autoescape=True: & und ähnliche Zeichen korrekt als XML escapen
     tpl.render(context, autoescape=True)
 
     out = io.BytesIO()
     tpl.save(out)
     docx_bytes = apply_sdt_contact_fields(out.getvalue(), context)
-    return apply_options_table(
+    docx_bytes = apply_options_table(docx_bytes, [])
+    summary = offer.get("priceSummary") or {}
+    scope_groups = offer.get("scopeGroups") or (offer.get("content") or {}).get("scopeGroups") or []
+    return apply_zusammenfassung_table(
         docx_bytes,
-        options,
-        total_label="Total Softwarelizenzen (inkl. Instanz & Optionen) exkl. MwSt.",
-        total_price=str(context.get("lizenz_total_chf") or ""),
+        list(scope_groups),
+        subtotal_chf=summary.get("subtotalChf"),
+        discount_chf=summary.get("commercialDiscountChf"),
+        grand_total_chf=summary.get("grandTotalChf"),
     )

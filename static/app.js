@@ -1011,33 +1011,80 @@
       .join("");
 
     const selectedOpts = doc.content.selectedOptions || [];
+    // A1.2: nur Beschreibung, keine Preise (Preise nur unter Leistungsumfang)
     const optionsHtml = selectedOpts.length
-      ? `<table class="offer-options-table">
+      ? selectedOpts.map((opt) => `
+          <div class="offer-fn">
+            <div class="offer-fn-mark">✓</div>
+            <div>
+              <h4>${escapeHtml(opt.title || "")}</h4>
+              <p>${escapeHtml(opt.text || "")}</p>
+            </div>
+          </div>`).join("")
+      : `<p class="offer-empty-note">Keine optionalen Softwaremodule gewählt — Preise siehe Leistungsumfang.</p>`;
+
+    const scopeTableHtml = (() => {
+      if (!scopeGroups.length) {
+        return `<p class="offer-empty-note">Kein Leistungsumfang kalkuliert.</p>`;
+      }
+      let pos = 0;
+      const bodyRows = [];
+      scopeGroups.forEach((group) => {
+        bodyRows.push(`
+          <tr class="offer-scope-section">
+            <td colspan="4"><strong>${escapeHtml(group.title || "")}</strong></td>
+          </tr>`);
+        (group.items || []).forEach((item) => {
+          pos += 1;
+          bodyRows.push(`
+            <tr>
+              <td class="col-pos">${pos}</td>
+              <td class="col-name"><strong>${escapeHtml(item.name || "")}</strong></td>
+              <td class="col-desc">${escapeHtml(item.description || "")}</td>
+              <td class="col-price"></td>
+            </tr>`);
+        });
+        if (group.total != null) {
+          bodyRows.push(`
+            <tr class="offer-scope-subtotal">
+              <td colspan="3">Total ${escapeHtml(group.title || "")}</td>
+              <td class="col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
+            </tr>`);
+        }
+      });
+      if (summary.subtotalChf != null && summary.commercialDiscountChf) {
+        bodyRows.push(`
+          <tr class="offer-scope-subtotal">
+            <td colspan="3">Zwischentotal</td>
+            <td class="col-price"><strong>${money(summary.subtotalChf, "CHF")}</strong></td>
+          </tr>`);
+        bodyRows.push(`
+          <tr>
+            <td colspan="3">Projektrabatt</td>
+            <td class="col-price"><strong>− ${money(summary.commercialDiscountChf, "CHF")}</strong></td>
+          </tr>`);
+      }
+      return `
+        <table class="offer-options-table offer-scope-price-table">
           <thead>
             <tr>
               <th class="col-pos">Pos.</th>
-              <th class="col-name">Option</th>
+              <th class="col-name">Position</th>
               <th class="col-desc">Beschreibung</th>
               <th class="col-price">Preis</th>
             </tr>
           </thead>
           <tbody>
-            ${selectedOpts.map((opt, idx) => `
-              <tr>
-                <td class="col-pos">${idx + 1}</td>
-                <td class="col-name"><strong>${escapeHtml(opt.title || "")}</strong></td>
-                <td class="col-desc">${escapeHtml(opt.text || "")}</td>
-                <td class="col-price"></td>
-              </tr>`).join("")}
+            ${bodyRows.join("")}
           </tbody>
           <tfoot>
             <tr class="offer-options-total">
-              <td colspan="3">Total Softwarelizenzen (inkl. Instanz &amp; Optionen) exkl. MwSt.</td>
-              <td class="col-price"><strong>${licSum && licSum.total != null ? money(licSum.total, licSum.currency || "CHF") : "—"}</strong></td>
+              <td colspan="3">Gesamttotal exkl. MwSt.</td>
+              <td class="col-price"><strong>${grand != null ? money(grand, "CHF") : "—"}</strong></td>
             </tr>
           </tfoot>
-        </table>`
-      : `<p class="offer-empty-note">Keine optionalen Softwaremodule gewählt.</p>`;
+        </table>`;
+    })();
 
     const hardwareHtml = (doc.content.hardwareOptions || [])
       .map((opt) => `
@@ -1213,9 +1260,8 @@
         <section class="offer-section" id="sec-options">
           <h2>A1.2 Mögliche Optionen für WAMAS® Lift &amp; Store</h2>
           <p>${escapeHtml(doc.content.machineOptionsLead || "")}</p>
-          <h3>Gewählte Software-Optionen</h3>
-          <p class="offer-options-hint">Je gewählter Option eine eigene Zeile — anschliessend das Lizenz-Total.</p>
-          <div class="offer-options-wrap">${optionsHtml}</div>
+          <p class="offer-options-hint">Kurzbeschrieb der gewählten Module. Kalkulierte Positionen und Preise stehen nur unter «Leistungsumfang &amp; Preise».</p>
+          <div class="offer-fn-list">${optionsHtml}</div>
           <h3 id="sec-hardware">A1.2.1 Hardware-Optionen vom WAMAS® Lift &amp; Store</h3>
           <div class="offer-hw-grid">${hardwareHtml}</div>
         </section>
@@ -1223,17 +1269,9 @@
         <section class="offer-section offer-section-prices" id="sec-commercial">
           <h2>1. Leistungsumfang &amp; Preise</h2>
           <p class="offer-lead-line">${escapeHtml(cfgBits || "")}</p>
-          <p>Auflistung der Leistungen ohne Einzelpreise. Ausgewiesen werden die Bereichstotals und das Gesamttotal.</p>
-          ${scopeHtml || "<p class=\"offer-empty-note\">Kein Leistungsumfang kalkuliert.</p>"}
-          <div class="offer-totals-box">
-            ${licSum ? `<div><span>Softwarelizenzen</span><strong>${money(licSum.total, licSum.currency || "CHF")}</strong></div>` : ""}
-            ${itSum ? `<div><span>IT-Aufwand inkl. Reise</span><strong>${money(itSum.total, itSum.currency || "CHF")}</strong></div>` : ""}
-            ${summary.subtotalChf != null && summary.commercialDiscountChf ? `<div><span>Zwischentotal</span><strong>${money(summary.subtotalChf, "CHF")}</strong></div>` : ""}
-            ${summary.commercialDiscountChf ? `<div><span>Projektrabatt</span><strong>− ${money(summary.commercialDiscountChf, "CHF")}</strong></div>` : ""}
-            ${grand != null ? `<div class="offer-totals-grand"><span>Gesamttotal exkl. MwSt</span><strong>${money(grand, "CHF")}</strong></div>` : ""}
-          </div>
+          <p>Je Position eine Zeile; ausgewiesen werden die Bereichstotals und das Gesamttotal (ohne Einzelpreise je Zeile).</p>
+          <div class="offer-options-wrap">${scopeTableHtml}</div>
           <p class="offer-note">${escapeHtml(customerNote)}</p>
-          ${priceCards}
         </section>
 
         <section class="offer-section" id="sec-clients">

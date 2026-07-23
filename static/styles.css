@@ -1532,6 +1532,18 @@ textarea:focus {
   font-size: 1.05rem;
 }
 
+.offer-options-table tr.offer-scope-section td {
+  background: #fffdf0;
+  border-bottom: 2px solid var(--ssi-yellow);
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.offer-options-table tr.offer-scope-subtotal td {
+  background: #f7f7f7;
+  font-weight: 600;
+}
+
 .offer-empty-note {
   font-style: italic;
   color: var(--ssi-muted);
