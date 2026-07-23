@@ -1288,7 +1288,7 @@
         <section class="offer-section" id="sec-requirements">
           <h2>A3. ${escapeHtml(req.title || "Anforderungen")}</h2>
           <p>${escapeHtml(req.note || "")}</p>
-          <div class="offer-req-grid">
+          <div class="offer-req-grid${req.showMobile ? " has-mobile" : ""}">
             <div>
               <h3>Server</h3>
               <ul>${listItems(req.server)}</ul>
@@ -1301,6 +1301,11 @@
               <h3>Touch Client / IPC</h3>
               <ul>${listItems(req.touch)}</ul>
             </div>
+            ${req.showMobile ? `
+            <div>
+              <h3>Mobile Terminal</h3>
+              <ul>${listItems(req.mobile)}</ul>
+            </div>` : ""}
           </div>
           ${req.networkHighlight ? `<p class="offer-note"><strong>Netzwerk:</strong> ${escapeHtml(req.networkHighlight)}</p>` : ""}
         </section>

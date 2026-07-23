@@ -203,6 +203,7 @@
   "architecture": {
     "title": "Standard-Systemarchitektur",
     "text": "Der WAMAS Lift & Store Server (A) ist im Kundennetzwerk integriert und verwaltet alle Daten zentral. Der WAMAS Lift & Store (C) und dessen Komponenten werden über ein internes Netzwerk verwaltet und sind mittels Firewall (B) mit dem Kundennetzwerk verbunden. Der auf dem IPC installierte Touch Client (D) und die Maschinensteuerung (E) ermöglichen die Lagerverwaltung. Für Stammdaten, Einstellungen und Auswertungen wird der Admin Client (F) auf einem Kundenrechner installiert.",
+    "textMobileExtra": " Bei Externen Lagerplätzen wird zusätzlich der Mobile Terminal Client für Scanner-/Handheld-Prozesse an externen Lagerorten eingesetzt.",
     "legend": [
       "(A) WAMAS Lift & Store Server",
       "(B) Firewall",
@@ -211,6 +212,7 @@
       "(E) Maschinensteuerung",
       "(F) Admin Client"
     ],
+    "legendMobile": "(G) Mobile Terminal (bei Externen Lagerplätzen)",
     "image": "/static/assets/annex/architecture.png?v=20260722arch"
   },
   "requirements": {
@@ -235,7 +237,13 @@
       "Windows 10 IoT / Windows 7 Embedded Standard",
       "Kundenseitiger Touch-PC möglich gemäss Desktop-Mindestanforderungen"
     ],
-    "networkHighlight": "Empfohlen: Server ↔ Touch Client / Admin Client 100 Mbit/s – 1 ms; Server ↔ DBMS / WCS 1 Gbit/s – <1 ms."
+    "mobile": [
+      "Industrie-Handheld / Scanner mit Touch (kundenseitig)",
+      "WLAN-Anbindung gemäss Netzwerkempfehlung",
+      "WAMAS Lift & Store Mobile Client für Externe Lagerplätze"
+    ],
+    "networkHighlight": "Empfohlen: Server ↔ Touch Client / Admin Client 100 Mbit/s – 1 ms; Server ↔ DBMS / WCS 1 Gbit/s – <1 ms.",
+    "networkHighlightMobile": "Empfohlen: Server ↔ Touch Client / Admin Client / Mobile Terminal 100 Mbit/s – 1 ms; Server ↔ DBMS / WCS 1 Gbit/s – <1 ms."
   },
   "acceptance": "Abnahme und Übergabe der Software an die Endkundschaft haben direkt nach Abschluss der Softwareschulung durch die Landesgesellschaft zu erfolgen. Dazu wird sowohl von den involvierten SSI-SCHÄFER-IT-Consultants als auch von den Verantwortlichen der Endkundschaft das Abnahmeprotokoll ausgefüllt und unterschrieben. Offene Punkte werden nach Absprache, maximal aber innerhalb von 6 Monaten ab Abnahmeprotokoll-Datum erledigt. Dieser Zeitraum wird für nicht von SSI SCHÄFER verursachte Verspätungen nicht verlängert.",
   "responsibilities": [

@@ -1327,7 +1327,7 @@ def compose_offer(payload: ComposeOfferRequest):
         if it_opts.get(it_id) and lic_id in option_texts and lic_id not in selected_addons:
             options.append({"id": lic_id, **option_texts[lic_id]})
 
-    # A1.3: Mobile Terminal nur bei Option «Externe Lagerplätze»
+    # A1.3 / A2 / A3: Mobile Terminal nur bei Option «Externe Lagerplätze»
     has_external_storage = (
         "external_storage" in selected_addons
         or bool(it_opts.get("externalStorage"))
@@ -1340,6 +1340,39 @@ def compose_offer(payload: ComposeOfferRequest):
     }
     if has_external_storage:
         clients_content["mobile"] = template["clients"].get("mobile", "")
+
+    arch_tpl = template.get("architecture") or {}
+    architecture_content: Dict[str, Any] = {
+        "title": arch_tpl.get("title", "Standard-Systemarchitektur"),
+        "text": arch_tpl.get("text", ""),
+        "legend": list(arch_tpl.get("legend") or []),
+        "image": arch_tpl.get("image", ""),
+        "showMobile": has_external_storage,
+    }
+    if has_external_storage:
+        extra = (arch_tpl.get("textMobileExtra") or "").strip()
+        if extra:
+            base = (architecture_content["text"] or "").rstrip()
+            architecture_content["text"] = f"{base} {extra}".strip()
+        legend_mobile = (arch_tpl.get("legendMobile") or "").strip()
+        if legend_mobile:
+            architecture_content["legend"] = list(architecture_content["legend"]) + [legend_mobile]
+
+    req_tpl = template.get("requirements") or {}
+    requirements_content: Dict[str, Any] = {
+        "title": req_tpl.get("title", "Anforderungen (Auszug)"),
+        "note": req_tpl.get("note", ""),
+        "server": list(req_tpl.get("server") or []),
+        "desktop": list(req_tpl.get("desktop") or []),
+        "touch": list(req_tpl.get("touch") or []),
+        "networkHighlight": req_tpl.get("networkHighlight", ""),
+        "showMobile": has_external_storage,
+    }
+    if has_external_storage:
+        requirements_content["mobile"] = list(req_tpl.get("mobile") or [])
+        mobile_net = (req_tpl.get("networkHighlightMobile") or "").strip()
+        if mobile_net:
+            requirements_content["networkHighlight"] = mobile_net
 
     commercial: List[Dict[str, Any]] = []
     pos = 0
@@ -1672,8 +1705,8 @@ def compose_offer(payload: ComposeOfferRequest):
             "selectedOptions": options,
             "hardwareOptions": template.get("hardwareOptions", []),
             "clients": clients_content,
-            "architecture": template.get("architecture", {}),
-            "requirements": template.get("requirements", {}),
+            "architecture": architecture_content,
+            "requirements": requirements_content,
             "acceptance": template.get("acceptance", ""),
             "responsibilities": template["responsibilities"],
             "documentsLead": template.get("documentsLead", ""),

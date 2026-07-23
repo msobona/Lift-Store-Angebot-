@@ -1687,6 +1687,10 @@ textarea:focus {
   margin: 0.75rem 0;
 }
 
+.offer-req-grid.has-mobile {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .offer-req-grid > div {
   border: 1px solid var(--ssi-line);
   padding: 0.7rem 0.8rem;
@@ -2154,6 +2158,10 @@ textarea:focus {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 0.55rem !important;
+  }
+
+  .offer-req-grid.has-mobile {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 
   .offer-hw-grid {
