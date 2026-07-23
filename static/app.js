@@ -543,8 +543,11 @@
       document.getElementById("btnPdfOfferDoc").disabled = !state.savedOfferId;
       switchView("offer");
       if (notify || previousId) {
-        const rev = previousId ? `\n(Neu erzeugt aus ${previousId})` : "";
-        alert(`Gespeichert: ${doc.meta.offerNumber}${rev}`);
+        const title = doc.meta.archiveTitle || doc.meta.offerNumber;
+        const rev = previousId
+          ? `\nVersion ${doc.meta.revisionCode || ""} (aus ${previousId})`
+          : (doc.meta.revisionCode ? `\nVersion ${doc.meta.revisionCode}` : "");
+        alert(`Gespeichert: ${title}${rev}`);
       }
     } catch (err) {
       alert(err.message);
@@ -983,7 +986,7 @@
             <div><span>Fax:</span><strong></strong></div>
             <div><span>E-Mail:</span><strong>${escapeHtml(c.email || "")}</strong></div>
             ${c.projectName ? `<div><span>Projekt:</span><strong>${escapeHtml(c.projectName)}</strong></div>` : ""}
-            <div><span>Angebotsnr.:</span><strong>${escapeHtml(doc.meta.offerNumber || "")}</strong></div>
+            <div><span>Angebotsnr.:</span><strong>${escapeHtml(doc.meta.archiveTitle || doc.meta.offerNumber || "")}</strong></div>
           </aside>
           <div class="offer-cover-contacts">
             <table>
@@ -1649,11 +1652,22 @@
       const amountText = o.kind === "offer_document"
         ? (o.amount || "—")
         : money(o.amount, o.currency || "CHF");
+      const projectTitle = (o.projectName || "").trim()
+        || (o.kind === "offer_document" ? (o.archiveTitle || "").replace(/\s+[A-Za-z]\d+\s*$/, "").trim() : "")
+        || o.offerNumber;
+      const revBadge = o.revisionCode
+        ? `<span class="archive-rev" title="Version">${escapeHtml(o.revisionCode)}</span>`
+        : "";
+      const subtitleParts = [];
+      if (o.company) subtitleParts.push(o.company);
+      if (o.offerNumber && o.offerNumber !== projectTitle) subtitleParts.push(o.offerNumber);
+      if (o.summary) subtitleParts.push(o.summary);
+      if (o.revisionOf) subtitleParts.push(`aus ${o.revisionOf}`);
       return `
       <article class="archive-item" data-id="${escapeHtml(o.id)}" data-kind="${escapeHtml(o.kind || "")}">
         <div>
-          <h3>${escapeHtml(o.offerNumber)} <span class="muted">(${kindLabel})</span></h3>
-          <p>${escapeHtml(o.company || "—")} · ${escapeHtml(o.summary || "")}</p>
+          <h3>${escapeHtml(projectTitle)} ${revBadge}<span class="muted">(${kindLabel})</span></h3>
+          <p>${escapeHtml(subtitleParts.join(" · ") || "—")}</p>
           <p>${escapeHtml(String(amountText))} · ${escapeHtml(o.createdAt || "")}</p>
         </div>
         <div class="archive-actions">

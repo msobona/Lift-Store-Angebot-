@@ -140,6 +140,142 @@ def round_flat_chf(value: Any) -> float:
         return 0.0
 
 
+_UMLAUT_MAP = str.maketrans(
+    {
+        "ä": "ae",
+        "ö": "oe",
+        "ü": "ue",
+        "Ä": "Ae",
+        "Ö": "Oe",
+        "Ü": "Ue",
+        "ß": "ss",
+    }
+)
+_REVISION_RE = re.compile(r"^(?P<slug>.+)-(?P<letter>[A-Za-z])(?P<num>\d+)$")
+
+
+def slugify_project(value: Any, fallback: str = "Angebot") -> str:
+    """Dateiname-/Angebotsnr.-tauglicher Projekt-Slug."""
+    text = str(value or "").strip().translate(_UMLAUT_MAP)
+    text = re.sub(r"[^\w\s\-]+", "", text, flags=re.UNICODE)
+    text = re.sub(r"[\s_]+", "-", text).strip("-")
+    text = re.sub(r"-{2,}", "-", text)
+    if not text:
+        text = str(fallback or "Angebot").strip().translate(_UMLAUT_MAP)
+        text = re.sub(r"[^\w\s\-]+", "", text, flags=re.UNICODE)
+        text = re.sub(r"[\s_]+", "-", text).strip("-") or "Angebot"
+    # Nur Zeichen, die offer_path durchlässt
+    text = "".join(c for c in text if c.isalnum() or c in "-_")
+    return text[:80] or "Angebot"
+
+
+def project_series_label(customer: Optional[Dict[str, Any]]) -> str:
+    """Anzeigename der Versionsserie: Projekt, sonst Firma."""
+    cust = customer or {}
+    project = str(cust.get("projectName") or "").strip()
+    company = str(cust.get("company") or "").strip()
+    return project or company or "Angebot"
+
+
+def parse_revision_code(offer_number: Any) -> Optional[Dict[str, Any]]:
+    """Liest {slug}-A12 aus Angebotsnummer."""
+    m = _REVISION_RE.match(str(offer_number or "").strip())
+    if not m:
+        return None
+    return {
+        "slug": m.group("slug"),
+        "letter": m.group("letter").upper(),
+        "number": int(m.group("num")),
+    }
+
+
+def _iter_saved_offers() -> List[Dict[str, Any]]:
+    items: List[Dict[str, Any]] = []
+    for path in OFFERS_DIR.glob("*.json"):
+        try:
+            items.append(json.loads(path.read_text(encoding="utf-8")))
+        except Exception:
+            continue
+    return items
+
+
+def allocate_project_offer_number(
+    customer: Optional[Dict[str, Any]],
+    *,
+    based_on: Optional[str] = None,
+    revision_letter: str = "A",
+) -> Dict[str, Any]:
+    """
+    Vergibt Angebotsnummer: {Projekt}-A1, bei Bearbeitung {Projekt}-A2, …
+    Serie = Projektname (Fallback Firma). Index-Buchstabe A + fortlaufende Nummer.
+    """
+    letter = (revision_letter or "A").upper()[:1] or "A"
+    label = project_series_label(customer)
+    slug = slugify_project(label)
+    max_n = 0
+
+    # Bestehende Versionen derselben Serie (Slug oder gleicher Projektname)
+    for data in _iter_saved_offers():
+        if (data.get("kind") or "") != "offer_document":
+            continue
+        meta = data.get("meta") or {}
+        cust = data.get("customer") or {}
+        existing_slug = (meta.get("projectSlug") or "").strip()
+        parsed = parse_revision_code(meta.get("offerNumber") or data.get("id"))
+        same_series = False
+        if existing_slug and existing_slug == slug:
+            same_series = True
+        elif parsed and parsed["slug"] == slug:
+            same_series = True
+        elif project_series_label(cust) == label:
+            same_series = True
+        if not same_series:
+            continue
+        n = meta.get("revisionNumber")
+        if n is None and parsed:
+            n = parsed["number"]
+        try:
+            max_n = max(max_n, int(n or 0))
+        except (TypeError, ValueError):
+            pass
+
+    # Falls Vorgänger bekannt und höhere Nummer hat
+    if based_on:
+        base_path = offer_path(based_on)
+        if base_path.exists():
+            try:
+                base = json.loads(base_path.read_text(encoding="utf-8"))
+                bmeta = base.get("meta") or {}
+                bn = bmeta.get("revisionNumber")
+                if bn is None:
+                    parsed_base = parse_revision_code(bmeta.get("offerNumber") or based_on)
+                    bn = parsed_base["number"] if parsed_base else 0
+                max_n = max(max_n, int(bn or 0))
+            except Exception:
+                pass
+        else:
+            parsed_base = parse_revision_code(based_on)
+            if parsed_base and parsed_base["slug"] == slug:
+                max_n = max(max_n, parsed_base["number"])
+
+    next_n = max_n + 1
+    offer_number = f"{slug}-{letter}{next_n}"
+    # Kollision (Dateiname) vermeiden
+    while offer_path(offer_number).exists():
+        next_n += 1
+        offer_number = f"{slug}-{letter}{next_n}"
+
+    return {
+        "offerNumber": offer_number,
+        "projectLabel": label,
+        "projectSlug": slug,
+        "revisionIndex": letter,
+        "revisionNumber": next_n,
+        "revisionCode": f"{letter}{next_n}",
+        "archiveTitle": f"{label} {letter}{next_n}",
+    }
+
+
 # ---------------------------------------------------------------------------
 # License calculator (IC)
 # ---------------------------------------------------------------------------
@@ -1461,10 +1597,21 @@ def compose_offer(payload: ComposeOfferRequest):
         else template.get("introStandalone")
     ) or ""
     intro_variant = intro_variant_tpl.replace("{count}", str(max(1, instance_count)))
+    versioning = allocate_project_offer_number(
+        customer,
+        based_on=payload.basedOnOfferNumber,
+        revision_letter="A",
+    )
     doc = {
         "kind": "offer_document",
         "meta": {
-            "offerNumber": f"ANG-{created.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
+            "offerNumber": versioning["offerNumber"],
+            "archiveTitle": versioning["archiveTitle"],
+            "projectLabel": versioning["projectLabel"],
+            "projectSlug": versioning["projectSlug"],
+            "revisionIndex": versioning["revisionIndex"],
+            "revisionNumber": versioning["revisionNumber"],
+            "revisionCode": versioning["revisionCode"],
             "createdAt": created.isoformat(timespec="seconds"),
             "validUntil": (created + timedelta(days=validity_days)).strftime("%d.%m.%Y"),
             "validityDays": validity_days,
@@ -1614,27 +1761,47 @@ def api_list_offers():
                     if grand is not None
                     else (" + ".join(amount_parts) if amount_parts else None)
                 )
+                meta = data.get("meta") or {}
+                cust = data.get("customer") or {}
+                project_name = cust.get("projectName") or meta.get("projectLabel") or ""
+                revision_code = meta.get("revisionCode")
+                if not revision_code:
+                    parsed = parse_revision_code(meta.get("offerNumber") or path.stem)
+                    revision_code = parsed["letter"] + str(parsed["number"]) if parsed else ""
+                archive_title = meta.get("archiveTitle") or (
+                    f"{project_name} {revision_code}".strip()
+                    if project_name or revision_code
+                    else meta.get("offerNumber", path.stem)
+                )
                 items.append(
                     {
                         "id": data.get("id") or path.stem,
                         "kind": kind,
-                        "offerNumber": data.get("meta", {}).get("offerNumber", path.stem),
-                        "company": data.get("customer", {}).get("company", ""),
-                        "projectName": data.get("customer", {}).get("projectName", ""),
+                        "offerNumber": meta.get("offerNumber", path.stem),
+                        "archiveTitle": archive_title,
+                        "revisionCode": revision_code or None,
+                        "revisionIndex": meta.get("revisionIndex"),
+                        "revisionNumber": meta.get("revisionNumber"),
+                        "company": cust.get("company", ""),
+                        "projectName": project_name,
                         "summary": summary or "Gesamtangebot",
                         "amount": amount_display,
                         "currency": "",
-                        "createdAt": data.get("meta", {}).get("createdAt"),
+                        "createdAt": meta.get("createdAt"),
+                        "revisionOf": meta.get("revisionOf"),
                     }
                 )
             else:
+                cust = data.get("customer") or {}
                 items.append(
                     {
                         "id": data.get("id") or path.stem,
                         "kind": kind,
                         "offerNumber": data.get("meta", {}).get("offerNumber", path.stem),
-                        "company": data.get("customer", {}).get("company", ""),
-                        "projectName": data.get("customer", {}).get("projectName", ""),
+                        "archiveTitle": None,
+                        "revisionCode": None,
+                        "company": cust.get("company", ""),
+                        "projectName": cust.get("projectName", ""),
                         "summary": summary,
                         "amount": (
                             totals.get("sellNetChf")

@@ -310,7 +310,7 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         ]
     )
 
-    angebotsnummer = meta.get("offerNumber", "")
+    angebotsnummer = meta.get("archiveTitle") or meta.get("offerNumber", "")
     datum = meta.get("documentDate", "")
     gueltig_bis = meta.get("validUntil", "")
     revision_von = (

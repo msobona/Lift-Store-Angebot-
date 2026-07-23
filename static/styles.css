@@ -697,6 +697,18 @@ textarea:focus {
 }
 .archive-item h3 { margin: 0 0 0.2rem; font-size: 1rem; }
 .archive-item p { margin: 0; color: var(--ssi-muted); font-size: 0.86rem; }
+.archive-rev {
+  display: inline-block;
+  margin: 0 0.35rem 0 0.15rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ssi-navy, #003366);
+  background: color-mix(in srgb, var(--ssi-navy, #003366) 12%, transparent);
+  border-radius: 0.25rem;
+  vertical-align: 0.05em;
+}
 .archive-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .empty-state { color: var(--ssi-muted); padding: 1rem 0; }
 
