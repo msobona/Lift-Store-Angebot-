@@ -1259,7 +1259,7 @@
 
         <section class="offer-section" id="sec-clients">
           <h2>A1.3 Bedienoberfläche Bediener und Admin Client</h2>
-          <div class="offer-client-grid">
+          <div class="offer-client-grid${doc.content.clients?.showMobile ? " has-mobile" : ""}">
             <div class="offer-client">
               <h4>Touch Client</h4>
               <p>${escapeHtml(doc.content.clients.touch)}</p>
@@ -1268,10 +1268,11 @@
               <h4>Admin Client</h4>
               <p>${escapeHtml(doc.content.clients.admin)}</p>
             </div>
+            ${doc.content.clients?.showMobile ? `
             <div class="offer-client">
               <h4>Mobile Terminal</h4>
-              <p>${escapeHtml(doc.content.clients.mobile)}</p>
-            </div>
+              <p>${escapeHtml(doc.content.clients.mobile || "")}</p>
+            </div>` : ""}
           </div>
         </section>
 

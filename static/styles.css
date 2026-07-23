@@ -1642,9 +1642,13 @@ textarea:focus {
 
 .offer-client-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
   margin-top: 0.55rem;
+}
+
+.offer-client-grid.has-mobile {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .offer-client {
@@ -2136,7 +2140,16 @@ textarea:focus {
   }
 
   /* Side-by-side layouts must survive print (A4 viewport is < 960px) */
-  .offer-client-grid,
+  .offer-client-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.55rem !important;
+  }
+
+  .offer-client-grid.has-mobile {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
   .offer-req-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;

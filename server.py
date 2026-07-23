@@ -1327,6 +1327,20 @@ def compose_offer(payload: ComposeOfferRequest):
         if it_opts.get(it_id) and lic_id in option_texts and lic_id not in selected_addons:
             options.append({"id": lic_id, **option_texts[lic_id]})
 
+    # A1.3: Mobile Terminal nur bei Option «Externe Lagerplätze»
+    has_external_storage = (
+        "external_storage" in selected_addons
+        or bool(it_opts.get("externalStorage"))
+        or any(o.get("id") == "external_storage" for o in options)
+    )
+    clients_content: Dict[str, Any] = {
+        "touch": template["clients"]["touch"],
+        "admin": template["clients"]["admin"],
+        "showMobile": has_external_storage,
+    }
+    if has_external_storage:
+        clients_content["mobile"] = template["clients"].get("mobile", "")
+
     commercial: List[Dict[str, Any]] = []
     pos = 0
 
@@ -1657,7 +1671,7 @@ def compose_offer(payload: ComposeOfferRequest):
             "machineOptionsLead": template.get("machineOptionsLead", ""),
             "selectedOptions": options,
             "hardwareOptions": template.get("hardwareOptions", []),
-            "clients": template["clients"],
+            "clients": clients_content,
             "architecture": template.get("architecture", {}),
             "requirements": template.get("requirements", {}),
             "acceptance": template.get("acceptance", ""),
