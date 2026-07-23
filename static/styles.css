@@ -1534,10 +1534,46 @@ textarea:focus {
   line-height: 1.45;
 }
 
+.offer-options-table .col-content {
+  width: 100%;
+  line-height: 1.5;
+  font-size: 0.98rem;
+}
+
+.offer-options-table .col-content strong {
+  display: block;
+  font-size: 1.02rem;
+  margin-bottom: 0.35rem;
+}
+
+.offer-options-table .offer-scope-desc {
+  margin: 0;
+  color: #333;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.offer-options-table .col-total-label {
+  width: auto;
+}
+
 .offer-options-table .col-price {
-  width: 7.5rem;
+  width: 9.5rem;
   text-align: right;
   white-space: nowrap;
+  vertical-align: middle;
+}
+
+.offer-options-table tr.offer-scope-content td {
+  padding-top: 1.15rem;
+  padding-bottom: 1.15rem;
+}
+
+.offer-options-table tr.offer-scope-subtotal td,
+.offer-options-table tr.offer-options-total td {
+  padding-top: 0.95rem;
+  padding-bottom: 0.95rem;
+  vertical-align: middle;
 }
 
 .offer-options-table tfoot td {

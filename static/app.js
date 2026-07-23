@@ -1004,18 +1004,19 @@
         groups.forEach((group) => {
           (group.items || []).forEach((item) => {
             pos += 1;
+            const desc = String(item.description || "").trim();
             bodyRows.push(`
-              <tr>
-                <td class="col-pos">${pos}</td>
-                <td class="col-name"><strong>${escapeHtml(item.name || "")}</strong></td>
-                <td class="col-desc">${escapeHtml(item.description || "")}</td>
-                <td class="col-price"></td>
+              <tr class="offer-scope-content">
+                <td colspan="2" class="col-content">
+                  <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
+                  ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
+                </td>
               </tr>`);
           });
           if (group.total != null) {
             bodyRows.push(`
               <tr class="offer-scope-subtotal">
-                <td colspan="3">${escapeHtml(totalLabel)}</td>
+                <td class="col-total-label">${escapeHtml(totalLabel)}</td>
                 <td class="col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
               </tr>`);
           }
@@ -1024,13 +1025,7 @@
           <table class="offer-options-table offer-scope-price-table">
             <thead>
               <tr>
-                <th colspan="4" class="offer-summary-banner">${escapeHtml(headerTitle)}</th>
-              </tr>
-              <tr>
-                <th class="col-pos">Pos.</th>
-                <th class="col-name">Position</th>
-                <th class="col-desc">Beschreibung</th>
-                <th class="col-price">Preis</th>
+                <th colspan="2" class="offer-summary-banner">${escapeHtml(headerTitle)}</th>
               </tr>
             </thead>
             <tbody>${bodyRows.join("")}</tbody>
@@ -1046,17 +1041,17 @@
       if (summary.subtotalChf != null && summary.commercialDiscountChf) {
         footer += `
           <tr class="offer-scope-subtotal">
-            <td colspan="3">Zwischentotal</td>
+            <td class="col-total-label">Zwischentotal</td>
             <td class="col-price"><strong>${money(summary.subtotalChf, "CHF")}</strong></td>
           </tr>
-          <tr>
-            <td colspan="3">Projektrabatt</td>
+          <tr class="offer-scope-subtotal">
+            <td class="col-total-label">Projektrabatt</td>
             <td class="col-price"><strong>− ${money(summary.commercialDiscountChf, "CHF")}</strong></td>
           </tr>`;
       }
       footer += `
         <tr class="offer-options-total">
-          <td colspan="3">Total netto exkl. MwSt.</td>
+          <td class="col-total-label">Total netto exkl. MwSt.</td>
           <td class="col-price"><strong>${grand != null ? money(grand, "CHF") : "—"}</strong></td>
         </tr>`;
 
@@ -1064,7 +1059,7 @@
         <table class="offer-options-table offer-scope-price-table offer-grand-total-table">
           <thead>
             <tr>
-              <th colspan="4" class="offer-summary-banner">Gesamttotal</th>
+              <th colspan="2" class="offer-summary-banner">Gesamttotal</th>
             </tr>
           </thead>
           <tbody>${footer}</tbody>

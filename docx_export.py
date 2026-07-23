@@ -153,7 +153,14 @@ def _render_optionen_text(options: List[Dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
-def _set_tc_paragraphs(tc, lines: List[str], *, first_bold: bool = False) -> None:
+def _set_tc_paragraphs(
+    tc,
+    lines: List[str],
+    *,
+    first_bold: bool = False,
+    align_right: bool = False,
+    font_size_half_points: int = 22,
+) -> None:
     """Ersetzt den Zellinhalt durch Absätze (eine Zeile = ein Absatz)."""
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
@@ -174,6 +181,10 @@ def _set_tc_paragraphs(tc, lines: List[str], *, first_bold: bool = False) -> Non
         spacing.set(qn("w:line"), "300")
         spacing.set(qn("w:lineRule"), "auto")
         pPr.append(spacing)
+        if align_right:
+            jc = OxmlElement("w:jc")
+            jc.set(qn("w:val"), "right")
+            pPr.append(jc)
         p.append(pPr)
         r = OxmlElement("w:r")
         rPr = OxmlElement("w:rPr")
@@ -181,10 +192,10 @@ def _set_tc_paragraphs(tc, lines: List[str], *, first_bold: bool = False) -> Non
             rPr.append(OxmlElement("w:b"))
             rPr.append(OxmlElement("w:bCs"))
         sz = OxmlElement("w:sz")
-        sz.set(qn("w:val"), "20")
+        sz.set(qn("w:val"), str(int(font_size_half_points)))
         rPr.append(sz)
         szCs = OxmlElement("w:szCs")
-        szCs.set(qn("w:val"), "20")
+        szCs.set(qn("w:val"), str(int(font_size_half_points)))
         rPr.append(szCs)
         r.append(rPr)
         t = OxmlElement("w:t")
@@ -357,6 +368,52 @@ def apply_zusammenfassung_table(
                 lic.append(group)
         return {"license": lic, "it": it}
 
+    def _grid_col_count(table) -> int:
+        grid = table._tbl.tblGrid
+        if grid is not None:
+            cols = grid.findall(qn("w:gridCol"))
+            if cols:
+                return len(cols)
+        # Fallback aus Header-gridSpan / Zellen
+        tcs = table.rows[0]._tr.findall(qn("w:tc")) if table.rows else []
+        span = 0
+        for tc in tcs:
+            tcPr = tc.find(qn("w:tcPr"))
+            gs = tcPr.find(qn("w:gridSpan")) if tcPr is not None else None
+            span += int(gs.get(qn("w:val"))) if gs is not None else 1
+        return max(span, 2)
+
+    def _set_grid_span(tc, span: int, width_dxa: Optional[int] = None) -> None:
+        tcPr = tc.find(qn("w:tcPr"))
+        if tcPr is None:
+            tcPr = OxmlElement("w:tcPr")
+            tc.insert(0, tcPr)
+        for old in tcPr.findall(qn("w:gridSpan")):
+            tcPr.remove(old)
+        if span > 1:
+            gs = OxmlElement("w:gridSpan")
+            gs.set(qn("w:val"), str(int(span)))
+            tcPr.append(gs)
+        if width_dxa is not None:
+            for old in tcPr.findall(qn("w:tcW")):
+                tcPr.remove(old)
+            tcW = OxmlElement("w:tcW")
+            tcW.set(qn("w:w"), str(int(width_dxa)))
+            tcW.set(qn("w:type"), "dxa")
+            tcPr.append(tcW)
+
+    def _table_width_dxa(table) -> int:
+        grid = table._tbl.tblGrid
+        if grid is None:
+            return 9000
+        total = 0
+        for col in grid.findall(qn("w:gridCol")):
+            try:
+                total += int(col.get(qn("w:w")) or 0)
+            except (TypeError, ValueError):
+                pass
+        return total or 9000
+
     def clear_data_rows(table) -> None:
         tbl = table._tbl
         for row in list(table.rows)[1:]:
@@ -366,27 +423,66 @@ def apply_zusammenfassung_table(
         tcs = table.rows[0]._tr.findall(qn("w:tc"))
         if not tcs:
             return
-        # Erste Zelle des Merge-Headers
-        _set_tc_text_simple(tcs[0], title, bold=True, fill="FFED00")
+        # Gelber Kopf als eine volle Spalte über die gesamte Tabellenbreite
+        keep = tcs[0]
+        for tc in tcs[1:]:
+            table.rows[0]._tr.remove(tc)
+        _set_grid_span(keep, _grid_col_count(table), width_dxa=_table_width_dxa(table))
+        _set_tc_text_simple(keep, title, bold=True, fill="FFED00")
 
-    def add_row(table, cell_texts: List[Any], *, min_height: int = 1400, first_bold: bool = False) -> None:
+    def add_content_row(table, lines: List[str], *, min_height: int = 1500, first_bold: bool = True) -> None:
+        """Eine volle Textzeile (1 Spalte über die ganze Tabellenbreite)."""
         tr = deepcopy(template_tr)
         tcs = tr.findall(qn("w:tc"))
-        values = list(cell_texts)
-        while len(values) < len(tcs):
-            values.append("")
-        for i, tc in enumerate(tcs):
-            raw = values[i]
-            if isinstance(raw, (list, tuple)):
-                lines = [str(x) for x in raw]
-            else:
-                lines = str(raw).split("\n") if raw is not None else [""]
-            # Alle Zellen der Totalzeile fett, wenn first_bold und letzte Spalte Preis
-            _set_tc_paragraphs(
-                tc,
-                lines,
-                first_bold=(first_bold and (i == 0 or i == len(tcs) - 1)),
-            )
+        if not tcs:
+            return
+        keep = tcs[0]
+        for tc in tcs[1:]:
+            tr.remove(tc)
+        cols = _grid_col_count(table)
+        _set_grid_span(keep, cols, width_dxa=_table_width_dxa(table))
+        _set_tc_paragraphs(keep, lines, first_bold=first_bold)
+        _set_row_min_height(tr, min_height)
+        table._tbl.append(tr)
+
+    def add_total_row(
+        table,
+        label: str,
+        price: str,
+        *,
+        min_height: int = 750,
+    ) -> None:
+        """Totalzeile: 2 Spalten — Text | Preis."""
+        tr = deepcopy(template_tr)
+        tcs = tr.findall(qn("w:tc"))
+        if len(tcs) < 2:
+            # Mindestens 2 Zellen sicherstellen
+            while len(tr.findall(qn("w:tc"))) < 2:
+                tr.append(deepcopy(tcs[0] if tcs else template_tr.findall(qn("w:tc"))[0]))
+            tcs = tr.findall(qn("w:tc"))
+        # Nur erste und letzte Zelle behalten
+        keep_label = tcs[0]
+        keep_price = tcs[-1]
+        for tc in tcs[1:-1]:
+            tr.remove(tc)
+        # Nach Entfernen der Mittelzellen Reihenfolge prüfen
+        tcs = tr.findall(qn("w:tc"))
+        if len(tcs) == 1:
+            # template hatte 1 Zelle — Preis-Zelle klonen
+            keep_price = deepcopy(keep_label)
+            tr.append(keep_price)
+            tcs = tr.findall(qn("w:tc"))
+        keep_label, keep_price = tcs[0], tcs[-1]
+
+        cols = _grid_col_count(table)
+        total_w = _table_width_dxa(table)
+        price_w = max(1800, total_w // 4)
+        label_w = max(2000, total_w - price_w)
+        label_span = max(1, cols - 1)
+        _set_grid_span(keep_label, label_span, width_dxa=label_w)
+        _set_grid_span(keep_price, 1, width_dxa=price_w)
+        _set_tc_paragraphs(keep_label, [label], first_bold=True)
+        _set_tc_paragraphs(keep_price, [price], first_bold=True, align_right=True)
         _set_row_min_height(tr, min_height)
         table._tbl.append(tr)
 
@@ -395,7 +491,7 @@ def apply_zusammenfassung_table(
         clear_data_rows(table)
         pos = 0
         if not groups:
-            add_row(table, ["Keine Positionen in diesem Bereich.", "", "", ""], min_height=800)
+            add_content_row(table, ["Keine Positionen in diesem Bereich."], min_height=800, first_bold=False)
             return
         for group in groups:
             for item in group.get("items") or []:
@@ -406,21 +502,20 @@ def apply_zusammenfassung_table(
                 if desc:
                     lines.append(desc)
                 lines.append("")
-                add_row(table, [lines, "", "", ""], min_height=1500, first_bold=True)
+                add_content_row(table, lines, min_height=1500, first_bold=True)
             total = group.get("total")
-            title = (group.get("title") or "").strip()
             if total_prefix == "A":
                 label = "Total A · Softwarelizenzen"
             elif total_prefix == "B":
                 label = "Total B · IT-Aufwand"
             else:
-                label = f"Total {title}".strip() or "Total"
+                label = f"Total {(group.get('title') or '').strip()}".strip() or "Total"
             if total is not None:
-                add_row(
+                add_total_row(
                     table,
-                    [label, "", "", _money(total, group.get("currency") or "CHF")],
+                    label,
+                    _money(total, group.get("currency") or "CHF"),
                     min_height=750,
-                    first_bold=True,
                 )
 
     buckets = classify_groups()
@@ -468,18 +563,18 @@ def apply_zusammenfassung_table(
     clear_data_rows(grand_table)
 
     if subtotal_chf is not None and discount_chf:
-        add_row(grand_table, ["Zwischentotal", "", "", _money(subtotal_chf, "CHF")], min_height=600, first_bold=True)
-        add_row(grand_table, ["Projektrabatt", "", "", f"− {_money(discount_chf, 'CHF')}"], min_height=600)
+        add_total_row(grand_table, "Zwischentotal", _money(subtotal_chf, "CHF"), min_height=600)
+        add_total_row(grand_table, "Projektrabatt", f"− {_money(discount_chf, 'CHF')}", min_height=600)
 
     if grand_total_chf is not None:
-        add_row(
+        add_total_row(
             grand_table,
-            ["Total netto exkl. MwSt.", "", "", _money(grand_total_chf, "CHF")],
+            "Total netto exkl. MwSt.",
+            _money(grand_total_chf, "CHF"),
             min_height=900,
-            first_bold=True,
         )
     else:
-        add_row(grand_table, ["Total netto exkl. MwSt.", "", "", "—"], min_height=900, first_bold=True)
+        add_total_row(grand_table, "Total netto exkl. MwSt.", "—", min_height=900)
 
     out = io.BytesIO()
     doc.save(out)
