@@ -37,7 +37,8 @@ Adresse aus dem Formular wird automatisch in `strasse` + `plz_ort` zerlegt, wenn
 `{{erstellt_von}}`, Bedingungen/Signaturen wie bisher.
 
 Cover-Dropdowns (Innendienst/Aussendienst) und Unterschriften-Dropdowns in der Logimat-Vorlage
-werden beim Word-Export mit den zwei gewählten SSI-Kontakten befüllt.
+werden beim Word-Export befüllt. Im Kalkulator (Tab Angebot) sind Cover-Ansprechpartner und
+Unterschriften **getrennt** wählbar (jeweils zwei Personen).
 
 ## Tipps
 
