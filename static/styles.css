@@ -1800,7 +1800,7 @@ textarea:focus {
 
 .offer-footer img { height: 26px; }
 
-/* Kaufmännische Bedingungen */
+/* Kaufmännische Bedingungen — immer auf neuer Seite (Druck) */
 .offer-terms {
   margin-top: 2rem;
 }
@@ -2194,11 +2194,18 @@ textarea:focus {
   .offer-toc,
   .offer-section-prices,
   .offer-annex-start,
-  .offer-section {
+  .offer-section:not(.offer-terms) {
     break-before: auto;
     break-after: auto;
     page-break-before: auto;
     page-break-after: auto;
+  }
+
+  /* Kaufmännische Bedingungen immer auf neuer Seite */
+  .offer-section.offer-terms,
+  #sec-terms {
+    break-before: page !important;
+    page-break-before: always !important;
   }
 
   .offer-fn,
