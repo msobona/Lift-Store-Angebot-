@@ -330,12 +330,15 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
 
     addr = _split_swiss_address(customer.get("address", ""))
     prepared_by = (meta.get("preparedBy") or "").strip()
-    # Cover + Unterschriften: nur die gewählte Person — kein Mix mit Default-Signaturen
+    # Cover: SSI-Ansprechpartner | Letzte Seite: Unterschriften (getrennt)
     ssi_contacts = offer.get("ssiContacts") or meta.get("ssiContacts") or []
     ssi1 = dict(ssi_contacts[0] if len(ssi_contacts) > 0 else {})
     ssi2 = dict(ssi_contacts[1] if len(ssi_contacts) > 1 else {})
+    # Signaturen aus Bedingungen / Angebot — nicht dieselben wie Cover
+    offer_sigs = offer.get("signatories") or []
+    raw_sig1 = dict(offer_sigs[0] if len(offer_sigs) > 0 else sig1 or {})
+    raw_sig2 = dict(offer_sigs[1] if len(offer_sigs) > 1 else sig2 or {})
 
-    # Nachschlagen anhand ID/Name, falls Angebot ohne vollständige Stammdaten kommt
     def _enrich(contact: Dict[str, Any], *, name_hint: str = "") -> Dict[str, Any]:
         if contact.get("email") and contact.get("name"):
             return contact
@@ -351,6 +354,8 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
 
     ssi1 = _enrich(ssi1, name_hint=prepared_by)
     ssi2 = _enrich(ssi2)
+    raw_sig1 = _enrich(raw_sig1)
+    raw_sig2 = _enrich(raw_sig2)
 
     def _fields(primary: Dict[str, Any], *, name_fallback: str = "") -> Dict[str, str]:
         """Nur Felder der gewählten Person — kein Fallback auf andere Signatur."""
@@ -367,15 +372,21 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
 
     f1 = _fields(ssi1, name_fallback=prepared_by)
     f2 = _fields(ssi2)
-    # Nur wenn gar keine SSI-Auswahl vorhanden: klassische Signaturen aus Bedingungen
+    sf1 = _fields(raw_sig1)
+    sf2 = _fields(raw_sig2)
+    # Cover-Fallback nur wenn leer
     if not f1["name"] and not f2["name"]:
         f1 = _fields(sig1)
         f2 = _fields(sig2)
+    # Signatur-Fallback auf Cover nur wenn Signaturen komplett leer
+    if not sf1["name"] and not sf2["name"]:
+        sf1, sf2 = f1, f2
 
     ssi1_name, ssi1_pos, ssi1_mail, ssi1_tel = f1["name"], f1["title"], f1["email"], f1["phone"]
     ssi2_name, ssi2_pos, ssi2_mail, ssi2_tel = f2["name"], f2["title"], f2["email"], f2["phone"]
-    sig1_name, sig1_title, sig1_role = f1["name"], f1["title"], f1["role"]
-    sig2_name, sig2_title, sig2_role = f2["name"], f2["title"], f2["role"]
+    sig1_name, sig1_title, sig1_role = sf1["name"], sf1["title"], sf1["role"]
+    sig2_name, sig2_title, sig2_role = sf2["name"], sf2["title"], sf2["role"]
+    sig1_mail, sig2_mail = sf1["email"], sf2["email"]
     if prepared_by == "" and ssi1_name:
         prepared_by = ssi1_name
 
@@ -384,7 +395,6 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         return "\n".join(parts)
 
     def _sig_details(title: str, role: str, email: str = "") -> str:
-        # Funktion + E-Mail mitziehen (Titel kann später nachgepflegt werden)
         parts = [p for p in [title, role, email] if p]
         return "\n".join(parts)
 
@@ -452,11 +462,11 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "signatur_1_name": sig1_name,
         "signatur_1_titel": sig1_title,
         "signatur_1_rolle": sig1_role,
-        "signatur_1_details": _sig_details(sig1_title, sig1_role, ssi1_mail),
+        "signatur_1_details": _sig_details(sig1_title, sig1_role, sig1_mail),
         "signatur_2_name": sig2_name,
         "signatur_2_titel": sig2_title,
         "signatur_2_rolle": sig2_role,
-        "signatur_2_details": _sig_details(sig2_title, sig2_role, ssi2_mail),
+        "signatur_2_details": _sig_details(sig2_title, sig2_role, sig2_mail),
     }
 
 

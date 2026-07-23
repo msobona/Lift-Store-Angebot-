@@ -101,6 +101,8 @@
     return {
       contact1Id: d.contact1Id || "",
       contact2Id: d.contact2Id || "",
+      signatory1Id: d.signatory1Id || d.contact1Id || "",
+      signatory2Id: d.signatory2Id || d.contact2Id || "",
     };
   }
 
@@ -137,50 +139,45 @@
     meta.textContent = formatSsiContactMeta(ssiContactById(selectEl.value));
   }
 
-  function currentSsiContactIds() {
-    const offer1 = document.getElementById("offerSsiContact1")?.value || "";
-    const offer2 = document.getElementById("offerSsiContact2")?.value || "";
-    if (offer1 || offer2) return { ssiContact1Id: offer1, ssiContact2Id: offer2 };
-    const d = ssiContactDefaults();
-    return { ssiContact1Id: d.contact1Id || "", ssiContact2Id: d.contact2Id || "" };
+  function setSelectValue(selectId, value) {
+    const el = document.getElementById(selectId);
+    if (!el) return;
+    fillSsiContactSelect(el, value);
+    el.value = value || "";
+    updateSsiContactMeta(el);
   }
 
-  function setSsiContactIds(id1, id2) {
-    const defaults = ssiContactDefaults();
-    const c1 = id1 || defaults.contact1Id || "";
-    const c2 = id2 || defaults.contact2Id || "";
-    const s1 = document.getElementById("offerSsiContact1");
-    const s2 = document.getElementById("offerSsiContact2");
-    if (s1) {
-      fillSsiContactSelect(s1, c1);
-      s1.value = c1;
-      updateSsiContactMeta(s1);
-    }
-    if (s2) {
-      fillSsiContactSelect(s2, c2);
-      s2.value = c2;
-      updateSsiContactMeta(s2);
-    }
+  function currentSsiContactIds() {
+    const d = ssiContactDefaults();
+    return {
+      ssiContact1Id: document.getElementById("offerSsiContact1")?.value || d.contact1Id || "",
+      ssiContact2Id: document.getElementById("offerSsiContact2")?.value || d.contact2Id || "",
+      signatory1Id: document.getElementById("offerSignatory1")?.value || d.signatory1Id || "",
+      signatory2Id: document.getElementById("offerSignatory2")?.value || d.signatory2Id || "",
+    };
+  }
+
+  function setSsiContactIds(id1, id2, sig1, sig2) {
+    const d = ssiContactDefaults();
+    setSelectValue("offerSsiContact1", id1 || d.contact1Id || "");
+    setSelectValue("offerSsiContact2", id2 || d.contact2Id || "");
+    setSelectValue("offerSignatory1", sig1 || d.signatory1Id || "");
+    setSelectValue("offerSignatory2", sig2 || d.signatory2Id || "");
   }
 
   function initSsiContactPickers() {
-    const s1 = document.getElementById("offerSsiContact1");
-    const s2 = document.getElementById("offerSsiContact2");
-    fillSsiContactSelect(s1, "");
-    fillSsiContactSelect(s2, "");
-    const defaults = ssiContactDefaults();
-    setSsiContactIds(defaults.contact1Id, defaults.contact2Id);
+    ["offerSsiContact1", "offerSsiContact2", "offerSignatory1", "offerSignatory2"].forEach((id) => {
+      fillSsiContactSelect(document.getElementById(id), "");
+    });
+    const d = ssiContactDefaults();
+    setSsiContactIds(d.contact1Id, d.contact2Id, d.signatory1Id, d.signatory2Id);
 
-    const onChange = (event) => {
+    document.addEventListener("change", (event) => {
       const el = event.target;
       if (!(el instanceof HTMLSelectElement)) return;
-      if (!el.id.startsWith("offerSsiContact")) return;
-      setSsiContactIds(
-        document.getElementById("offerSsiContact1")?.value || "",
-        document.getElementById("offerSsiContact2")?.value || "",
-      );
-    };
-    document.addEventListener("change", onChange);
+      if (!/^(offerSsiContact|offerSignatory)/.test(el.id || "")) return;
+      updateSsiContactMeta(el);
+    });
   }
 
   function initAddressAutocomplete(input) {
@@ -574,6 +571,8 @@
     setSsiContactIds(
       cfg.ssiContact1Id || offer.meta?.ssiContact1Id || ssiDefaults.contact1Id,
       cfg.ssiContact2Id || offer.meta?.ssiContact2Id || ssiDefaults.contact2Id,
+      cfg.signatory1Id || offer.meta?.signatory1Id || ssiDefaults.signatory1Id,
+      cfg.signatory2Id || offer.meta?.signatory2Id || ssiDefaults.signatory2Id,
     );
     setFormValue(licenseForm, "instanceCount", cfg.instanceCount ?? 1);
     setFormValue(licenseForm, "extraOpeningClients", cfg.extraOpeningClients ?? 0);
@@ -623,6 +622,8 @@
     setSsiContactIds(
       cfg.ssiContact1Id || defaults.contact1Id,
       cfg.ssiContact2Id || defaults.contact2Id,
+      cfg.signatory1Id || defaults.signatory1Id,
+      cfg.signatory2Id || defaults.signatory2Id,
     );
     setFormValue(itForm, "realizationPeriod", cfg.realizationPeriod || "");
     setFormValue(itForm, "deviceCount", cfg.deviceCount ?? 1);
@@ -727,6 +728,14 @@
         offer.meta?.ssiContact2Id
           || lic?.configuration?.ssiContact2Id
           || itOffer?.configuration?.ssiContact2Id
+          || "",
+        offer.meta?.signatory1Id
+          || lic?.configuration?.signatory1Id
+          || itOffer?.configuration?.signatory1Id
+          || "",
+        offer.meta?.signatory2Id
+          || lic?.configuration?.signatory2Id
+          || itOffer?.configuration?.signatory2Id
           || "",
       );
       await Promise.all([recalcLicense(), recalcIt()]);
@@ -1206,6 +1215,7 @@
           <strong>${escapeHtml(s.name)}</strong>
           <span>${escapeHtml(s.title || "")}</span>
           ${s.role ? `<span>${escapeHtml(s.role)}</span>` : ""}
+          ${s.email ? `<span>${escapeHtml(s.email)}</span>` : ""}
         </div>`)
       .join("");
 
@@ -1273,6 +1283,8 @@
           preparedBy: ssiContactById(ids.ssiContact1Id)?.name || "",
           ssiContact1Id: ids.ssiContact1Id,
           ssiContact2Id: ids.ssiContact2Id,
+          signatory1Id: ids.signatory1Id,
+          signatory2Id: ids.signatory2Id,
         };
       })(),
       licenseMarginPercent: pricing.marginPercent,
@@ -1535,6 +1547,8 @@
           preparedBy: ssiContactById(ids.ssiContact1Id)?.name || "",
           ssiContact1Id: ids.ssiContact1Id,
           ssiContact2Id: ids.ssiContact2Id,
+          signatory1Id: ids.signatory1Id,
+          signatory2Id: ids.signatory2Id,
         };
       })(),
       itMarginPercent: (() => {

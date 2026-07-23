@@ -100,17 +100,31 @@ def resolve_ssi_contacts(
     *,
     use_defaults: bool = True,
     prepared_by: Optional[str] = None,
+    default_key1: str = "contact1Id",
+    default_key2: str = "contact2Id",
 ) -> List[Dict[str, Any]]:
     data = load_ssi_contacts()
     defaults = (data.get("meta") or {}).get("defaults") or {}
-    id1 = (contact1_id or "").strip() or (defaults.get("contact1Id") if use_defaults else "")
-    id2 = (contact2_id or "").strip() or (defaults.get("contact2Id") if use_defaults else "")
+    id1 = (contact1_id or "").strip() or (defaults.get(default_key1) if use_defaults else "")
+    id2 = (contact2_id or "").strip() or (defaults.get(default_key2) if use_defaults else "")
     c1 = _ssi_contact_by_id(id1) or {}
     c2 = _ssi_contact_by_id(id2) or {}
     # Falls nur „Erstellt von“/Name ohne ID: Stammdaten (E-Mail/Funktion) nachziehen
     if not c1.get("id") and prepared_by:
         c1 = _ssi_contact_by_name(prepared_by) or c1
     return [c1, c2]
+
+
+def _person_snapshot(row: Optional[Dict[str, Any]]) -> Dict[str, str]:
+    row = row or {}
+    return {
+        "name": row.get("name") or "",
+        "title": row.get("title") or "",
+        "role": row.get("role") or "",
+        "email": row.get("email") or "",
+        "phone": row.get("phone") or "",
+        "id": row.get("id") or "",
+    }
 
 
 def offer_path(offer_id: str) -> Path:
@@ -147,6 +161,8 @@ class OfferRequest(BaseModel):
     preparedBy: str = ""
     ssiContact1Id: str = ""
     ssiContact2Id: str = ""
+    signatory1Id: str = ""
+    signatory2Id: str = ""
     # Optional: überschreibt Katalog-Defaults (interne Kalkulation)
     licenseMarginPercent: Optional[float] = Field(None, ge=0, le=500)
     eurToChfRate: Optional[float] = Field(None, gt=0, le=10)
@@ -375,6 +391,8 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "preparedBy": prepared_by,
             "ssiContact1Id": payload.ssiContact1Id or (ssi_contacts[0].get("id") or ""),
             "ssiContact2Id": payload.ssiContact2Id or (ssi_contacts[1].get("id") or ""),
+            "signatory1Id": payload.signatory1Id,
+            "signatory2Id": payload.signatory2Id,
             "ssiContacts": ssi_contacts,
             "sllCount": sll,
             "discountPercent": discount["percent"],
@@ -443,6 +461,8 @@ class ItOfferRequest(BaseModel):
     preparedBy: str = ""
     ssiContact1Id: str = ""
     ssiContact2Id: str = ""
+    signatory1Id: str = ""
+    signatory2Id: str = ""
     # Nur Marge (CHF intern, kein Währungskurs)
     itMarginPercent: Optional[float] = Field(None, ge=0, le=500)
 
@@ -760,6 +780,8 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             ),
             "ssiContact1Id": payload.ssiContact1Id,
             "ssiContact2Id": payload.ssiContact2Id,
+            "signatory1Id": payload.signatory1Id,
+            "signatory2Id": payload.signatory2Id,
             "ssiContacts": resolve_ssi_contacts(payload.ssiContact1Id, payload.ssiContact2Id),
         },
         "lines": lines,
@@ -1031,9 +1053,11 @@ class ComposeOfferRequest(BaseModel):
     discountPercent: Optional[float] = Field(None, ge=0, le=100)
     discountAmountChf: Optional[float] = Field(None, ge=0)
     roundTo: Optional[int] = Field(None, ge=0)  # 0/None = aus, sonst z.B. 10/50/100
-    # SSI-Ansprechpartner (Cover + Unterschriften) — überschreibt gespeicherte Auswahl
+    # SSI-Ansprechpartner (Cover) und Unterschriften (letzte Seite) — getrennt
     ssiContact1Id: Optional[str] = None
     ssiContact2Id: Optional[str] = None
+    signatory1Id: Optional[str] = None
+    signatory2Id: Optional[str] = None
 
 
 def _load_saved_offer(offer_id: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -1069,6 +1093,18 @@ def compose_offer(payload: ComposeOfferRequest):
         or it_cfg.get("ssiContact2Id")
         or ""
     )
+    signatory1_id = (
+        payload.signatory1Id
+        or lic_cfg.get("signatory1Id")
+        or it_cfg.get("signatory1Id")
+        or ""
+    )
+    signatory2_id = (
+        payload.signatory2Id
+        or lic_cfg.get("signatory2Id")
+        or it_cfg.get("signatory2Id")
+        or ""
+    )
     prepared_hint = (
         lic_cfg.get("preparedBy")
         or it_cfg.get("preparedBy")
@@ -1078,6 +1114,15 @@ def compose_offer(payload: ComposeOfferRequest):
         contact1_id,
         contact2_id,
         prepared_by=prepared_hint,
+        default_key1="contact1Id",
+        default_key2="contact2Id",
+    )
+    signatories_people = resolve_ssi_contacts(
+        signatory1_id,
+        signatory2_id,
+        use_defaults=True,
+        default_key1="signatory1Id",
+        default_key2="signatory2Id",
     )
     prepared_by = (
         prepared_hint
@@ -1389,25 +1434,11 @@ def compose_offer(payload: ComposeOfferRequest):
 
     created = datetime.now()
     commercial_terms = load_commercial_terms()
-    # Unterschriften aus SSI-Auswahl (statt fixer Florian/Andrej)
+    # Unterschriften getrennt von Cover-Ansprechpartnern
     closing = dict(commercial_terms.get("closing") or {})
     closing["signatories"] = [
-        {
-            "name": (ssi_contacts[0] or {}).get("name") or "",
-            "title": (ssi_contacts[0] or {}).get("title") or "",
-            "role": (ssi_contacts[0] or {}).get("role") or "",
-            "email": (ssi_contacts[0] or {}).get("email") or "",
-            "phone": (ssi_contacts[0] or {}).get("phone") or "",
-            "id": (ssi_contacts[0] or {}).get("id") or "",
-        },
-        {
-            "name": (ssi_contacts[1] or {}).get("name") or "",
-            "title": (ssi_contacts[1] or {}).get("title") or "",
-            "role": (ssi_contacts[1] or {}).get("role") or "",
-            "email": (ssi_contacts[1] or {}).get("email") or "",
-            "phone": (ssi_contacts[1] or {}).get("phone") or "",
-            "id": (ssi_contacts[1] or {}).get("id") or "",
-        },
+        _person_snapshot(signatories_people[0] if signatories_people else {}),
+        _person_snapshot(signatories_people[1] if len(signatories_people) > 1 else {}),
     ]
     commercial_terms = {**commercial_terms, "closing": closing}
     validity_days = int(commercial_terms.get("validityDays") or 14)
@@ -1427,10 +1458,13 @@ def compose_offer(payload: ComposeOfferRequest):
             "preparedBy": prepared_by,
             "ssiContact1Id": (ssi_contacts[0] or {}).get("id") or contact1_id,
             "ssiContact2Id": (ssi_contacts[1] or {}).get("id") or contact2_id,
+            "signatory1Id": (signatories_people[0] or {}).get("id") or signatory1_id,
+            "signatory2Id": (signatories_people[1] or {}).get("id") or signatory2_id,
             "templateSource": "Anhang zu Software_v2.6.X.docx · Kaufmännische Bedingungen CH 09.2022",
             "documentDate": created.strftime("%d.%m.%Y"),
         },
         "ssiContacts": ssi_contacts,
+        "signatories": signatories_people,
         "customer": customer,
         "branding": {
             "product": "WAMAS Lift & Store",
