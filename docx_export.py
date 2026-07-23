@@ -140,16 +140,17 @@ def _render_optionen_text(options: List[Dict[str, Any]]) -> str:
     if not options:
         return "Keine optionalen Softwaremodule gewählt."
     blocks = []
-    for opt in options:
+    for idx, opt in enumerate(options, start=1):
         title = (opt.get("title") or "").strip()
         text = (opt.get("text") or "").strip()
         if title and text:
-            blocks.append(f"• {title}\n{text}")
+            blocks.append(f"{idx}. {title}\n{text}")
         elif title:
-            blocks.append(f"• {title}")
+            blocks.append(f"{idx}. {title}")
         elif text:
-            blocks.append(f"• {text}")
-    return _join_paragraphs(blocks)
+            blocks.append(f"{idx}. {text}")
+    # Extra Leerzeilen zwischen Optionen → mehr Platz in der Word-Tabelle
+    return "\n\n\n".join(blocks)
 
 
 def _render_section_body(sec: Dict[str, Any], blocks: List[str], heading_prefix: str = "") -> None:

@@ -1012,14 +1012,31 @@
 
     const selectedOpts = doc.content.selectedOptions || [];
     const optionsHtml = selectedOpts.length
-      ? selectedOpts.map((opt) => `
-          <div class="offer-fn">
-            <div class="offer-fn-mark">✓</div>
-            <div>
-              <h4>${escapeHtml(opt.title)}</h4>
-              <p>${escapeHtml(opt.text)}</p>
-            </div>
-          </div>`).join("")
+      ? `<table class="offer-options-table">
+          <thead>
+            <tr>
+              <th class="col-pos">Pos.</th>
+              <th class="col-name">Option</th>
+              <th class="col-desc">Beschreibung</th>
+              <th class="col-price">Preis</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${selectedOpts.map((opt, idx) => `
+              <tr>
+                <td class="col-pos">${idx + 1}</td>
+                <td class="col-name"><strong>${escapeHtml(opt.title || "")}</strong></td>
+                <td class="col-desc">${escapeHtml(opt.text || "")}</td>
+                <td class="col-price"></td>
+              </tr>`).join("")}
+          </tbody>
+          <tfoot>
+            <tr class="offer-options-total">
+              <td colspan="3">Total Softwarelizenzen (inkl. Instanz &amp; Optionen) exkl. MwSt.</td>
+              <td class="col-price"><strong>${licSum && licSum.total != null ? money(licSum.total, licSum.currency || "CHF") : "—"}</strong></td>
+            </tr>
+          </tfoot>
+        </table>`
       : `<p class="offer-empty-note">Keine optionalen Softwaremodule gewählt.</p>`;
 
     const hardwareHtml = (doc.content.hardwareOptions || [])
@@ -1093,7 +1110,7 @@
     root.innerHTML = `
       <div class="offer-sheet offer-cover-page">
         <header class="offer-cover-hero">
-          <img class="offer-cover-bg" src="/static/assets/offer-cover-logimat.jpg?v=20260722" alt="" />
+          <img class="offer-cover-bg" src="/static/assets/offer-cover-logimat.jpg?v=20260723cover" alt="" />
           <div class="offer-cover-shade" aria-hidden="true"></div>
           <img class="offer-cover-logo" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
           <div class="offer-cover-titleblock">
@@ -1197,7 +1214,8 @@
           <h2>A1.2 Mögliche Optionen für WAMAS® Lift &amp; Store</h2>
           <p>${escapeHtml(doc.content.machineOptionsLead || "")}</p>
           <h3>Gewählte Software-Optionen</h3>
-          <div class="offer-fn-list">${optionsHtml}</div>
+          <p class="offer-options-hint">Je gewählter Option eine eigene Zeile — anschliessend das Lizenz-Total.</p>
+          <div class="offer-options-wrap">${optionsHtml}</div>
           <h3 id="sec-hardware">A1.2.1 Hardware-Optionen vom WAMAS® Lift &amp; Store</h3>
           <div class="offer-hw-grid">${hardwareHtml}</div>
         </section>

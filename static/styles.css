@@ -923,7 +923,7 @@ textarea:focus {
   min-height: 297mm;
   height: 297mm;
   background-color: #cfcfcf;
-  background-image: url("/static/assets/offer-cover-logimat.jpg?v=20260722");
+  background-image: url("/static/assets/offer-cover-logimat.jpg?v=20260723cover");
   background-size: cover;
   background-position: 58% 35%;
   background-repeat: no-repeat;
@@ -1459,6 +1459,78 @@ textarea:focus {
 }
 
 .offer-fn p { margin: 0; }
+
+.offer-options-hint {
+  margin: 0 0 0.75rem;
+  color: var(--ssi-muted);
+  font-size: 0.9rem;
+}
+
+.offer-options-wrap {
+  margin: 0 0 1.5rem;
+}
+
+.offer-options-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #fff;
+  border: 1px solid var(--ssi-line);
+}
+
+.offer-options-table th,
+.offer-options-table td {
+  border-bottom: 1px solid var(--ssi-line);
+  vertical-align: top;
+  text-align: left;
+  padding: 1.1rem 0.85rem;
+}
+
+.offer-options-table thead th {
+  background: #fffdf0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--ssi-yellow);
+}
+
+.offer-options-table tbody td {
+  min-height: 4.5rem;
+  padding-top: 1.35rem;
+  padding-bottom: 1.35rem;
+}
+
+.offer-options-table .col-pos {
+  width: 3.2rem;
+  text-align: center;
+  color: var(--ssi-muted);
+  font-weight: 700;
+}
+
+.offer-options-table .col-name {
+  width: 28%;
+}
+
+.offer-options-table .col-desc {
+  line-height: 1.45;
+}
+
+.offer-options-table .col-price {
+  width: 7.5rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.offer-options-table tfoot td {
+  background: #f7f7f7;
+  font-weight: 600;
+  border-bottom: 0;
+  padding: 1rem 0.85rem;
+}
+
+.offer-options-table tr.offer-options-total .col-price {
+  font-size: 1.05rem;
+}
 
 .offer-empty-note {
   font-style: italic;
@@ -2033,14 +2105,27 @@ textarea:focus {
 
   img {
     max-width: 100% !important;
-    height: auto !important;
+  }
+
+  .offer-cover-hero {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-image: url("/static/assets/offer-cover-logimat.jpg?v=20260723cover") !important;
+    background-size: cover !important;
+    background-position: 58% 35% !important;
   }
 
   .offer-cover-bg {
+    position: absolute !important;
+    inset: 0 !important;
     max-width: none !important;
+    max-height: none !important;
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
+    object-position: 58% 35% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .offer-cover-logo {
@@ -2057,6 +2142,11 @@ textarea:focus {
     background: #fff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  .offer-options-table tbody td {
+    padding-top: 4mm !important;
+    padding-bottom: 4mm !important;
   }
 
   a { text-decoration: none !important; border: 0 !important; color: inherit !important; }
