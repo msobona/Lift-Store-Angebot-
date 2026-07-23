@@ -797,36 +797,13 @@ textarea:focus {
   line-height: 1.4;
 }
 
-/* Repeating page chrome (header/footer) for multi-page body */
-.offer-paged {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-.offer-paged > thead {
-  display: table-header-group;
-}
-
-.offer-paged > tfoot {
-  display: table-footer-group;
-}
-
-.offer-paged > thead > tr > td,
-.offer-paged > tbody > tr > td,
-.offer-paged > tfoot > tr > td {
-  border: 0;
-  padding: 0;
-  vertical-align: top;
-}
-
 .offer-page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0 0 0.55rem;
-  margin: 0 0 1rem;
+  padding: 0 0 0.65rem;
+  margin: 0 0 1.1rem;
   border-bottom: 3px solid var(--ssi-yellow);
 }
 
@@ -851,33 +828,22 @@ textarea:focus {
 }
 
 .offer-page-header-logo {
-  width: 38mm;
-  max-width: 38mm;
+  width: 42mm;
+  max-width: 42mm;
   height: auto;
   flex-shrink: 0;
   object-fit: contain;
+  background: #fff;
+  padding: 2px 4px;
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
-.offer-page-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 0.45rem;
-  border-top: 1px solid var(--ssi-line);
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--ssi-muted);
-}
-
-.offer-page-footer-right::after {
-  content: "Seite";
-}
-
-.offer-paged-body {
-  orphans: 3;
-  widows: 3;
+/* Print-only running chrome (fixed; space reserved via @page margins) */
+.offer-print-running-header,
+.offer-print-running-footer {
+  display: none;
 }
 
 .offer-section > h2,
@@ -899,6 +865,11 @@ textarea:focus {
 .offer-signatory {
   break-inside: avoid;
   page-break-inside: avoid;
+}
+
+.offer-body-sheet {
+  orphans: 3;
+  widows: 3;
 }
 
 .offer-cover {
@@ -1804,14 +1775,13 @@ textarea:focus {
 
 @page {
   size: A4 portrait;
-  margin: 12mm 14mm 16mm;
+  margin: 16mm 14mm 16mm 14mm;
 }
 
 @page :first {
   margin: 0;
 }
 
-/* Page numbers where the print engine supports margin boxes (e.g. Firefox) */
 @page {
   @bottom-right {
     content: "Seite " counter(page);
@@ -1901,6 +1871,8 @@ textarea:focus {
     overflow: hidden !important;
     page-break-after: always;
     break-after: page;
+    position: relative;
+    z-index: 20;
   }
 
   .offer-cover-hero {
@@ -1919,44 +1891,35 @@ textarea:focus {
     margin: 0 !important;
   }
 
-  .offer-paged {
-    width: 100%;
+  /* No fixed/table repeating chrome — Chrome overlaps those with body text.
+     Keep one clear in-flow header; page margins keep edges clean. */
+  .offer-print-running-header,
+  .offer-print-running-footer {
+    display: none !important;
   }
 
-  .offer-paged > thead {
-    display: table-header-group;
-  }
-
-  .offer-paged > tfoot {
-    display: table-footer-group;
-  }
-
-  .offer-page-header {
+  .offer-body-sheet > .offer-page-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8mm;
     padding: 0 0 3mm;
-    margin: 0 0 5mm;
+    margin: 0 0 6mm;
     border-bottom: 2.5pt solid #ffed00;
+    break-after: avoid;
+    page-break-after: avoid;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
   .offer-page-header-logo {
-    width: 32mm !important;
-    max-width: 32mm !important;
-  }
-
-  .offer-page-footer {
-    margin-top: 4mm;
-    padding-top: 2.5mm;
-  }
-
-  /* Hide static "Seite" label when margin-box numbering is available;
-     keep a subtle footer line either way. */
-  .offer-page-footer-right::after {
-    content: none;
-  }
-
-  .offer-cover-band h1 {
-    font-size: 18pt;
+    width: 40mm !important;
+    max-width: 40mm !important;
+    height: auto !important;
+    background: #fff !important;
+    padding: 1.5mm 2mm !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .offer-section h2 {
@@ -2002,7 +1965,6 @@ textarea:focus {
     page-break-after: auto;
   }
 
-  /* Keep blocks together; allow long sections to continue cleanly */
   .offer-fn,
   .offer-figure,
   .offer-price-card,
@@ -2010,10 +1972,16 @@ textarea:focus {
   .offer-client,
   .offer-terms-sub,
   .offer-signatory,
-  .offer-hw-grid > *,
-  tr {
+  .offer-hw-grid > * {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  .offer-price-table tr,
+  .offer-resp tr,
+  .offer-terms-table tr {
+    break-inside: auto;
+    page-break-inside: auto;
   }
 
   p,
@@ -2022,7 +1990,6 @@ textarea:focus {
     widows: 3;
   }
 
-  /* Avoid a heading alone at the bottom of a page */
   h2 + p,
   h2 + div,
   h3 + p,
@@ -2045,9 +2012,19 @@ textarea:focus {
   }
 
   .offer-cover-logo {
-    max-width: 42mm !important;
-    width: 42mm !important;
+    max-width: 44mm !important;
+    width: 44mm !important;
     height: auto !important;
+    background: #fff !important;
+    padding: 2mm !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .offer-logo-ssi {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   a { text-decoration: none !important; border: 0 !important; color: inherit !important; }
