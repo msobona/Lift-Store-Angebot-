@@ -1288,6 +1288,7 @@
         <section class="offer-section" id="sec-requirements">
           <h2>A3. ${escapeHtml(req.title || "Anforderungen")}</h2>
           <p>${escapeHtml(req.note || "")}</p>
+          ${doc.content.serverProvisioningNote ? `<p class="offer-note">${escapeHtml(doc.content.serverProvisioningNote)}</p>` : ""}
           <div class="offer-req-grid${req.showMobile ? " has-mobile" : ""}">
             <div>
               <h3>Server</h3>

@@ -21,7 +21,7 @@
     {
       "id": "multi_client",
       "title": "Mandantenfähigkeit",
-      "text": "Verwaltung von mehreren Mandanten / Klienten innerhalb von WAMAS® LOGIMAT, um z. B. Artikelbestände systemisch unterscheiden zu können."
+      "text": "Verwaltung von mehreren Mandanten / Klienten innerhalb von WAMAS Lift & Store, um z. B. Artikelbestände systemisch unterscheiden zu können."
     },
     {
       "id": "item_mgmt",
@@ -31,12 +31,12 @@
     {
       "id": "item_images",
       "title": "Artikelbilder",
-      "text": "Zur Verifizierung bei der Ein-/Auslagerung können Artikelbilder hinterlegt werden, die dem Mitarbeiter am Touch Client angezeigt werden. Durch Antippen des Bildes lässt sich dieses vergrössern. Bilder können mittels Touch- sowie Admin Client hinzugefügt werden."
+      "text": "Zur Verifizierung bei der Ein-/Auslagerung können Artikelbilder hinterlegt werden, die dem Mitarbeiter am Touch Client angezeigt werden. Durch Antippen des Bildes lässt sich dieses vergrössern."
     },
     {
       "id": "tray_layout",
       "title": "Tablarlayoutverwaltung",
-      "text": "Die Behälter können systemisch auf dem Tablar platziert werden. Per „Drag and Drop“ kann der Mitarbeiter sein Tablarlayout gestalten. Tablarlayouts können als Vorlage abgespeichert und auf andere Tablare übertragen werden."
+      "text": "Die Behälter können systemisch auf dem Tablar platziert werden. Per „Drag and Drop“ kann der Mitarbeiter sein Tablarlayout gestalten. Tablarlayouts können als Vorlage abgespeichert werden, um diese später auf andere Tablare zu übertragen."
     },
     {
       "id": "box_create",
@@ -56,13 +56,13 @@
     {
       "id": "strategies",
       "title": "Lagerstrategien bei Ein-/Auslagerung*",
-      "text": "Unterstützte Strategien: Redundanz (gleichmässige Verteilung auf mehrere Lifte), platzoptimiert (zuerst angebrochene Lagerplätze) und tablaroptimiert (Tablarauslastung / weniger Fahrbefehle).",
+      "text": "Unterstützte Strategien: Redundanz (Artikel gleichmässig auf mehrere Lifte verteilt, auch wenn ein Lift ausser Betrieb ist), platzoptimiert (zuerst angebrochene Lagerplätze füllen/leeren) und tablaroptimiert (Tablarauslastung optimieren, Fahrbefehle vermeiden).",
       "marker": "*"
     },
     {
       "id": "smartsearch",
       "title": "Intelligente Suche (Smartsearch)",
-      "text": "Am Touch Client kann der Mitarbeiter in der Suchmaske durch Platzhalter filtern (Freitext, Präfix*, *Suffix, *Mitte*)."
+      "text": "Am Touch Client kann der Mitarbeiter in der Suchmaske durch Platzhalter filtern: Freitextsuche, Präfix* (z. B. Art12*), *Suffix (z. B. *345) und *Mitte* (z. B. *234*)."
     },
     {
       "id": "serial",
@@ -72,48 +72,48 @@
     {
       "id": "buffer",
       "title": "Pufferung von kommissionierten Aufträgen*",
-      "text": "Fertig kommissionierte Ware, die noch nicht für den Versand benötigt wird, kann im WAMAS Lift & Store eingelagert werden (Ziel-Ladeeinheit von WAMAS Lift & Store verwaltet).",
+      "text": "Ware, die bereits fertig kommissioniert ist, aber noch nicht für den Versand benötigt wird, kann im SSI LOGIMAT® eingelagert werden. Dies gilt für Kommissionieraufträge, deren Ziel-Ladeeinheit mit WAMAS Lift & Store verwaltet wird.",
       "marker": "*"
     },
     {
       "id": "batch_orders",
       "title": "Stapelauftragsbearbeitung",
-      "text": "Im manuellen Betrieb können mehrere Auslagerungen in eine Warteschlange aufgenommen und nacheinander abgearbeitet werden."
+      "text": "Im manuellen Betrieb besteht die Möglichkeit, mehrere Auslagerungen in eine Warteschlange aufzunehmen und dann nacheinander die gesammelten Positionen am Stück abzuarbeiten."
     },
     {
       "id": "inventory",
       "title": "Inventurbearbeitung*",
-      "text": "Unterstützt Stichtagsinventur, permanente Inventur (inkl. Nulldurchgang) sowie spontane Inventur am Touch Client ohne Inventurauftrag.",
+      "text": "Unterstützt Stichtagsinventur und permanente Inventur (inkl. Nulldurchgangsinventur). Zusätzlich kann ein Lagerplatz jederzeit ohne Inventurauftrag durch Auswahl am Touch Client inventarisiert werden. Die Wahl der Inventurmethode ist mit Wirtschaftsprüfer / Finanzamt abzustimmen.",
       "marker": "*"
     },
     {
       "id": "printing",
       "title": "Druckfunktionen",
-      "text": "Druck von Lieferscheinen, Artikeletiketten und Etiketten für Ladeeinheiten – automatisch oder manuell gestartet."
+      "text": "Mit dieser Funktion können Lieferscheine, Artikeletiketten und Etiketten für Ladeeinheiten gedruckt werden – automatisch (z. B. nach Abschluss eines Kommissionierauftrags) oder durch manuellen Start."
     },
     {
       "id": "horizontal_opt",
       "title": "Horizontale Optimierung*",
-      "text": "Ein Mitarbeiter arbeitet an zwei oder mehr Lagerliften; die Kommissionierreihenfolge wird so optimiert, dass Wartezeiten gering bleiben. Piktogramme leiten zur aktiven Bedienöffnung.",
+      "text": "Für maximale Effizienz arbeitet ein Mitarbeiter an zwei oder mehr Lagerliften SSI LOGIMAT®. Die Kommissionierreihenfolge wird so optimiert, dass der Bediener möglichst geringe Wartezeiten hat. Zusätzlich leiten Piktogramme (Pfeile) zur aktiven Bedienöffnung.",
       "marker": "*"
     },
     {
       "id": "dynamic_zones",
       "title": "Dynamische Kommissionierzonen*",
-      "text": "Bildung dynamischer Kommissionierzonen: Der Mitarbeiter wählt die Lagerlifte einer Zone; dadurch ist er angemeldet und kein weiterer Mitarbeiter kann sich an diesen Liften anmelden.",
+      "text": "Bildung dynamischer Kommissionierzonen, um flexibel auf Leistungsspitzen oder ruhigere Phasen zu reagieren. Der Mitarbeiter wählt die Lagerlifte einer Zone; dadurch ist er angemeldet und kein weiterer Mitarbeiter kann sich an diesen Liften anmelden.",
       "marker": "*"
     },
     {
       "id": "prio",
       "title": "Auftragspriorisierung**",
-      "text": "Aufträge können unterschiedlich priorisiert werden. Die Priorität je Auftrag wird über die HOST-Schnittstelle mitgeteilt.",
+      "text": "Es besteht die Möglichkeit, Aufträge unterschiedlich zu priorisieren. Die Priorität je Auftrag wird über die HOST-Schnittstelle mitgeteilt.",
       "marker": "**",
       "requiresOrderHandling": true
     },
     {
       "id": "express",
       "title": "Expressaufträge*",
-      "text": "Expressaufträge (höchste Priorität oder manuelle Tablaranforderungen) werden prioritär behandelt; laufende Aufträge werden beim nächsten Tablarwechsel unterbrochen und danach fortgesetzt.",
+      "text": "Expressaufträge (höchste Priorität oder manuelle Tablaranforderungen) werden prioritär behandelt. Ein laufender Auftrag wird beim nächsten Tablarwechsel unterbrochen, der Expressauftrag abgearbeitet und danach der pausierte Auftrag fortgesetzt.",
       "marker": "*"
     },
     {
@@ -125,19 +125,19 @@
     {
       "id": "item_import",
       "title": "Schnittstelle für den initialen Artikelimport",
-      "text": "Artikelstammdaten werden per CSV-Datei bereitgestellt und von WAMAS Lift & Store importiert."
+      "text": "Die zu importierenden Artikelstammdaten werden per CSV-Datei bereitgestellt und von WAMAS Lift & Store importiert."
     },
     {
       "id": "host_interface",
       "title": "Standardschnittstelle zu einem HOST-System**",
-      "text": "Übermittlung von Aufträgen (Einlagerung, Kommissionierung, Inventur) und Artikelstammdaten vom HOST/ERP; Rückmeldung u. a. von Bestandsinformationen an das HOST-System.",
+      "text": "Die Standardschnittstelle dient zur Übermittlung von Aufträgen (Einlagerung, Kommissionierung, Inventur) und von Artikelstammdaten vom HOST (z. B. ERP) an WAMAS Lift & Store. WAMAS Lift & Store meldet auftragsbezogen und regelmässig Informationen u. a. über den Bestand an das HOST-System zurück.",
       "marker": "**",
       "requiresOrderHandling": true
     },
     {
       "id": "third_party_devices",
       "title": "Integration von Drittgeräten",
-      "text": "Einbindung u. a. von Barcode-Scanner, Etikettendrucker und RFID-Kartenlesegerät. Auf Anfrage erhalten Sie die Liste „Unterstützte Hardware“."
+      "text": "Die Einbindung von Drittgeräten (u. a. Barcode-Scanner, Etikettendrucker, RFID-Kartenlesegerät) ist möglich. Auf Anfrage erhalten Sie eine Auflistung der von WAMAS Lift & Store unterstützten Hardware."
     },
     {
       "id": "remote",
@@ -196,18 +196,18 @@
     { "title": "LogiWork", "text": "Höhenverstellbare Tablarausgabe für individuelle Arbeitshöhe." }
   ],
   "clients": {
-    "touch": "Touch Client für Bediener: Tablarbewegungen, Ein-/Aus-/Umlagern, Inventur, Artikelerfassung, Behältermanagement, Maschinenbestände prüfen.",
-    "admin": "Admin Client: Stammdaten, Systemprozesse, HOST-Anbindung. Aus Sicherheitsgründen keine Maschinenbedienung – der Bediener muss am Lift stehen.",
-    "mobile": "Mobile Terminal: mobile Lagerprozesse per Scanner/Touch."
+    "touch": "Der Touch Client wird auf dem Industrie-PC am SSI LOGIMAT® ausgeführt und hat eine für Touchscreen ausgelegte Benutzeroberfläche ohne physische Tastatur. Funktionsumfang: Tablare anfordern/einrichten/ändern; Einlagern, Auslagern, Umlagern und Inventur; Artikel erfassen; Behälter erstellen/bearbeiten; Bestände anderer Lagerlifte einer Zone einsehen; Bearbeitung von Aufträgen.",
+    "admin": "Der Admin Client ermöglicht die Konfiguration von Stammdaten, die Kontrolle von Systemprozessen und die Anbindung an ein HOST-System. Er wird in der Regel von Leitstandmitarbeitern oder IT-Verantwortlichen genutzt. Aus Sicherheitsgründen kann der SSI LOGIMAT® nicht mit dem Admin Client bedient werden – der Bediener muss am Lift stehen. Weitere Funktionen: Bestände verwalten, Excel-Export, Benutzerverwaltung, Boxtypen, Auswertungen, Pflege von Systempartnern (ERP).",
+    "mobile": "Mobile Terminal: mobile Lagerprozesse per Scanner/Touch an externen Lagerplätzen."
   },
   "architecture": {
     "title": "Standard-Systemarchitektur",
-    "text": "Der WAMAS Lift & Store Server (A) ist im Kundennetzwerk integriert und verwaltet alle Daten zentral. Der WAMAS Lift & Store (C) und dessen Komponenten werden über ein internes Netzwerk verwaltet und sind mittels Firewall (B) mit dem Kundennetzwerk verbunden. Der auf dem IPC installierte Touch Client (D) und die Maschinensteuerung (E) ermöglichen die Lagerverwaltung. Für Stammdaten, Einstellungen und Auswertungen wird der Admin Client (F) auf einem Kundenrechner installiert.",
+    "text": "Der WAMAS Lift & Store Server (A) ist im Kundennetzwerk integriert und verwaltet alle Daten zentral. Der SSI LOGIMAT® (C) und dessen Komponenten werden über ein LOGIMAT-internes Netzwerk verwaltet und sind mittels einer Firewall (B) mit dem Kundennetzwerk verbunden. Der auf dem IPC am SSI LOGIMAT® (C) installierte WAMAS Lift & Store Touch Client (D) und die Maschinensteuerung (E) ermöglichen eine einfache und effiziente Lagerverwaltung. Für die Pflege von Stammdaten, Einstellungen und Auswertungen wird zudem der WAMAS Lift & Store Admin Client (F) auf einem beliebigen Kundenrechner installiert.",
     "textMobileExtra": " Bei Externen Lagerplätzen wird zusätzlich der Mobile Terminal Client für Scanner-/Handheld-Prozesse an externen Lagerorten eingesetzt.",
     "legend": [
       "(A) WAMAS Lift & Store Server",
       "(B) Firewall",
-      "(C) WAMAS Lift & Store / LOGIMAT",
+      "(C) SSI LOGIMAT®",
       "(D) Touch Client / Control Panel",
       "(E) Maschinensteuerung",
       "(F) Admin Client"
@@ -215,6 +215,7 @@
     "legendMobile": "(G) Mobile Terminal (bei Externen Lagerplätzen)",
     "image": "/static/assets/annex/architecture.png?v=20260722arch"
   },
+  "serverProvisioningNote": "Die benötigte Server-Hardware und System-Software sind vom Kunden beizustellen. Auf Anfrage stellen wir Ihnen das Dokument «Systemanforderungen» zur Verfügung. Es wird eine kostenfreie SQL-Instanz als Datenbankmanagementsystem verwendet. Diese wird standardmässig bei der Inbetriebnahme durch SSI SCHÄFER installiert.",
   "requirements": {
     "title": "Anforderungen (Auszug)",
     "note": "Vollständige Systemanforderungen gemäss System-Requirements-Manual. Nachfolgend die wichtigsten Mindestanforderungen aus dem Software-Anhang.",

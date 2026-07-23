@@ -1780,6 +1780,7 @@ def compose_offer(payload: ComposeOfferRequest):
             "clients": clients_content,
             "architecture": architecture_content,
             "requirements": requirements_content,
+            "serverProvisioningNote": template.get("serverProvisioningNote", ""),
             "acceptance": template.get("acceptance", ""),
             "responsibilities": template["responsibilities"],
             "documentsLead": template.get("documentsLead", ""),
