@@ -952,52 +952,8 @@
     const req = doc.content.requirements || {};
     const scopeGroups = doc.scopeGroups || doc.content?.scopeGroups || [];
 
-    const scopeHtml = scopeGroups.map((group) => {
-      const items = (group.items || [])
-        .map((item) => `
-          <div class="offer-fn">
-            <div class="offer-fn-mark">•</div>
-            <div>
-              <h4>${escapeHtml(item.name || "")}</h4>
-              ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}
-            </div>
-          </div>`)
-        .join("");
-      return `
-        <div class="offer-scope-group">
-          <h3>${escapeHtml(group.title || "")}</h3>
-          <div class="offer-fn-list">${items || "<p class=\"offer-empty-note\">Keine Positionen.</p>"}</div>
-          ${group.total != null ? `
-            <div class="offer-scope-total">
-              <span>Total ${escapeHtml(group.title || "")}</span>
-              <strong>${money(group.total, group.currency || "CHF")}</strong>
-            </div>` : ""}
-        </div>`;
-    }).join("");
-
     const grand = summary.grandTotalChf;
     const customerNote = summary.note || "Alle Preise in CHF, exkl. MwSt.";
-
-    const priceCards = `
-      <div class="offer-price-summary">
-        ${licSum ? `
-          <div class="offer-price-card">
-            <span>Softwarelizenzen</span>
-            <strong>${money(licSum.total, licSum.currency || "CHF")}</strong>
-            <small>Gesamttotal Lizenzen · exkl. MwSt.</small>
-          </div>` : ""}
-        ${itSum ? `
-          <div class="offer-price-card">
-            <span>IT-Aufwand / Installation</span>
-            <strong>${money(itSum.total, itSum.currency || "CHF")}</strong>
-            <small>Gesamttotal IT inkl. Reise · exkl. MwSt.</small>
-          </div>` : ""}
-        <div class="offer-price-card">
-          <span>Gesamttotal CHF</span>
-          <strong>${grand != null ? money(grand, "CHF") : "—"}</strong>
-          <small>${escapeHtml(customerNote)}</small>
-        </div>
-      </div>`;
 
     const standardHtml = (doc.content.standardFunctions || [])
       .map((fn, idx) => `
