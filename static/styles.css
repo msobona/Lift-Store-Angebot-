@@ -2192,9 +2192,8 @@ textarea:focus {
 
   .offer-cover,
   .offer-toc,
-  .offer-section-prices,
   .offer-annex-start,
-  .offer-section:not(.offer-terms) {
+  .offer-section:not(.offer-terms):not(.offer-section-prices) {
     break-before: auto;
     break-after: auto;
     page-break-before: auto;
@@ -2203,7 +2202,9 @@ textarea:focus {
 
   /* Diese Abschnitte immer auf neuer Seite */
   .offer-section.offer-terms,
+  .offer-section-prices,
   #sec-terms,
+  #sec-commercial,
   #sec-architecture,
   #sec-requirements {
     break-before: page !important;
