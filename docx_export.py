@@ -137,6 +137,7 @@ def _display_instance_name(name: Any, instance_id: Any = None) -> str:
 
 
 def _render_optionen_text(options: List[Dict[str, Any]]) -> str:
+    """Fallback-Text falls die dynamische Tabelle nicht greift."""
     if not options:
         return "Keine optionalen Softwaremodule gewählt."
     blocks = []
@@ -149,8 +150,145 @@ def _render_optionen_text(options: List[Dict[str, Any]]) -> str:
             blocks.append(f"{idx}. {title}")
         elif text:
             blocks.append(f"{idx}. {text}")
-    # Extra Leerzeilen zwischen Optionen → mehr Platz in der Word-Tabelle
-    return "\n\n\n".join(blocks)
+    return "\n\n".join(blocks)
+
+
+def _set_tc_paragraphs(tc, lines: List[str], *, first_bold: bool = False) -> None:
+    """Ersetzt den Zellinhalt durch Absätze (eine Zeile = ein Absatz)."""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    for child in list(tc):
+        if child.tag == qn("w:p"):
+            tc.remove(child)
+
+    if not lines:
+        lines = [""]
+
+    for i, line in enumerate(lines):
+        p = OxmlElement("w:p")
+        pPr = OxmlElement("w:pPr")
+        spacing = OxmlElement("w:spacing")
+        spacing.set(qn("w:after"), "80")
+        spacing.set(qn("w:before"), "40")
+        spacing.set(qn("w:line"), "300")
+        spacing.set(qn("w:lineRule"), "auto")
+        pPr.append(spacing)
+        p.append(pPr)
+        r = OxmlElement("w:r")
+        rPr = OxmlElement("w:rPr")
+        if first_bold and i == 0 and str(line).strip():
+            rPr.append(OxmlElement("w:b"))
+            rPr.append(OxmlElement("w:bCs"))
+        sz = OxmlElement("w:sz")
+        sz.set(qn("w:val"), "20")
+        rPr.append(sz)
+        szCs = OxmlElement("w:szCs")
+        szCs.set(qn("w:val"), "20")
+        rPr.append(szCs)
+        r.append(rPr)
+        t = OxmlElement("w:t")
+        t.set(qn("xml:space"), "preserve")
+        t.text = str(line)
+        r.append(t)
+        p.append(r)
+        tc.append(p)
+
+
+def _set_row_min_height(tr, twips: int = 1600) -> None:
+    """Mindestzeilenhöhe für mehr Platz pro Option."""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    trPr = tr.find(qn("w:trPr"))
+    if trPr is None:
+        trPr = OxmlElement("w:trPr")
+        tr.insert(0, trPr)
+    # bestehende Höhe entfernen
+    for old in trPr.findall(qn("w:trHeight")):
+        trPr.remove(old)
+    trHeight = OxmlElement("w:trHeight")
+    trHeight.set(qn("w:val"), str(int(twips)))
+    trHeight.set(qn("w:hRule"), "atLeast")
+    trPr.append(trHeight)
+
+
+def apply_options_table(
+    docx_bytes: bytes,
+    options: List[Dict[str, Any]],
+    *,
+    total_label: str = "Total Softwarelizenzen exkl. MwSt.",
+    total_price: str = "",
+) -> bytes:
+    """
+    Optionen-Tabelle dynamisch: 1 Zeile je gewählter Option (+ Totalzeile mit Preis).
+    2 Optionen → 2 Zeilen + Preis; 4 Optionen → 4 Zeilen + Preis.
+    """
+    from copy import deepcopy
+
+    from docx import Document
+    from docx.oxml.ns import qn
+
+    doc = Document(io.BytesIO(docx_bytes))
+    table = None
+    for candidate in doc.tables:
+        if not candidate.rows:
+            continue
+        header = "".join((candidate.rows[0].cells[0].text or "").split())
+        if header.lower().startswith("optionen"):
+            table = candidate
+            break
+    if table is None:
+        return docx_bytes
+
+    tbl = table._tbl
+    data_rows = list(table.rows)[1:]
+    if not data_rows:
+        return docx_bytes
+
+    template_tr = deepcopy(data_rows[0]._tr)
+
+    # Alle Datenzeilen entfernen (Header bleibt)
+    for row in data_rows:
+        tbl.remove(row._tr)
+
+    def add_row(cell_texts: List[Any], *, min_height: int = 1600, first_bold: bool = False) -> None:
+        tr = deepcopy(template_tr)
+        tcs = tr.findall(qn("w:tc"))
+        # Zelle 0 = Optionstext (breit), letzte Zelle = Preis
+        values = list(cell_texts)
+        while len(values) < len(tcs):
+            values.append("")
+        for i, tc in enumerate(tcs):
+            raw = values[i]
+            if isinstance(raw, (list, tuple)):
+                lines = [str(x) for x in raw]
+            else:
+                lines = str(raw).split("\n") if raw is not None else [""]
+            _set_tc_paragraphs(tc, lines, first_bold=(first_bold and i == 0))
+        _set_row_min_height(tr, min_height)
+        tbl.append(tr)
+
+    if not options:
+        add_row(["Keine optionalen Softwaremodule gewählt.", "", "", ""], min_height=900)
+    else:
+        for idx, opt in enumerate(options, start=1):
+            title = (opt.get("title") or "").strip() or f"Option {idx}"
+            text = (opt.get("text") or "").strip()
+            lines = [f"{idx}. {title}"]
+            if text:
+                lines.append(text)
+            # Extra Leerzeile für Luft in der Zeile
+            lines.append("")
+            add_row([lines, "", "", ""], min_height=1700, first_bold=True)
+
+    # Totalzeile mit Preis
+    price = (total_price or "").strip()
+    add_row([total_label, "", "", price], min_height=700, first_bold=True)
+
+    out = io.BytesIO()
+    doc.save(out)
+    return out.getvalue()
 
 
 def _render_section_body(sec: Dict[str, Any], blocks: List[str], heading_prefix: str = "") -> None:
@@ -600,6 +738,9 @@ def build_offer_docx(offer: Dict[str, Any]) -> bytes:
 
     template_path = ensure_annex_template()
     context = build_template_context(offer)
+    options = list((offer.get("content") or {}).get("selectedOptions") or [])
+    # Platzhalter nur als Fallback — die Tabelle wird danach dynamisch gebaut
+    context["optionen_text"] = ""
 
     tpl = DocxTemplate(str(template_path))
     # autoescape=True: & und ähnliche Zeichen korrekt als XML escapen
@@ -607,4 +748,10 @@ def build_offer_docx(offer: Dict[str, Any]) -> bytes:
 
     out = io.BytesIO()
     tpl.save(out)
-    return apply_sdt_contact_fields(out.getvalue(), context)
+    docx_bytes = apply_sdt_contact_fields(out.getvalue(), context)
+    return apply_options_table(
+        docx_bytes,
+        options,
+        total_label="Total Softwarelizenzen (inkl. Instanz & Optionen) exkl. MwSt.",
+        total_price=str(context.get("lizenz_total_chf") or ""),
+    )
