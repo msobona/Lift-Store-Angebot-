@@ -11,7 +11,7 @@
     "kmRate": 1.4,
     "mealRate": 30,
     "overnightRate": 150,
-    "marginPercent": 28
+    "marginPercent": 0
   },
   "travelDefaults": {
     "origin": {

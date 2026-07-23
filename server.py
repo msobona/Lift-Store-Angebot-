@@ -694,7 +694,7 @@ class ItOfferRequest(BaseModel):
     ssiContact2Id: str = ""
     signatory1Id: str = ""
     signatory2Id: str = ""
-    # Nur Marge (CHF intern, kein Währungskurs)
+    # Optionale Zusatz-Marge; Sätze sind bereits Verkaufspreise (Standard aus Katalog = 0)
     itMarginPercent: Optional[float] = Field(None, ge=0, le=500)
 
 
@@ -911,11 +911,11 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
     travel_amount_cost = round(sum(l["amount"] for l in travel_lines), 2)
     work_amount_cost = round(work_amount, 2)
 
-    # IT intern in CHF: nur Marge, kein EUR→CHF-Kurs
+    # IT intern in CHF: Sätze sind Verkaufspreise; optionale Zusatz-Marge (Standard 0)
     margin_percent = float(
         payload.itMarginPercent
         if payload.itMarginPercent is not None
-        else (rates.get("marginPercent") or 0)
+        else (rates.get("marginPercent") if rates.get("marginPercent") is not None else 0)
     )
     margin_factor = 1.0 + (margin_percent / 100.0)
     for line in lines:

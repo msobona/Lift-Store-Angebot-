@@ -191,12 +191,13 @@
           <section class="block">
             <h2>Verkaufskalkulation</h2>
             <p class="block-lead">
-              IT-Aufwände sind intern in <strong>CHF</strong> (Schweiz) — <strong>kein</strong> Währungskurs.
-              Nur die Marge wird auf den Verkaufspreis aufgeschlagen.
+              IT-Aufwände sind intern in <strong>CHF</strong> — Stundensatz, km, Verpflegung usw. sind bereits
+              <strong>Verkaufspreise</strong> (kein Währungskurs, standardmässig <strong>keine</strong> Marge).
+              Optional kann zusätzlich eine Marge aufgeschlagen werden.
             </p>
             <div class="grid-2">
-              <label>Marge %
-                <input name="itMarginPercent" type="number" min="0" max="500" step="0.1" value="28" />
+              <label>Zusatz-Marge % <span class="hint">(Standard 0)</span>
+                <input name="itMarginPercent" type="number" min="0" max="500" step="0.1" value="0" />
               </label>
             </div>
           </section>
@@ -397,6 +398,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260723pdf1"></script>
+  <script src="/static/app.js?v=20260723it-margin0"></script>
 </body>
 </html>
