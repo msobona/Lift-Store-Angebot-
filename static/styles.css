@@ -2204,7 +2204,8 @@ textarea:focus {
   /* Diese Abschnitte immer auf neuer Seite */
   .offer-section.offer-terms,
   #sec-terms,
-  #sec-architecture {
+  #sec-architecture,
+  #sec-requirements {
     break-before: page !important;
     page-break-before: always !important;
   }
