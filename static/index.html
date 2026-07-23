@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260723print" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260723flat" />
 </head>
 <body>
   <header class="topbar">
@@ -315,7 +315,8 @@
         <div class="hero-body">
             <p>
               Erzeugt <strong>ein Gesamtangebot</strong> mit Leistungsumfang und Gesamttotal
-              (ohne Einzelpreise / Stunden je Position). Optional Rabatt oder Abrundung setzen, dann erzeugen.
+              (ohne Einzelpreise / Stunden je Position). Verkaufspreise sind ganze CHF (ohne Rappen);
+              optional Projektrabatt setzen, dann erzeugen.
               <br /><strong>Kundenfertiges Cover:</strong> bitte <em>PDF 1:1 (aus Word)</em> oder Word nutzen —
               die Bildschirmvorschau ist eine Annäherung.
             </p>
@@ -325,14 +326,6 @@
             </label>
             <label>Projektrabatt CHF
               <input id="offerDiscountAmount" type="number" min="0" step="1" value="0" />
-            </label>
-            <label>Abrunden auf
-              <select id="offerRoundTo">
-                <option value="0">Keine Abrundung</option>
-                <option value="10">10 CHF</option>
-                <option value="50">50 CHF</option>
-                <option value="100">100 CHF</option>
-              </select>
             </label>
             <label class="span-2">SSI-Ansprechpartner (Cover / Kopfzeile)
               <span class="ssi-contact-pickers">
@@ -399,6 +392,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260723print"></script>
+  <script src="/static/app.js?v=20260723flat"></script>
 </body>
 </html>

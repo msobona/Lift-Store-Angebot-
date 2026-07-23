@@ -24,12 +24,18 @@
     advanced_security: "advancedSecurity",
   };
 
-  const money = (value, currency = "CHF") =>
-    new Intl.NumberFormat("de-CH", {
+  const roundFlatChf = (value) => Math.round(Number(value || 0));
+
+  const money = (value, currency = "CHF") => {
+    const n = Number(value || 0);
+    const flat = currency === "CHF";
+    return new Intl.NumberFormat("de-CH", {
       style: "currency",
       currency,
-      maximumFractionDigits: 2,
-    }).format(Number(value || 0));
+      minimumFractionDigits: flat ? 0 : 2,
+      maximumFractionDigits: flat ? 0 : 2,
+    }).format(flat ? roundFlatChf(n) : n);
+  };
 
   function licensePricing() {
     const p = state.licenseCatalog?.product || {};
@@ -53,9 +59,9 @@
 
   function icEurToSellChf(eurAmount) {
     const { marginPercent, eurToChfRate } = licensePricing();
-    // Erst Kurs EUR→CHF (Einkauf CHF), dann Marge auf CHF
+    // Erst Kurs EUR→CHF (Einkauf CHF), dann Marge → ganze CHF
     const costChf = Number(eurAmount || 0) * eurToChfRate;
-    return Math.round(costChf * (1 + marginPercent / 100) * 100) / 100;
+    return roundFlatChf(costChf * (1 + marginPercent / 100));
   }
 
   function icEurToCostChf(eurAmount) {
@@ -516,8 +522,7 @@
       it: state.itOffer || null,
       basedOnOfferNumber: state.editingFromOfferId || null,
       discountPercent: Number(document.getElementById("offerDiscountPercent")?.value || 0) || 0,
-      discountAmountChf: Number(document.getElementById("offerDiscountAmount")?.value || 0) || 0,
-      roundTo: Number(document.getElementById("offerRoundTo")?.value || 0) || 0,
+      discountAmountChf: roundFlatChf(document.getElementById("offerDiscountAmount")?.value || 0),
       ...currentSsiContactIds(),
     };
     try {
@@ -1078,9 +1083,8 @@
           <div class="offer-totals-box">
             ${licSum ? `<div><span>Softwarelizenzen</span><strong>${money(licSum.total, licSum.currency || "CHF")}</strong></div>` : ""}
             ${itSum ? `<div><span>IT-Aufwand inkl. Reise</span><strong>${money(itSum.total, itSum.currency || "CHF")}</strong></div>` : ""}
-            ${summary.subtotalChf != null && (summary.commercialDiscountChf || summary.roundingAmountChf) ? `<div><span>Zwischentotal</span><strong>${money(summary.subtotalChf, "CHF")}</strong></div>` : ""}
+            ${summary.subtotalChf != null && summary.commercialDiscountChf ? `<div><span>Zwischentotal</span><strong>${money(summary.subtotalChf, "CHF")}</strong></div>` : ""}
             ${summary.commercialDiscountChf ? `<div><span>Projektrabatt</span><strong>− ${money(summary.commercialDiscountChf, "CHF")}</strong></div>` : ""}
-            ${summary.roundingAmountChf ? `<div><span>Abrundung</span><strong>− ${money(summary.roundingAmountChf, "CHF")}</strong></div>` : ""}
             ${grand != null ? `<div class="offer-totals-grand"><span>Gesamttotal exkl. MwSt</span><strong>${money(grand, "CHF")}</strong></div>` : ""}
           </div>
           <p class="offer-note">${escapeHtml(customerNote)}</p>

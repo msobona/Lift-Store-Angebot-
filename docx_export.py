@@ -95,7 +95,11 @@ def _money(value: Any, currency: str = "CHF") -> str:
         amount = float(value or 0)
     except (TypeError, ValueError):
         amount = 0.0
-    formatted = f"{amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", "'")
+    if str(currency).upper() == "CHF":
+        amount = float(round(amount))
+        formatted = f"{amount:,.0f}".replace(",", "'")
+    else:
+        formatted = f"{amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", "'")
     return f"{currency} {formatted}"
 
 
@@ -285,7 +289,7 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
                 }
             )
 
-    # Keine Bereichs-Totals hier: Projektrabatt/Abrundung gelten nur für Gesamttotal.
+    # Keine Bereichs-Totals hier: Projektrabatt gilt nur für Gesamttotal.
     scope_text_blocks = []
     for group in scope_groups:
         scope_text_blocks.append(group.get("title") or "")
