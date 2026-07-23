@@ -320,8 +320,8 @@
         <div class="hero-body">
             <p>
               Erzeugt <strong>ein Gesamtangebot</strong> mit Leistungsumfang und Gesamttotal
-              (ohne Einzelpreise / Stunden je Position). Verkaufspreise sind ganze CHF (ohne Rappen);
-              optional Projektrabatt setzen, dann erzeugen.
+              (ohne Einzelpreise / Stunden je Position). Verkaufspreise mit 2 Dezimalstellen
+              (in der Kalkulation aufgerundet); optional Projektrabatt setzen, dann erzeugen.
               <br /><strong>Kundenfertiges Cover:</strong> bitte <em>PDF 1:1 (aus Word)</em> oder Word nutzen —
               die Bildschirmvorschau ist eine Annäherung.
             </p>
@@ -330,7 +330,7 @@
               <input id="offerDiscountPercent" type="number" min="0" max="100" step="0.1" value="0" />
             </label>
             <label>Projektrabatt CHF
-              <input id="offerDiscountAmount" type="number" min="0" step="1" value="0" />
+              <input id="offerDiscountAmount" type="number" min="0" step="0.01" value="0" />
             </label>
             <label class="span-2">SSI-Ansprechpartner (Cover / Kopfzeile)
               <span class="ssi-contact-pickers">
@@ -398,6 +398,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260723it-margin0"></script>
+  <script src="/static/app.js?v=20260723chf2"></script>
 </body>
 </html>

@@ -24,17 +24,20 @@
     advanced_security: "advancedSecurity",
   };
 
-  const roundFlatChf = (value) => Math.round(Number(value || 0));
+  const roundSellChf = (value) => {
+    const n = Number(value || 0);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return Math.ceil(n * 100 - 1e-9) / 100;
+  };
 
   const money = (value, currency = "CHF") => {
     const n = Number(value || 0);
-    const flat = currency === "CHF";
     return new Intl.NumberFormat("de-CH", {
       style: "currency",
       currency,
-      minimumFractionDigits: flat ? 0 : 2,
-      maximumFractionDigits: flat ? 0 : 2,
-    }).format(flat ? roundFlatChf(n) : n);
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number.isFinite(n) ? n : 0);
   };
 
   function licensePricing() {
@@ -59,9 +62,9 @@
 
   function icEurToSellChf(eurAmount) {
     const { marginPercent, eurToChfRate } = licensePricing();
-    // Erst Kurs EUR→CHF (Einkauf CHF), dann Marge → ganze CHF
+    // Erst Kurs EUR→CHF (Einkauf CHF), dann Marge → auf 2 Stellen aufrunden
     const costChf = Number(eurAmount || 0) * eurToChfRate;
-    return roundFlatChf(costChf * (1 + marginPercent / 100));
+    return roundSellChf(costChf * (1 + marginPercent / 100));
   }
 
   function icEurToCostChf(eurAmount) {
@@ -640,7 +643,7 @@
       it: state.itOffer || null,
       basedOnOfferNumber: state.editingFromOfferId || null,
       discountPercent: Number(document.getElementById("offerDiscountPercent")?.value || 0) || 0,
-      discountAmountChf: roundFlatChf(document.getElementById("offerDiscountAmount")?.value || 0),
+      discountAmountChf: Math.round(Number(document.getElementById("offerDiscountAmount")?.value || 0) * 100) / 100,
       ...currentSsiContactIds(),
     };
     try {

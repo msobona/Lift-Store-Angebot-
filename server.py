@@ -132,12 +132,32 @@ def offer_path(offer_id: str) -> Path:
     return OFFERS_DIR / f"{safe}.json"
 
 
-def round_flat_chf(value: Any) -> float:
-    """Kaufmännisch auf ganze CHF runden (ohne Rappen) — für Verkaufspreise."""
+def round_sell_chf(value: Any) -> float:
+    """Verkaufspreise: immer auf 2 Dezimalstellen (Rappen) aufrunden.
+
+    Aufrunden in der Kalkulation, damit Positionspreise und Totale im Angebot
+    mathematisch sauber und mit zwei Stellen ausgewiesen werden können.
+    """
     try:
-        return float(round(float(value or 0)))
+        x = float(value or 0)
     except (TypeError, ValueError):
         return 0.0
+    if x <= 0:
+        return 0.0
+    # -1e-9 vermeidet Floating-Point-Artefakte (z. B. 10.10 * 100 = 1010.0000000001)
+    return math.ceil(x * 100.0 - 1e-9) / 100.0
+
+
+def round_chf2(value: Any) -> float:
+    """Kaufmännisch auf 2 Dezimalstellen (für Summen / Differenzen gerundeter Beträge)."""
+    try:
+        return round(float(value or 0) + 1e-9, 2)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+# Historischer Name — Aufrufe erwarten Verkaufspreis-Rundung (aufrunden)
+round_flat_chf = round_sell_chf
 
 
 _UMLAUT_MAP = str.maketrans(
@@ -539,14 +559,14 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         else (product.get("eurToChfRate") or 1)
     )
     margin_factor = 1.0 + (margin_percent / 100.0)
-    # Reihenfolge: IC EUR → Kurs → Einkauf CHF → Marge → Verkauf CHF (ganze CHF)
+    # Reihenfolge: IC EUR → Kurs → Einkauf CHF → Marge → Verkauf CHF (2 Stellen, aufgerundet)
     cost_chf = round(net * eur_to_chf, 2)
     margin_amount_eur = round(net * (margin_percent / 100.0), 2)
     sell_net_eur = round(net * margin_factor, 2)
     contribution_margin_eur = margin_amount_eur
     vat_rate = float(product.get("vatRate") or 0)
 
-    # Verkaufspreise je Position: ganze CHF, Total = Stück × Menge (ebenfalls flach)
+    # Verkaufspreise je Position: auf 2 Stellen aufrunden; Total = Stück × Menge (ebenfalls)
     for line in lines:
         ic_unit = float(line.get("unitPrice") or 0)
         ic_total = float(line.get("total") or 0)
@@ -555,27 +575,27 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         line["totalIcEur"] = ic_total
         unit_cost_chf = round(ic_unit * eur_to_chf, 2)
         total_cost_chf = round(ic_total * eur_to_chf, 2)
-        unit_sell = round_flat_chf(unit_cost_chf * margin_factor)
+        unit_sell = round_sell_chf(unit_cost_chf * margin_factor)
         line["unitPrice"] = unit_sell
         if qty:
-            line["total"] = round_flat_chf(unit_sell * qty)
+            line["total"] = round_sell_chf(unit_sell * qty)
         else:
-            line["total"] = round_flat_chf(total_cost_chf * margin_factor)
+            line["total"] = round_sell_chf(total_cost_chf * margin_factor)
         line["currency"] = product.get("offerCurrency", "CHF")
 
-    # Verkaufs-Nettototal aus gerundeten Positionen abzgl. Mengenrabatt (ebenfalls flach)
-    lines_sell_sum = round_flat_chf(sum(float(l.get("total") or 0) for l in lines))
+    # Verkaufs-Nettototal aus gerundeten Positionen abzgl. Mengenrabatt
+    lines_sell_sum = round_chf2(sum(float(l.get("total") or 0) for l in lines))
     discount_sell_chf = 0.0
     if discount["percent"] and lines_sell_sum:
-        # Gleicher %-Satz wie IC-Rabatt, aber auf Verkauf CHF angewandt → keine Rappen-Differenz
-        discount_sell_chf = round_flat_chf(lines_sell_sum * (float(discount["percent"]) / 100.0))
-    sell_net_chf = round_flat_chf(lines_sell_sum - discount_sell_chf)
-    contribution_margin_chf = round_flat_chf(sell_net_chf - round_flat_chf(cost_chf))
+        # Gleicher %-Satz wie IC-Rabatt; kaufmännisch 2 Stellen, damit Summe − Rabatt aufgeht
+        discount_sell_chf = round_chf2(lines_sell_sum * (float(discount["percent"]) / 100.0))
+    sell_net_chf = round_chf2(lines_sell_sum - discount_sell_chf)
+    contribution_margin_chf = round_chf2(sell_net_chf - cost_chf)
     contribution_margin_percent = (
         round((contribution_margin_chf / sell_net_chf) * 100, 1) if sell_net_chf else 0.0
     )
-    vat = round_flat_chf(sell_net_chf * vat_rate)
-    gross = round_flat_chf(sell_net_chf + vat)
+    vat = round_sell_chf(sell_net_chf * vat_rate)
+    gross = round_chf2(sell_net_chf + vat)
 
     created = datetime.now()
     valid_until = created + timedelta(days=int(product["validityDays"]))
@@ -921,24 +941,24 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
     for line in lines:
         cost = float(line.get("amount") or 0)
         line["amountCost"] = cost
-        line["amount"] = round_flat_chf(cost * margin_factor)
+        line["amount"] = round_sell_chf(cost * margin_factor)
 
-    work_amount = round_flat_chf(sum(float(l.get("amount") or 0) for l in lines if l["category"] != "travel"))
-    travel_amount = round_flat_chf(sum(float(l.get("amount") or 0) for l in travel_lines))
-    margin_amount = round_flat_chf((work_amount_cost + travel_amount_cost) * (margin_percent / 100.0))
+    work_amount = round_chf2(sum(float(l.get("amount") or 0) for l in lines if l["category"] != "travel"))
+    travel_amount = round_chf2(sum(float(l.get("amount") or 0) for l in travel_lines))
+    margin_amount = round_chf2((work_amount_cost + travel_amount_cost) * (margin_percent / 100.0))
     total_hours = round(work_hours + travel_hours, 2)
     total_amount_cost = round(work_amount_cost + travel_amount_cost, 2)
-    total_amount = round_flat_chf(work_amount + travel_amount)
+    total_amount = round_chf2(work_amount + travel_amount)
     contribution_margin_percent = (
         round((margin_amount / total_amount) * 100, 1) if total_amount else 0.0
     )
-    hourly_sell = round_flat_chf(hourly * margin_factor)
+    hourly_sell = round_sell_chf(hourly * margin_factor)
 
     created = datetime.now()
     offer_sections = [
         {
             "title": f"Software WAMAS Lift & Store für {payload.deviceCount} Geräte",
-            "amount": round_flat_chf(sum(l["amount"] for l in lines if l["category"] == "logimat")),
+            "amount": round_chf2(sum(l["amount"] for l in lines if l["category"] == "logimat")),
             "bullets": cat["baseScopeBullets"],
         }
     ]
@@ -962,7 +982,7 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
         offer_sections.append(
             {
                 "title": "Projektspezifische Erweiterungen",
-                "amount": round_flat_chf(sum(c["amount"] for c in customs)),
+                "amount": round_chf2(sum(c["amount"] for c in customs)),
                 "bullets": [c["description"] for c in customs],
             }
         )
@@ -1283,7 +1303,7 @@ class ComposeOfferRequest(BaseModel):
     # Kommerzielle Anpassung vor Angebotserzeugung (Kundenangebot)
     discountPercent: Optional[float] = Field(None, ge=0, le=100)
     discountAmountChf: Optional[float] = Field(None, ge=0)
-    # Legacy: grosse End-Abrundung (10/50/100) entfernt — Preise sind bereits ganze CHF
+    # Legacy: grosse End-Abrundung (10/50/100) entfernt — Verkaufspreise auf 2 Stellen aufgerundet
     roundTo: Optional[int] = Field(None, ge=0)
     # SSI-Ansprechpartner (Cover) und Unterschriften (letzte Seite) — getrennt
     ssiContact1Id: Optional[str] = None
@@ -1545,12 +1565,12 @@ def compose_offer(payload: ComposeOfferRequest):
     lic_sell_chf = (license_totals or {}).get("sellNetChf")
     it_total_chf = (it_totals or {}).get("totalAmount")
     if lic_sell_chf is not None:
-        lic_sell_chf = round_flat_chf(lic_sell_chf)
+        lic_sell_chf = round_chf2(lic_sell_chf)
     if it_total_chf is not None:
-        it_total_chf = round_flat_chf(it_total_chf)
+        it_total_chf = round_chf2(it_total_chf)
     subtotal_chf = None
     if lic_sell_chf is not None or it_total_chf is not None:
-        subtotal_chf = round_flat_chf(float(lic_sell_chf or 0) + float(it_total_chf or 0))
+        subtotal_chf = round_chf2(float(lic_sell_chf or 0) + float(it_total_chf or 0))
 
     # Kunden-Leistungsumfang ohne Positionspreise / Stunden
     scope_groups: List[Dict[str, Any]] = []
@@ -1636,26 +1656,26 @@ def compose_offer(payload: ComposeOfferRequest):
             }
         )
 
-    # Projektrabatt auf Gesamttotal (bereits flache Positionspreise → keine End-Abrundung)
+    # Projektrabatt auf Gesamttotal (Positionspreise bereits auf 2 Stellen aufgerundet)
     adj_notes: List[str] = []
     discount_percent = float(payload.discountPercent or 0)
-    discount_amount_chf = round_flat_chf(payload.discountAmountChf or 0)
+    discount_amount_chf = round_chf2(payload.discountAmountChf or 0)
     commercial_discount = 0.0
     grand_chf = subtotal_chf
     if grand_chf is not None:
         if discount_percent > 0:
-            pct_disc = round_flat_chf(grand_chf * (discount_percent / 100.0))
+            pct_disc = round_chf2(grand_chf * (discount_percent / 100.0))
             commercial_discount += pct_disc
             adj_notes.append(f"Projektrabatt {discount_percent:g}%")
         if discount_amount_chf > 0:
             commercial_discount += discount_amount_chf
             chf_fmt = (
-                f"{discount_amount_chf:,.0f}"
-                .replace(",", "'")
+                f"{discount_amount_chf:,.2f}"
+                .replace(",", "X").replace(".", ",").replace("X", "'")
             )
             adj_notes.append(f"Rabatt CHF {chf_fmt}")
-        commercial_discount = round_flat_chf(min(commercial_discount, grand_chf))
-        grand_chf = round_flat_chf(grand_chf - commercial_discount)
+        commercial_discount = round_chf2(min(commercial_discount, grand_chf))
+        grand_chf = round_chf2(grand_chf - commercial_discount)
 
     price_summary = {
         "license": {
