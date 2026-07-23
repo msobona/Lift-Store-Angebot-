@@ -2,6 +2,7 @@
   const state = {
     licenseCatalog: null,
     itCatalog: null,
+    ssiContacts: null,
     licenseOffer: null,
     itOffer: null,
     offerDocument: null,
@@ -89,6 +90,135 @@
       Math.sin(dLat / 2) ** 2 +
       Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
     return 2 * r * Math.asin(Math.sqrt(a));
+  }
+
+  function ssiContactById(id) {
+    return (state.ssiContacts?.contacts || []).find((c) => c.id === id) || null;
+  }
+
+  function ssiContactDefaults() {
+    const d = state.ssiContacts?.meta?.defaults || {};
+    return {
+      contact1Id: d.contact1Id || "",
+      contact2Id: d.contact2Id || "",
+    };
+  }
+
+  function formatSsiContactMeta(contact) {
+    if (!contact) return "";
+    return [contact.title, contact.email, contact.phone].filter(Boolean).join(" · ");
+  }
+
+  function fillSsiContactSelect(selectEl, selectedId) {
+    if (!selectEl) return;
+    const contacts = [...(state.ssiContacts?.contacts || [])].sort((a, b) =>
+      String(a.name || "").localeCompare(String(b.name || ""), "de"),
+    );
+    const previous = selectedId || selectEl.value || "";
+    selectEl.innerHTML = `<option value="">— bitte wählen —</option>${contacts
+      .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`)
+      .join("")}`;
+    if (previous && contacts.some((c) => c.id === previous)) {
+      selectEl.value = previous;
+    } else if (!previous) {
+      selectEl.value = "";
+    }
+  }
+
+  function updateSsiContactMeta(selectEl) {
+    if (!selectEl) return;
+    const root = selectEl.closest(".ssi-contact-picker") || selectEl.parentElement;
+    const meta = root?.querySelector(".ssi-contact-meta");
+    if (!meta) return;
+    meta.textContent = formatSsiContactMeta(ssiContactById(selectEl.value));
+  }
+
+  function syncPreparedByFromContacts(form) {
+    if (!form) return;
+    const id = form.querySelector('[name="ssiContact1Id"]')?.value || "";
+    const name = ssiContactById(id)?.name || "";
+    const hidden = form.querySelector('[name="preparedBy"]');
+    if (hidden) hidden.value = name;
+  }
+
+  function currentSsiContactIds() {
+    const offer1 = document.getElementById("offerSsiContact1")?.value;
+    const offer2 = document.getElementById("offerSsiContact2")?.value;
+    if (offer1 || offer2) {
+      return { ssiContact1Id: offer1 || "", ssiContact2Id: offer2 || "" };
+    }
+    const lic1 = licenseForm?.querySelector('[name="ssiContact1Id"]')?.value || "";
+    const lic2 = licenseForm?.querySelector('[name="ssiContact2Id"]')?.value || "";
+    if (lic1 || lic2) return { ssiContact1Id: lic1, ssiContact2Id: lic2 };
+    const it1 = itForm?.querySelector('[name="ssiContact1Id"]')?.value || "";
+    const it2 = itForm?.querySelector('[name="ssiContact2Id"]')?.value || "";
+    if (it1 || it2) return { ssiContact1Id: it1, ssiContact2Id: it2 };
+    const d = ssiContactDefaults();
+    return { ssiContact1Id: d.contact1Id, ssiContact2Id: d.contact2Id };
+  }
+
+  function setSsiContactIds(id1, id2, { syncAll = true } = {}) {
+    const defaults = ssiContactDefaults();
+    const c1 = id1 || defaults.contact1Id || "";
+    const c2 = id2 || defaults.contact2Id || "";
+    const pairs = [
+      [licenseForm?.querySelector('[name="ssiContact1Id"]'), licenseForm?.querySelector('[name="ssiContact2Id"]')],
+      [itForm?.querySelector('[name="ssiContact1Id"]'), itForm?.querySelector('[name="ssiContact2Id"]')],
+      [document.getElementById("offerSsiContact1"), document.getElementById("offerSsiContact2")],
+    ];
+    pairs.forEach(([s1, s2]) => {
+      if (!s1 && !s2) return;
+      if (s1) {
+        fillSsiContactSelect(s1, c1);
+        s1.value = c1;
+        updateSsiContactMeta(s1);
+      }
+      if (s2) {
+        fillSsiContactSelect(s2, c2);
+        s2.value = c2;
+        updateSsiContactMeta(s2);
+      }
+    });
+    syncPreparedByFromContacts(licenseForm);
+    syncPreparedByFromContacts(itForm);
+  }
+
+  function initSsiContactPickers() {
+    const defaults = ssiContactDefaults();
+    [
+      licenseForm?.querySelector('[name="ssiContact1Id"]'),
+      licenseForm?.querySelector('[name="ssiContact2Id"]'),
+      itForm?.querySelector('[name="ssiContact1Id"]'),
+      itForm?.querySelector('[name="ssiContact2Id"]'),
+      document.getElementById("offerSsiContact1"),
+      document.getElementById("offerSsiContact2"),
+    ].forEach((el) => fillSsiContactSelect(el, ""));
+
+    setSsiContactIds(defaults.contact1Id, defaults.contact2Id);
+
+    const onChange = (event) => {
+      const el = event.target;
+      if (!(el instanceof HTMLSelectElement)) return;
+      if (!/ssiContact|offerSsiContact/.test(el.id || el.name || "")) return;
+      updateSsiContactMeta(el);
+      // Sync all pickers to the changed pair
+      let id1 = "";
+      let id2 = "";
+      if (el.id === "offerSsiContact1" || el.id === "offerSsiContact2") {
+        id1 = document.getElementById("offerSsiContact1")?.value || "";
+        id2 = document.getElementById("offerSsiContact2")?.value || "";
+      } else if (el.form === licenseForm) {
+        id1 = licenseForm.querySelector('[name="ssiContact1Id"]')?.value || "";
+        id2 = licenseForm.querySelector('[name="ssiContact2Id"]')?.value || "";
+      } else if (el.form === itForm) {
+        id1 = itForm.querySelector('[name="ssiContact1Id"]')?.value || "";
+        id2 = itForm.querySelector('[name="ssiContact2Id"]')?.value || "";
+      } else {
+        return;
+      }
+      setSsiContactIds(id1, id2);
+    };
+    document.addEventListener("change", onChange);
   }
 
   function initAddressAutocomplete(input) {
@@ -229,11 +359,13 @@
   }
 
   function syncCustomerProject(fromForm, toForm) {
-    ["company", "projectName", "preparedBy"].forEach((field) => {
+    ["company", "projectName", "preparedBy", "ssiContact1Id", "ssiContact2Id"].forEach((field) => {
       if (fromForm[field] && toForm[field]) {
         toForm[field].value = fromForm[field].value;
+        if (field.startsWith("ssiContact")) updateSsiContactMeta(toForm[field]);
       }
     });
+    syncPreparedByFromContacts(toForm);
   }
 
   function applyLicenseSelectionToIt() {
@@ -429,6 +561,7 @@
       discountPercent: Number(document.getElementById("offerDiscountPercent")?.value || 0) || 0,
       discountAmountChf: Number(document.getElementById("offerDiscountAmount")?.value || 0) || 0,
       roundTo: Number(document.getElementById("offerRoundTo")?.value || 0) || 0,
+      ...currentSsiContactIds(),
     };
     try {
       const endpoint = save ? "/api/offer/compose/save" : "/api/offer/compose";
@@ -476,8 +609,12 @@
     setFormValue(licenseForm, "email", c.email || "");
     setFormValue(licenseForm, "phone", c.phone || "");
     setFormValue(licenseForm, "address", c.address || "");
-    setFormValue(licenseForm, "preparedBy", cfg.preparedBy || "");
     setFormValue(licenseForm, "notes", cfg.notes || "");
+    const ssiDefaults = ssiContactDefaults();
+    setSsiContactIds(
+      cfg.ssiContact1Id || offer.meta?.ssiContact1Id || ssiDefaults.contact1Id,
+      cfg.ssiContact2Id || offer.meta?.ssiContact2Id || ssiDefaults.contact2Id,
+    );
     setFormValue(licenseForm, "instanceCount", cfg.instanceCount ?? 1);
     setFormValue(licenseForm, "extraOpeningClients", cfg.extraOpeningClients ?? 0);
     setFormValue(licenseForm, "extraAdminClients", cfg.extraAdminClients ?? 0);
@@ -485,17 +622,17 @@
     setFormValue(licenseForm, "thirdPartyVlmTypes", cfg.thirdPartyVlmTypes ?? 0);
     setFormValue(licenseForm, "testInstances", cfg.testInstances ?? 0);
     setFormValue(licenseForm, "upgradeYears", cfg.upgradeYears ?? 0);
-    const defaults = state.licenseCatalog?.product || {};
+    const productDefaults = state.licenseCatalog?.product || {};
     const totals = offer.totals || {};
     setFormValue(
       licenseForm,
       "licenseMarginPercent",
-      cfg.licenseMarginPercent ?? totals.marginPercent ?? defaults.licenseMarginPercent ?? 28
+      cfg.licenseMarginPercent ?? totals.marginPercent ?? productDefaults.licenseMarginPercent ?? 28
     );
     setFormValue(
       licenseForm,
       "eurToChfRate",
-      cfg.eurToChfRate ?? totals.eurToChfRate ?? defaults.eurToChfRate ?? 0.93
+      cfg.eurToChfRate ?? totals.eurToChfRate ?? productDefaults.eurToChfRate ?? 0.93
     );
 
     const instanceId = cfg.instanceId || "basic";
@@ -521,8 +658,12 @@
     const cfg = offer.configuration || {};
     setFormValue(itForm, "company", c.company || "");
     setFormValue(itForm, "projectName", c.projectName || "");
-    setFormValue(itForm, "preparedBy", cfg.preparedBy || "");
     setFormValue(itForm, "notes", cfg.notes || "");
+    const defaults = ssiContactDefaults();
+    setSsiContactIds(
+      cfg.ssiContact1Id || defaults.contact1Id,
+      cfg.ssiContact2Id || defaults.contact2Id,
+    );
     setFormValue(itForm, "realizationPeriod", cfg.realizationPeriod || "");
     setFormValue(itForm, "deviceCount", cfg.deviceCount ?? 1);
     setFormValue(itForm, "zoneCount", cfg.zoneCount ?? 1);
@@ -618,6 +759,16 @@
         if (itOffer) fillItFormFromOffer(itOffer);
         if (lic && !itOffer) applyLicenseSelectionToIt();
       }
+      setSsiContactIds(
+        offer.meta?.ssiContact1Id
+          || lic?.configuration?.ssiContact1Id
+          || itOffer?.configuration?.ssiContact1Id
+          || "",
+        offer.meta?.ssiContact2Id
+          || lic?.configuration?.ssiContact2Id
+          || itOffer?.configuration?.ssiContact2Id
+          || "",
+      );
       await Promise.all([recalcLicense(), recalcIt()]);
       switchView("license");
       alert(
@@ -808,10 +959,17 @@
     const sigs = termsClosing.signatories || [];
     const sig1 = sigs[0] || {};
     const sig2 = sigs[1] || {};
-    const ssi1Name = doc.meta.preparedBy || sig1.name || "—";
-    const ssi1Pos = sig1.title || sig1.role || "";
-    const ssi2Name = sig2.name || "";
-    const ssi2Pos = sig2.title || sig2.role || "";
+    const ssiList = doc.ssiContacts || [];
+    const ssi1 = ssiList[0] || {};
+    const ssi2 = ssiList[1] || {};
+    const ssi1Name = ssi1.name || doc.meta.preparedBy || sig1.name || "—";
+    const ssi1Pos = ssi1.title || sig1.title || sig1.role || "";
+    const ssi1Mail = ssi1.email || sig1.email || "";
+    const ssi1Tel = ssi1.phone || sig1.phone || "";
+    const ssi2Name = ssi2.name || sig2.name || "";
+    const ssi2Pos = ssi2.title || sig2.title || sig2.role || "";
+    const ssi2Mail = ssi2.email || sig2.email || "";
+    const ssi2Tel = ssi2.phone || sig2.phone || "";
 
     root.innerHTML = `
       <div class="offer-sheet offer-cover-page">
@@ -847,14 +1005,14 @@
                 <tr>
                   <td>${escapeHtml(ssi1Name)}</td>
                   <td>${escapeHtml(ssi1Pos)}</td>
-                  <td></td>
-                  <td></td>
+                  <td>${escapeHtml(ssi1Mail)}</td>
+                  <td>${escapeHtml(ssi1Tel)}</td>
                 </tr>
                 <tr>
                   <td>${escapeHtml(ssi2Name)}</td>
                   <td>${escapeHtml(ssi2Pos)}</td>
-                  <td></td>
-                  <td></td>
+                  <td>${escapeHtml(ssi2Mail)}</td>
+                  <td>${escapeHtml(ssi2Tel)}</td>
                 </tr>
               </tbody>
             </table>
@@ -1132,6 +1290,8 @@
       upgradeYears: Number(data.get("upgradeYears") || 0),
       notes: String(data.get("notes") || "").trim(),
       preparedBy: String(data.get("preparedBy") || "").trim(),
+      ssiContact1Id: String(data.get("ssiContact1Id") || "").trim(),
+      ssiContact2Id: String(data.get("ssiContact2Id") || "").trim(),
       licenseMarginPercent: pricing.marginPercent,
       eurToChfRate: pricing.eurToChfRate,
     };
@@ -1387,6 +1547,8 @@
       mealCount: Number(data.get("mealCount") || 0),
       notes: String(data.get("notes") || "").trim(),
       preparedBy: String(data.get("preparedBy") || "").trim(),
+      ssiContact1Id: String(data.get("ssiContact1Id") || "").trim(),
+      ssiContact2Id: String(data.get("ssiContact2Id") || "").trim(),
       itMarginPercent: (() => {
         const v = Number(data.get("itMarginPercent"));
         return Number.isFinite(v) ? v : (state.itCatalog?.rates?.marginPercent ?? 28);
@@ -1643,6 +1805,7 @@
   async function init() {
     state.licenseCatalog = await api("/api/catalog");
     state.itCatalog = await api("/api/it/catalog");
+    state.ssiContacts = await api("/api/ssi-contacts");
     renderInstances();
     renderAddons();
     updateClientHints();
@@ -1659,6 +1822,7 @@
       `Stammdaten: Stundensatz ${money(r.hourlyRate, "CHF")} · km ${money(r.kmRate, "CHF")} · Verpflegung ${money(r.mealRate, "CHF")} · Übernachtung ${money(r.overnightRate, "CHF")} · Default-Marge ${r.marginPercent ?? 28}%`;
     document.getElementById("itDisclaimer").textContent = state.itCatalog.meta.disclaimer;
     initAddressAutocomplete(document.getElementById("customerAddress"));
+    initSsiContactPickers();
     bindEvents();
     // Initiale Live-Vorschau (auch ohne Firmenname)
     recalcLicense();

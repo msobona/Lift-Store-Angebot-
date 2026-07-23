@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "note": "SSI-Ansprechpartner für Cover und Unterschriften. Quellen: Dropdowns in Angebot Logimat DE.docx. Titel/E-Mail/Telefon bei Bedarf hier pflegen.",
+    "emailDomain": "ssi-schaefer.com",
+    "defaults": {
+      "contact1Id": "florian-brunner",
+      "contact2Id": "andrej-pulfer"
+    }
+  },
+  "contacts": [
+    {
+      "id": "adrian-bollinger",
+      "name": "Adrian Bollinger",
+      "title": "Innendienst / SSC",
+      "role": "",
+      "email": "adrian.bollinger@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["innendienst", "signatory"]
+    },
+    {
+      "id": "mario-gisler",
+      "name": "Mario Gisler",
+      "title": "Innendienst / SSC",
+      "role": "",
+      "email": "mario.gisler@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["innendienst", "signatory"]
+    },
+    {
+      "id": "oliver-meyer",
+      "name": "Oliver Meyer",
+      "title": "Innendienst / SSC",
+      "role": "",
+      "email": "oliver.meyer@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["innendienst", "signatory"]
+    },
+    {
+      "id": "andrea-micanovic",
+      "name": "Andrea Micanovic",
+      "title": "Innendienst / SSC",
+      "role": "",
+      "email": "andrea.micanovic@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["innendienst", "signatory"]
+    },
+    {
+      "id": "andrej-pulfer",
+      "name": "Andrej Pulfer",
+      "title": "Leiter Vertrieb Products & Equipment",
+      "role": "",
+      "email": "andrej.pulfer@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["innendienst", "aussendienst", "signatory"]
+    },
+    {
+      "id": "ursina-reich",
+      "name": "Ursina Reich",
+      "title": "Innendienst / SSC",
+      "role": "",
+      "email": "ursina.reich@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["innendienst", "signatory"]
+    },
+    {
+      "id": "annina-zancanaro",
+      "name": "Annina Zancanaro",
+      "title": "Innendienst / SSC",
+      "role": "",
+      "email": "annina.zancanaro@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["innendienst", "signatory"]
+    },
+    {
+      "id": "cenk-aytac",
+      "name": "Cenk Aytac",
+      "title": "Verkauf Aussendienst",
+      "role": "",
+      "email": "cenk.aytac@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["aussendienst"]
+    },
+    {
+      "id": "reto-haeuselmann",
+      "name": "Reto Häuselmann",
+      "title": "Verkauf Aussendienst",
+      "role": "",
+      "email": "reto.haeuselmann@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["aussendienst"]
+    },
+    {
+      "id": "marek-sobona",
+      "name": "Marek Sobona",
+      "title": "Verkauf Aussendienst",
+      "role": "",
+      "email": "marek.sobona@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["aussendienst"]
+    },
+    {
+      "id": "kristijan-zornjak",
+      "name": "Kristijan Zornjak",
+      "title": "Verkauf Aussendienst",
+      "role": "",
+      "email": "kristijan.zornjak@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["aussendienst"]
+    },
+    {
+      "id": "florian-brunner",
+      "name": "Florian Brunner",
+      "title": "Bereichsleiter Sales & Project Application PE",
+      "role": "Mitglied der Geschäftsleitung",
+      "email": "florian.brunner@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["signatory"]
+    },
+    {
+      "id": "luca-cathomen",
+      "name": "Luca Cathomen",
+      "title": "Geschäftsleitung",
+      "role": "",
+      "email": "luca.cathomen@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["signatory"]
+    },
+    {
+      "id": "peter-hansen",
+      "name": "Peter Hansen",
+      "title": "Geschäftsleitung",
+      "role": "",
+      "email": "peter.hansen@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["signatory"]
+    },
+    {
+      "id": "armin-kaufmann",
+      "name": "Armin Kaufmann",
+      "title": "Geschäftsleitung",
+      "role": "",
+      "email": "armin.kaufmann@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["signatory"]
+    },
+    {
+      "id": "marc-mangold",
+      "name": "Marc Mangold",
+      "title": "Geschäftsleitung",
+      "role": "",
+      "email": "marc.mangold@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["signatory"]
+    },
+    {
+      "id": "rudolf-mayer-richert",
+      "name": "Rudolf Mayer-Richert",
+      "title": "Geschäftsleitung",
+      "role": "",
+      "email": "rudolf.mayer-richert@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["signatory"]
+    },
+    {
+      "id": "michael-preisig",
+      "name": "Michael Preisig",
+      "title": "Geschäftsleitung",
+      "role": "",
+      "email": "michael.preisig@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["signatory"]
+    },
+    {
+      "id": "simon-rueede",
+      "name": "Simon Rüede",
+      "title": "Geschäftsleitung",
+      "role": "",
+      "email": "simon.rueede@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["signatory"]
+    },
+    {
+      "id": "daniel-urech",
+      "name": "Daniel Urech",
+      "title": "Geschäftsleitung",
+      "role": "",
+      "email": "daniel.urech@ssi-schaefer.com",
+      "phone": "",
+      "groups": ["signatory"]
+    }
+  ]
+}

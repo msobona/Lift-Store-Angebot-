@@ -5,13 +5,27 @@ from __future__ import annotations
 import io
 import json
 import re
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from xml.sax.saxutils import escape as xml_escape
 
 from docxtpl import DocxTemplate
 
 BASE_DIR = Path(__file__).resolve().parent
 FIELD_MAP_FILE = BASE_DIR / "data" / "docx_field_map.json"
+
+# Word-Inhaltssteuerelemente (ComboBox / Text) in Angebot Logimat DE.docx
+_SDT_TEXT_MAP = {
+    "Name (Innendienst)": "ssi_kontakt_1_name",
+    "Text Innendienst": "ssi_kontakt_1_details",
+    "Name (Aussendienst)": "ssi_kontakt_2_name",
+    "Text Aussendienst": "ssi_kontakt_2_details",
+    "Unterschrift links": "signatur_1_name",
+    "Funktion links": "signatur_1_details",
+    "Unterschrift rechts": "signatur_2_name",
+    "Funktion rechts": "signatur_2_details",
+}
 
 # Primär: Logimat-Vorlage (Titelseite mit Bild + Platzhalter).
 # Fallbacks: vollständige Anhang-Vorlage / schlanke Platzhalter-Vorlage.
@@ -290,15 +304,33 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
 
     addr = _split_swiss_address(customer.get("address", ""))
     prepared_by = (meta.get("preparedBy") or "").strip()
-    # Cover-Tabelle SSI-Ansprechpartner: Ersteller + Signaturen aus Bedingungen
-    ssi1_name = prepared_by or (sig1.get("name") or "")
-    ssi1_pos = sig1.get("title") or sig1.get("role") or ""
-    ssi1_mail = sig1.get("email") or ""
-    ssi1_tel = sig1.get("phone") or ""
-    ssi2_name = sig2.get("name") or ""
-    ssi2_pos = sig2.get("title") or sig2.get("role") or ""
-    ssi2_mail = sig2.get("email") or ""
-    ssi2_tel = sig2.get("phone") or ""
+    # Cover + Unterschriften: ausgewählte SSI-Kontakte (sonst Fallbacks)
+    ssi_contacts = offer.get("ssiContacts") or meta.get("ssiContacts") or []
+    ssi1 = ssi_contacts[0] if len(ssi_contacts) > 0 else {}
+    ssi2 = ssi_contacts[1] if len(ssi_contacts) > 1 else {}
+    ssi1_name = (ssi1.get("name") or prepared_by or sig1.get("name") or "").strip()
+    ssi1_pos = (ssi1.get("title") or sig1.get("title") or sig1.get("role") or "").strip()
+    ssi1_mail = (ssi1.get("email") or sig1.get("email") or "").strip()
+    ssi1_tel = (ssi1.get("phone") or sig1.get("phone") or "").strip()
+    ssi2_name = (ssi2.get("name") or sig2.get("name") or "").strip()
+    ssi2_pos = (ssi2.get("title") or sig2.get("title") or sig2.get("role") or "").strip()
+    ssi2_mail = (ssi2.get("email") or sig2.get("email") or "").strip()
+    ssi2_tel = (ssi2.get("phone") or sig2.get("phone") or "").strip()
+    # Signaturen: dieselben zwei Personen (Auswahl im Kalkulator)
+    sig1_name = ssi1_name or (sig1.get("name") or "")
+    sig1_title = ssi1_pos or (sig1.get("title") or "")
+    sig1_role = (ssi1.get("role") or sig1.get("role") or "")
+    sig2_name = ssi2_name or (sig2.get("name") or "")
+    sig2_title = ssi2_pos or (sig2.get("title") or "")
+    sig2_role = (ssi2.get("role") or sig2.get("role") or "")
+
+    def _details(pos: str, email: str, phone: str) -> str:
+        parts = [p for p in [pos, email, phone] if p]
+        return "\n".join(parts)
+
+    def _sig_details(title: str, role: str) -> str:
+        parts = [p for p in [title, role] if p]
+        return "\n".join(parts)
 
     return {
         "dokument_label": content.get("documentLabel") or "Angebot / Preisliste",
@@ -326,10 +358,12 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "ssi_kontakt_1_position": ssi1_pos,
         "ssi_kontakt_1_email": ssi1_mail,
         "ssi_kontakt_1_telefon": ssi1_tel,
+        "ssi_kontakt_1_details": _details(ssi1_pos, ssi1_mail, ssi1_tel),
         "ssi_kontakt_2_name": ssi2_name,
         "ssi_kontakt_2_position": ssi2_pos,
         "ssi_kontakt_2_email": ssi2_mail,
         "ssi_kontakt_2_telefon": ssi2_tel,
+        "ssi_kontakt_2_details": _details(ssi2_pos, ssi2_mail, ssi2_tel),
         "konfiguration": cfg_bits,
         "instance_name": instance_name,
         "instance_count": cfg.get("instanceCount") or "",
@@ -359,13 +393,133 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         or "Ihrem Auftrag, dem wir unsere volle Aufmerksamkeit schenken, sehen wir gerne entgegen.",
         "gruss": closing.get("greeting") or "Freundliche Grüsse",
         "firma_ssi": closing.get("company") or "SSI SCHÄFER AG",
-        "signatur_1_name": sig1.get("name", ""),
-        "signatur_1_titel": sig1.get("title", ""),
-        "signatur_1_rolle": sig1.get("role", ""),
-        "signatur_2_name": sig2.get("name", ""),
-        "signatur_2_titel": sig2.get("title", ""),
-        "signatur_2_rolle": sig2.get("role", ""),
+        "signatur_1_name": sig1_name,
+        "signatur_1_titel": sig1_title,
+        "signatur_1_rolle": sig1_role,
+        "signatur_1_details": _sig_details(sig1_title, sig1_role),
+        "signatur_2_name": sig2_name,
+        "signatur_2_titel": sig2_title,
+        "signatur_2_rolle": sig2_role,
+        "signatur_2_details": _sig_details(sig2_title, sig2_role),
     }
+
+
+def _set_sdt_plain_text(sdt_xml: str, text: str) -> str:
+    """Ersetzt den sichtbaren Inhalt eines w:sdt und entfernt Platzhalter-Flag."""
+    safe = xml_escape(text or "")
+    lines = safe.split("\n")
+    if len(lines) <= 1:
+        run_inner = f"<w:t>{safe}</w:t>"
+    else:
+        parts = [f'<w:t xml:space="preserve">{lines[0]}</w:t>']
+        for line in lines[1:]:
+            parts.append("<w:br/>")
+            parts.append(f'<w:t xml:space="preserve">{line}</w:t>')
+        run_inner = "".join(parts)
+
+    def repl_content(match: re.Match) -> str:
+        block = match.group(0)
+        replaced = False
+
+        def repl_run(rm: re.Match) -> str:
+            nonlocal replaced
+            if replaced:
+                return ""
+            replaced = True
+            # Keep run props if present
+            open_tag = rm.group(1)
+            return f"{open_tag}{run_inner}</w:r>"
+
+        block = re.sub(r"(<w:r\b[^>]*>).*?</w:r>", repl_run, block, flags=re.DOTALL)
+        if not replaced:
+            block = re.sub(
+                r"(<w:sdtContent\b[^>]*>)(.*?)(</w:sdtContent>)",
+                rf"\1<w:p><w:r>{run_inner}</w:r></w:p>\3",
+                block,
+                count=1,
+                flags=re.DOTALL,
+            )
+        return block
+
+    out = re.sub(
+        r"<w:sdtContent\b[^>]*>.*?</w:sdtContent>",
+        repl_content,
+        sdt_xml,
+        count=1,
+        flags=re.DOTALL,
+    )
+    out = re.sub(r"<w:showingPlcHdr\s*/>", "", out)
+    out = re.sub(r'<w:rStyle\s+w:val="Platzhaltertext"\s*/>', "", out)
+    return out
+
+
+def _iter_top_level_sdts(xml: str):
+    """Yield (start, end, chunk) for each top-level w:sdt element."""
+    i = 0
+    while True:
+        start = xml.find("<w:sdt>", i)
+        if start < 0:
+            return
+        depth = 0
+        j = start
+        while j < len(xml):
+            if xml.startswith("<w:sdt>", j):
+                depth += 1
+                j += 7
+                continue
+            if xml.startswith("</w:sdt>", j):
+                depth -= 1
+                j += 8
+                if depth == 0:
+                    yield start, j, xml[start:j]
+                    i = j
+                    break
+                continue
+            j += 1
+        else:
+            return
+
+
+def apply_sdt_contact_fields(docx_bytes: bytes, context: Dict[str, Any]) -> bytes:
+    """Befüllt Word-Dropdowns/Textfelder (Cover + Unterschriften) nach docxtpl-Render."""
+    zin = zipfile.ZipFile(io.BytesIO(docx_bytes), "r")
+    try:
+        xml = zin.read("word/document.xml").decode("utf-8")
+    except KeyError:
+        zin.close()
+        return docx_bytes
+
+    replacements = 0
+    pieces: List[str] = []
+    cursor = 0
+    for start, end, chunk in _iter_top_level_sdts(xml):
+        pieces.append(xml[cursor:start])
+        alias_m = re.search(r'<w:alias\b[^>]*w:val="([^"]+)"', chunk)
+        tag_m = re.search(r'<w:tag\b[^>]*w:val="([^"]+)"', chunk)
+        key = (alias_m.group(1) if alias_m else "") or (tag_m.group(1) if tag_m else "")
+        ctx_key = _SDT_TEXT_MAP.get(key)
+        if ctx_key and context.get(ctx_key) is not None:
+            pieces.append(_set_sdt_plain_text(chunk, str(context.get(ctx_key) or "")))
+            replacements += 1
+        else:
+            pieces.append(chunk)
+        cursor = end
+    pieces.append(xml[cursor:])
+    new_xml = "".join(pieces)
+
+    if replacements == 0:
+        zin.close()
+        return docx_bytes
+
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "word/document.xml":
+                data = new_xml.encode("utf-8")
+            zout.writestr(item, data)
+    zin.close()
+    return out.getvalue()
 
 
 def build_offer_docx(offer: Dict[str, Any]) -> bytes:
@@ -382,4 +536,4 @@ def build_offer_docx(offer: Dict[str, Any]) -> bytes:
 
     out = io.BytesIO()
     tpl.save(out)
-    return out.getvalue()
+    return apply_sdt_contact_fields(out.getvalue(), context)

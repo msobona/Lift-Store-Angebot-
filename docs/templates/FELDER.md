@@ -26,7 +26,7 @@ Zum Testen: Vorlage anpassen → Server neu starten → Angebot → **Word**.
 | `{{telefon}}` | Telefon Kunde |
 | `{{fax}}` | Fax (optional) |
 | `{{email}}` | E-Mail Kunde |
-| `{{ssi_kontakt_1_*}}` / `{{ssi_kontakt_2_*}}` | SSI-Ansprechpartner (Name, Position, E-Mail, Telefon) |
+| `{{ssi_kontakt_1_*}}` / `{{ssi_kontakt_2_*}}` | SSI-Ansprechpartner (Name, Position, E-Mail, Telefon) — Auswahl im Kalkulator (`data/ssi_contacts.json`) |
 
 Adresse aus dem Formular wird automatisch in `strasse` + `plz_ort` zerlegt, wenn sie dem Muster `…, 8000 Zürich` entspricht.
 
@@ -35,6 +35,9 @@ Adresse aus dem Formular wird automatisch in `strasse` + `plz_ort` zerlegt, wenn
 `{{anrede}}`, `{{einleitung}}`, `{{konfiguration}}`, `{{leistungsumfang_text}}`, `{{optionen_text}}`,  
 `{{lizenz_total_chf}}`, `{{it_total_chf}}`, `{{gesamt_chf}}`, `{{preis_hinweis}}`, `{{meta_zeile}}`,  
 `{{erstellt_von}}`, Bedingungen/Signaturen wie bisher.
+
+Cover-Dropdowns (Innendienst/Aussendienst) und Unterschriften-Dropdowns in der Logimat-Vorlage
+werden beim Word-Export mit den zwei gewählten SSI-Kontakten befüllt.
 
 ## Tipps
 

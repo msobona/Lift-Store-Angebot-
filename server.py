@@ -40,6 +40,7 @@ CATALOG_FILE = DATA_DIR / "catalog.json"
 IT_CATALOG_FILE = DATA_DIR / "it_catalog.json"
 OFFER_TEMPLATE_FILE = DATA_DIR / "offer_template.json"
 COMMERCIAL_TERMS_FILE = DATA_DIR / "commercial_terms_ch.json"
+SSI_CONTACTS_FILE = DATA_DIR / "ssi_contacts.json"
 
 OFFERS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -66,6 +67,36 @@ def load_offer_template() -> Dict[str, Any]:
 
 def load_commercial_terms() -> Dict[str, Any]:
     return json.loads(COMMERCIAL_TERMS_FILE.read_text(encoding="utf-8"))
+
+
+def load_ssi_contacts() -> Dict[str, Any]:
+    if not SSI_CONTACTS_FILE.exists():
+        return {"meta": {"defaults": {}}, "contacts": []}
+    return json.loads(SSI_CONTACTS_FILE.read_text(encoding="utf-8"))
+
+
+def _ssi_contact_by_id(contact_id: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not contact_id:
+        return None
+    for row in load_ssi_contacts().get("contacts") or []:
+        if row.get("id") == contact_id:
+            return dict(row)
+    return None
+
+
+def resolve_ssi_contacts(
+    contact1_id: Optional[str] = None,
+    contact2_id: Optional[str] = None,
+    *,
+    use_defaults: bool = True,
+) -> List[Dict[str, Any]]:
+    data = load_ssi_contacts()
+    defaults = (data.get("meta") or {}).get("defaults") or {}
+    id1 = (contact1_id or "").strip() or (defaults.get("contact1Id") if use_defaults else "")
+    id2 = (contact2_id or "").strip() or (defaults.get("contact2Id") if use_defaults else "")
+    c1 = _ssi_contact_by_id(id1) or {}
+    c2 = _ssi_contact_by_id(id2) or {}
+    return [c1, c2]
 
 
 def offer_path(offer_id: str) -> Path:
@@ -100,6 +131,8 @@ class OfferRequest(BaseModel):
     upgradeYears: int = Field(0, ge=0, le=20)
     notes: str = ""
     preparedBy: str = ""
+    ssiContact1Id: str = ""
+    ssiContact2Id: str = ""
     # Optional: überschreibt Katalog-Defaults (interne Kalkulation)
     licenseMarginPercent: Optional[float] = Field(None, ge=0, le=500)
     eurToChfRate: Optional[float] = Field(None, gt=0, le=10)
@@ -303,6 +336,9 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     scope.append(f"SLL-Einheiten: {sll} → Rabatt {discount['percent']}% ({discount['label']})")
     scope.append(f"Kurs EUR→CHF {eur_to_chf} · Marge {margin_percent:.0f}% auf Einkauf CHF")
 
+    ssi_contacts = resolve_ssi_contacts(payload.ssiContact1Id, payload.ssiContact2Id)
+    prepared_by = (payload.preparedBy or "").strip() or (ssi_contacts[0].get("name") or "")
+
     return {
         "kind": "license",
         "product": product,
@@ -322,7 +358,10 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "includedAdminClients": included_admin,
             "includedFunctions": included_functions,
             "notes": payload.notes,
-            "preparedBy": payload.preparedBy,
+            "preparedBy": prepared_by,
+            "ssiContact1Id": payload.ssiContact1Id or (ssi_contacts[0].get("id") or ""),
+            "ssiContact2Id": payload.ssiContact2Id or (ssi_contacts[1].get("id") or ""),
+            "ssiContacts": ssi_contacts,
             "sllCount": sll,
             "discountPercent": discount["percent"],
             "discountLabel": discount["label"],
@@ -388,6 +427,8 @@ class ItOfferRequest(BaseModel):
     mealCount: int = Field(0, ge=0, le=500)
     notes: str = ""
     preparedBy: str = ""
+    ssiContact1Id: str = ""
+    ssiContact2Id: str = ""
     # Nur Marge (CHF intern, kein Währungskurs)
     itMarginPercent: Optional[float] = Field(None, ge=0, le=500)
 
@@ -699,7 +740,13 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             "hourlyRateSell": hourly_sell,
             "itMarginPercent": margin_percent,
             "notes": payload.notes,
-            "preparedBy": payload.preparedBy,
+            "preparedBy": (
+                (payload.preparedBy or "").strip()
+                or ((resolve_ssi_contacts(payload.ssiContact1Id, payload.ssiContact2Id)[0] or {}).get("name") or "")
+            ),
+            "ssiContact1Id": payload.ssiContact1Id,
+            "ssiContact2Id": payload.ssiContact2Id,
+            "ssiContacts": resolve_ssi_contacts(payload.ssiContact1Id, payload.ssiContact2Id),
         },
         "lines": lines,
         "offerSections": offer_sections,
@@ -955,6 +1002,11 @@ def get_commercial_terms():
     return load_commercial_terms()
 
 
+@app.get("/api/ssi-contacts")
+def get_ssi_contacts():
+    return load_ssi_contacts()
+
+
 class ComposeOfferRequest(BaseModel):
     licenseOfferId: Optional[str] = None
     itOfferId: Optional[str] = None
@@ -965,6 +1017,9 @@ class ComposeOfferRequest(BaseModel):
     discountPercent: Optional[float] = Field(None, ge=0, le=100)
     discountAmountChf: Optional[float] = Field(None, ge=0)
     roundTo: Optional[int] = Field(None, ge=0)  # 0/None = aus, sonst z.B. 10/50/100
+    # SSI-Ansprechpartner (Cover + Unterschriften) — überschreibt gespeicherte Auswahl
+    ssiContact1Id: Optional[str] = None
+    ssiContact2Id: Optional[str] = None
 
 
 def _load_saved_offer(offer_id: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -986,9 +1041,25 @@ def compose_offer(payload: ComposeOfferRequest):
         raise HTTPException(status_code=400, detail="Lizenz- und/oder IT-Kalkulation erforderlich")
 
     customer = (license_offer or it_offer).get("customer", {})
+    lic_cfg = (license_offer or {}).get("configuration", {}) or {}
+    it_cfg = (it_offer or {}).get("configuration", {}) or {}
+    contact1_id = (
+        payload.ssiContact1Id
+        or lic_cfg.get("ssiContact1Id")
+        or it_cfg.get("ssiContact1Id")
+        or ""
+    )
+    contact2_id = (
+        payload.ssiContact2Id
+        or lic_cfg.get("ssiContact2Id")
+        or it_cfg.get("ssiContact2Id")
+        or ""
+    )
+    ssi_contacts = resolve_ssi_contacts(contact1_id, contact2_id)
     prepared_by = (
-        (license_offer or {}).get("configuration", {}).get("preparedBy")
-        or (it_offer or {}).get("configuration", {}).get("preparedBy")
+        lic_cfg.get("preparedBy")
+        or it_cfg.get("preparedBy")
+        or (ssi_contacts[0].get("name") if ssi_contacts else "")
         or ""
     )
 
@@ -1296,6 +1367,27 @@ def compose_offer(payload: ComposeOfferRequest):
 
     created = datetime.now()
     commercial_terms = load_commercial_terms()
+    # Unterschriften aus SSI-Auswahl (statt fixer Florian/Andrej)
+    closing = dict(commercial_terms.get("closing") or {})
+    closing["signatories"] = [
+        {
+            "name": (ssi_contacts[0] or {}).get("name") or "",
+            "title": (ssi_contacts[0] or {}).get("title") or "",
+            "role": (ssi_contacts[0] or {}).get("role") or "",
+            "email": (ssi_contacts[0] or {}).get("email") or "",
+            "phone": (ssi_contacts[0] or {}).get("phone") or "",
+            "id": (ssi_contacts[0] or {}).get("id") or "",
+        },
+        {
+            "name": (ssi_contacts[1] or {}).get("name") or "",
+            "title": (ssi_contacts[1] or {}).get("title") or "",
+            "role": (ssi_contacts[1] or {}).get("role") or "",
+            "email": (ssi_contacts[1] or {}).get("email") or "",
+            "phone": (ssi_contacts[1] or {}).get("phone") or "",
+            "id": (ssi_contacts[1] or {}).get("id") or "",
+        },
+    ]
+    commercial_terms = {**commercial_terms, "closing": closing}
     validity_days = int(commercial_terms.get("validityDays") or 14)
     intro_variant_tpl = (
         template.get("introOrderHandling")
@@ -1311,9 +1403,12 @@ def compose_offer(payload: ComposeOfferRequest):
             "validUntil": (created + timedelta(days=validity_days)).strftime("%d.%m.%Y"),
             "validityDays": validity_days,
             "preparedBy": prepared_by,
+            "ssiContact1Id": (ssi_contacts[0] or {}).get("id") or contact1_id,
+            "ssiContact2Id": (ssi_contacts[1] or {}).get("id") or contact2_id,
             "templateSource": "Anhang zu Software_v2.6.X.docx · Kaufmännische Bedingungen CH 09.2022",
             "documentDate": created.strftime("%d.%m.%Y"),
         },
+        "ssiContacts": ssi_contacts,
         "customer": customer,
         "branding": {
             "product": "WAMAS Lift & Store",

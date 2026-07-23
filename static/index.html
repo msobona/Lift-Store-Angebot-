@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260722oh" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260723ssi" />
 </head>
 <body>
   <header class="topbar">
@@ -75,7 +75,20 @@
               <label>Ansprechpartner<input name="contact" /></label>
               <label>E-Mail<input name="email" type="email" /></label>
               <label>Telefon<input name="phone" type="tel" placeholder="+41 …" /></label>
-              <label>Erstellt von<input name="preparedBy" /></label>
+              <label class="span-2">SSI-Ansprechpartner (Cover &amp; Unterschrift)
+                <span class="ssi-contact-pickers">
+                  <span class="ssi-contact-picker">
+                    <select name="ssiContact1Id" id="licenseSsiContact1" aria-label="SSI Kontakt 1"></select>
+                    <span class="ssi-contact-meta" data-for="ssiContact1Id"></span>
+                  </span>
+                  <span class="ssi-contact-picker">
+                    <select name="ssiContact2Id" id="licenseSsiContact2" aria-label="SSI Kontakt 2"></select>
+                    <span class="ssi-contact-meta" data-for="ssiContact2Id"></span>
+                  </span>
+                </span>
+                <span class="field-hint">Zwei Personen aus dem Logimat-Stamm — erscheinen auf Cover und letzter Seite.</span>
+              </label>
+              <input type="hidden" name="preparedBy" id="licensePreparedBy" value="" />
               <label class="span-2 address-autocomplete">Adresse
                 <span class="address-field">
                   <input
@@ -204,7 +217,19 @@
               <label>Firma *<input name="company" required placeholder="Muster GmbH" /></label>
               <label>Projektname<input name="projectName" /></label>
               <label>Realisierungszeitraum<input name="realizationPeriod" placeholder="Q3 2026" /></label>
-              <label>Erstellt von<input name="preparedBy" /></label>
+              <label class="span-2">SSI-Ansprechpartner (Cover &amp; Unterschrift)
+                <span class="ssi-contact-pickers">
+                  <span class="ssi-contact-picker">
+                    <select name="ssiContact1Id" id="itSsiContact1" aria-label="SSI Kontakt 1"></select>
+                    <span class="ssi-contact-meta" data-for="ssiContact1Id"></span>
+                  </span>
+                  <span class="ssi-contact-picker">
+                    <select name="ssiContact2Id" id="itSsiContact2" aria-label="SSI Kontakt 2"></select>
+                    <span class="ssi-contact-meta" data-for="ssiContact2Id"></span>
+                  </span>
+                </span>
+              </label>
+              <input type="hidden" name="preparedBy" id="itPreparedBy" value="" />
             </div>
           </section>
 
@@ -336,6 +361,19 @@
                 <option value="100">100 CHF</option>
               </select>
             </label>
+            <label class="span-2">SSI-Ansprechpartner (Cover &amp; Unterschrift)
+              <span class="ssi-contact-pickers">
+                <span class="ssi-contact-picker">
+                  <select id="offerSsiContact1" aria-label="SSI Kontakt 1"></select>
+                  <span class="ssi-contact-meta" data-for="offerSsiContact1"></span>
+                </span>
+                <span class="ssi-contact-picker">
+                  <select id="offerSsiContact2" aria-label="SSI Kontakt 2"></select>
+                  <span class="ssi-contact-meta" data-for="offerSsiContact2"></span>
+                </span>
+              </span>
+              <span class="field-hint">Auswahl gilt für Titelseite und Unterschriftenseite.</span>
+            </label>
           </div>
           <div id="internalContributionBox" class="internal-db-box no-print" aria-live="polite"></div>
           <div class="form-actions" style="margin:0">
@@ -375,6 +413,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260722oh"></script>
+  <script src="/static/app.js?v=20260723ssi"></script>
 </body>
 </html>
