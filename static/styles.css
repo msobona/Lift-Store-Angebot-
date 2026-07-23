@@ -2201,9 +2201,10 @@ textarea:focus {
     page-break-after: auto;
   }
 
-  /* Kaufmännische Bedingungen immer auf neuer Seite */
+  /* Diese Abschnitte immer auf neuer Seite */
   .offer-section.offer-terms,
-  #sec-terms {
+  #sec-terms,
+  #sec-architecture {
     break-before: page !important;
     page-break-before: always !important;
   }
