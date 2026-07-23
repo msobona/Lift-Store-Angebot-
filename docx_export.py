@@ -232,7 +232,7 @@ def apply_options_table(
     total_price: str = "",
 ) -> bytes:
     """
-    Optionen-Tabelle: nur Verweis — kalkulierte Positionen/Preise stehen in der Zusammenfassung.
+    Optionen-Tabelle: gewählte Module (Titel + Text). Preise stehen in der Zusammenfassung.
     """
     from copy import deepcopy
 
@@ -276,11 +276,26 @@ def apply_options_table(
         _set_row_min_height(tr, min_height)
         tbl.append(tr)
 
-    note = (
-        "Die gewählten Software-Optionen und alle Preise sind ausschliesslich "
-        "unter «Leistungsumfang & Preise» / Zusammenfassung aufgeführt."
-    )
-    add_row([note, "", "", ""], min_height=900)
+    if not options:
+        add_row(
+            [
+                "Keine optionalen Softwaremodule gewählt. "
+                "Kalkulierte Positionen und Preise stehen unter «Leistungsumfang & Preise» / Zusammenfassung.",
+                "",
+                "",
+                "",
+            ],
+            min_height=900,
+        )
+    else:
+        for idx, opt in enumerate(options, start=1):
+            title = (opt.get("title") or "").strip() or f"Option {idx}"
+            text = (opt.get("text") or "").strip()
+            lines = [f"{idx}. {title}"]
+            if text:
+                lines.append(text)
+            lines.append("")
+            add_row([lines, "", "", ""], min_height=1400, first_bold=True)
 
     out = io.BytesIO()
     doc.save(out)
@@ -622,7 +637,137 @@ def _greeting_line(contact: str) -> str:
     name = (contact or "").strip()
     if not name:
         return "Sehr geehrte Damen und Herren,"
-    return f"Sehr geehrte Damen und Herren / Sehr geehrte/r {name},"
+    tokens = name.split()
+    first = tokens[0].lower().rstrip(".")
+    if first in {"herr", "hr"}:
+        return f"Sehr geehrter {' '.join(tokens)},"
+    if first in {"frau", "fr"}:
+        return f"Sehr geehrte {' '.join(tokens)},"
+    return f"Sehr geehrte/r {name},"
+
+
+def _set_paragraph_text(paragraph, text: str) -> None:
+    """Ersetzt den gesamten Absatztext (behält grob die Formatierung des ersten Runs)."""
+    value = text or ""
+    if paragraph.runs:
+        paragraph.runs[0].text = value
+        for run in paragraph.runs[1:]:
+            run.text = ""
+    else:
+        paragraph.add_run(value)
+
+
+def _insert_page_break_before(element) -> None:
+    """Fügt vor einem Body-Element (Absatz/Tabelle) einen Seitenumbruch ein."""
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    p = OxmlElement("w:p")
+    r = OxmlElement("w:r")
+    br = OxmlElement("w:br")
+    br.set(qn("w:type"), "page")
+    r.append(br)
+    p.append(r)
+    element.addprevious(p)
+
+
+def polish_offer_docx(docx_bytes: bytes, context: Dict[str, Any]) -> bytes:
+    """Nachbearbeitung: Cover/Index, Anrede, Versionstabelle, Seitenumbrüche."""
+    from docx import Document
+
+    doc = Document(io.BytesIO(docx_bytes))
+    angebotsnummer = str(context.get("angebotsnummer") or "").strip()
+    revision_code = str(context.get("revision_code") or "").strip()
+    datum = str(context.get("datum") or "").strip()
+    titel = str(context.get("titel") or "").strip()
+    anrede = str(context.get("anrede") or "").strip()
+    einleitung = str(context.get("einleitung") or "").strip()
+    erstellt_von = str(context.get("erstellt_von") or "").strip()
+
+    # Cover-Titelzeile: Duplikate entfernen, Index/Angebotsnr. sichtbar machen
+    for p in doc.paragraphs[:8]:
+        t = (p.text or "").strip()
+        if "WAMAS" in t and ("Angebot" in t or "Lift" in t):
+            parts = [titel or "Angebot WAMAS® Lift & Store"]
+            if angebotsnummer:
+                parts.append(angebotsnummer)
+            elif revision_code:
+                parts.append(revision_code)
+            if datum:
+                parts.append(datum)
+            _set_paragraph_text(p, "  ·  ".join(parts))
+            break
+
+    # Anrede dynamisch
+    for p in doc.paragraphs:
+        t = (p.text or "").strip()
+        if t.startswith("Sehr geehrter Herr") or t.startswith("Sehr geehrte"):
+            _set_paragraph_text(p, anrede or "Sehr geehrte Damen und Herren,")
+            break
+
+    # Veralteten Hardcode-Dankestext durch Einleitung ersetzen
+    for p in doc.paragraphs:
+        t = p.text or ""
+        if "14.04.2008" in t or "Wir danken für Ihre Anfrage vom" in t:
+            _set_paragraph_text(
+                p,
+                einleitung
+                or "Wir danken für Ihre Anfrage und unterbreiten Ihnen nachstehend unser Angebot.",
+            )
+            break
+
+    # Bedingungen-Versionszeile (falls vorhanden)
+    terms_version = str(context.get("terms_version") or "").strip()
+    if terms_version:
+        for p in doc.paragraphs:
+            t = (p.text or "").strip()
+            if t.startswith("Version ") and len(t) < 40 and any(ch.isdigit() for ch in t):
+                _set_paragraph_text(p, f"Version {terms_version}")
+                break
+
+    # Versionstabelle: Index | Datum | Erstellt von | Kommentar/Angebotsnr.
+    for table in doc.tables:
+        if not table.rows:
+            continue
+        header = (table.rows[0].cells[0].text or "").strip().lower()
+        if not header.startswith("version"):
+            continue
+        if len(table.rows) < 2 or len(table.rows[1].cells) < 3:
+            continue
+        row = table.rows[1]
+        row.cells[0].text = revision_code or angebotsnummer or ""
+        if len(row.cells) > 1:
+            row.cells[1].text = datum
+        if len(row.cells) > 2 and not (row.cells[2].text or "").strip():
+            row.cells[2].text = erstellt_von
+        if len(row.cells) > 3:
+            comment = angebotsnummer if angebotsnummer != revision_code else ""
+            if revision_code and angebotsnummer and revision_code not in angebotsnummer:
+                comment = angebotsnummer
+            row.cells[3].text = comment
+        break
+
+    # Seitenumbrüche vor zentralen Blöcken (analog HTML-Druck)
+    break_headers = (
+        "einleitung",
+        "zusammenfassung",
+        "kaufmännische bedingungen",
+        "kaufmaennische bedingungen",
+    )
+    seen = set()
+    for table in doc.tables:
+        if not table.rows:
+            continue
+        header = (table.rows[0].cells[0].text or "").strip().lower()
+        key = next((h for h in break_headers if header.startswith(h)), None)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        _insert_page_break_before(table._tbl)
+
+    out = io.BytesIO()
+    doc.save(out)
+    return out.getvalue()
 
 
 def _split_swiss_address(address: str) -> Dict[str, str]:
@@ -840,6 +985,7 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "datum": datum,
         "gueltig_bis": gueltig_bis,
         "meta_zeile": meta_zeile,
+        "revision_code": meta.get("revisionCode") or "",
         "version_software": (offer.get("branding") or {}).get("version", "2.8"),
         "erstellt_von": prepared_by,
         "revision_von": revision_von,
@@ -1028,11 +1174,8 @@ def build_offer_docx(offer: Dict[str, Any]) -> bytes:
 
     template_path = ensure_annex_template()
     context = build_template_context(offer)
-    # Optionen-Platzhalter: kein zweites Preistableau — Verweis auf Leistungsumfang
-    context["optionen_text"] = (
-        "Die gewählten Software-Optionen und alle Preise sind ausschliesslich "
-        "unter «Leistungsumfang & Preise» / Zusammenfassung aufgeführt."
-    )
+    selected_options = list((offer.get("content") or {}).get("selectedOptions") or [])
+    # optionen_text bleibt die aus dem Context gerenderte Optionsbeschreibung
 
     tpl = DocxTemplate(str(template_path))
     tpl.render(context, autoescape=True)
@@ -1040,13 +1183,14 @@ def build_offer_docx(offer: Dict[str, Any]) -> bytes:
     out = io.BytesIO()
     tpl.save(out)
     docx_bytes = apply_sdt_contact_fields(out.getvalue(), context)
-    docx_bytes = apply_options_table(docx_bytes, [])
+    docx_bytes = apply_options_table(docx_bytes, selected_options)
     summary = offer.get("priceSummary") or {}
     scope_groups = offer.get("scopeGroups") or (offer.get("content") or {}).get("scopeGroups") or []
-    return apply_zusammenfassung_table(
+    docx_bytes = apply_zusammenfassung_table(
         docx_bytes,
         list(scope_groups),
         subtotal_chf=summary.get("subtotalChf"),
         discount_chf=summary.get("commercialDiscountChf"),
         grand_total_chf=summary.get("grandTotalChf"),
     )
+    return polish_offer_docx(docx_bytes, context)
