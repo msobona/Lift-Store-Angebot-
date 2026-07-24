@@ -1329,7 +1329,7 @@
           <p>${escapeHtml(doc.content.closing)}</p>
         </section>
 
-        ${renderCommercialTermsHtml(doc.content.commercialTerms)}
+        ${renderCommercialTermsHtml(doc.content.commercialTerms, offerDate)}
 
         <div class="offer-footer">
           <div>
@@ -1354,8 +1354,9 @@
     );
   }
 
-  function renderCommercialTermsHtml(terms) {
+  function renderCommercialTermsHtml(terms, offerDate = "") {
     if (!terms || !(terms.sections || []).length) return "";
+    const placeDate = `Schaffhauserstrasse 10, 8213 Neunkirch${offerDate ? ` · ${offerDate}` : ""}`;
     const sectionsHtml = (terms.sections || []).map((sec) => {
       const paras = (sec.paragraphs || [])
         .map((p) => `<p>${linkifyUrls(p)}</p>`)
@@ -1416,7 +1417,7 @@
           <div class="offer-customer-accept">
             <div>
               <p>Ort / Datum</p>
-              <div class="offer-sign-line"></div>
+              <p class="offer-place-date">${escapeHtml(placeDate)}</p>
             </div>
             <div>
               <p>Unterschrift / Stempel Kunde</p>
