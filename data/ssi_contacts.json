@@ -1,6 +1,6 @@
 {
   "meta": {
-    "note": "SSI-Ansprechpartner für Cover und Unterschriften. Quellen: Dropdowns in Angebot Logimat DE.docx. Titel/Abteilung (role) bei Bedarf hier pflegen.",
+    "note": "SSI-Ansprechpartner für Cover und Unterschriften. E-Mail-Schema: vorname.nachname@ssi-schaefer.com (bei Doppelnamen nur erster Nachname, z. B. Rudolf Mayer-Richert → rudolf.mayer@…). Umlaute als ae/oe/ue.",
     "emailDomain": "ssi-schaefer.com",
     "defaults": {
       "contact1Id": "andrej-pulfer",
@@ -212,7 +212,7 @@
       "name": "Rudolf Mayer-Richert",
       "title": "Head of Sales Switzerland, Member of General Management",
       "role": "Logistics Solutions",
-      "email": "rudolf.mayer-richert@ssi-schaefer.com",
+      "email": "rudolf.mayer@ssi-schaefer.com",
       "phone": "",
       "groups": [
         "signatory",
