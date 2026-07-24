@@ -231,12 +231,13 @@
     {
       "id": "simon-rueede",
       "name": "Simon Rüede",
-      "title": "",
-      "role": "",
+      "title": "Director IT Solutions, Member of General Management",
+      "role": "Logistics Solutions",
       "email": "simon.rueede@ssi-schaefer.com",
       "phone": "",
       "groups": [
-        "signatory"
+        "signatory",
+        "it-solutions"
       ]
     },
     {
