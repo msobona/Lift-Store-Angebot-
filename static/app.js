@@ -1160,10 +1160,7 @@
             <div><span>Strasse:</span><strong>${escapeHtml(addrParts.street || "—")}</strong></div>
             <div><span>Postleitzahl, Ort:</span><strong>${escapeHtml(addrParts.city || "—")}</strong></div>
             <div><span>Telefon:</span><strong>${escapeHtml(c.phone || "")}</strong></div>
-            <div><span>Fax:</span><strong></strong></div>
             <div><span>E-Mail:</span><strong>${escapeHtml(c.email || "")}</strong></div>
-            ${c.projectName ? `<div><span>Projekt:</span><strong>${escapeHtml(c.projectName)}</strong></div>` : ""}
-            <div><span>Angebotsnr.:</span><strong>${escapeHtml(doc.meta.archiveTitle || doc.meta.offerNumber || "")}</strong></div>
           </aside>
           <div class="offer-cover-contacts">
             <table>
