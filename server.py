@@ -1821,7 +1821,6 @@ def compose_offer(payload: ComposeOfferRequest):
             "standardFunctions": standard,
             "machineOptionsLead": template.get("machineOptionsLead", ""),
             "selectedOptions": options,
-            "hardwareOptions": template.get("hardwareOptions", []),
             "clients": clients_content,
             "architecture": architecture_content,
             "requirements": requirements_content,

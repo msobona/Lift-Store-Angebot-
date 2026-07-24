@@ -188,13 +188,6 @@
       "text": "Diese Funktion ermöglicht dem System, das Beleuchtungssystem in Abhängigkeit der aktuellen Öffnungen und vom Login-Status des Benutzers zu steuern."
     }
   },
-  "hardwareOptions": [
-    { "title": "LogiBar", "text": "Freigabelichtschranke unter der Zugriffsöffnung." },
-    { "title": "LogiPointer", "text": "Kennzeichnung des Lagerorts durch ein Laserpointer-System." },
-    { "title": "LogiPull", "text": "Manueller Tablarauszug für Entnahme/Einlagerung z. B. per Kran – besonders bei schweren und unhandlichen Gütern." },
-    { "title": "LogiTilt", "text": "Neigungsvorrichtung des Tablars zur ergonomischen Entnahme der Güter." },
-    { "title": "LogiWork", "text": "Höhenverstellbare Tablarausgabe für individuelle Arbeitshöhe." }
-  ],
   "clients": {
     "touch": "Der Touch Client wird auf dem Industrie-PC am SSI LOGIMAT® ausgeführt und hat eine für Touchscreen ausgelegte Benutzeroberfläche ohne physische Tastatur. Funktionsumfang: Tablare anfordern/einrichten/ändern; Einlagern, Auslagern, Umlagern und Inventur; Artikel erfassen; Behälter erstellen/bearbeiten; Bestände anderer Lagerlifte einer Zone einsehen; Bearbeitung von Aufträgen.",
     "admin": "Der Admin Client ermöglicht die Konfiguration von Stammdaten, die Kontrolle von Systemprozessen und die Anbindung an ein HOST-System. Er wird in der Regel von Leitstandmitarbeitern oder IT-Verantwortlichen genutzt. Aus Sicherheitsgründen kann der SSI LOGIMAT® nicht mit dem Admin Client bedient werden – der Bediener muss am Lift stehen. Weitere Funktionen: Bestände verwalten, Excel-Export, Benutzerverwaltung, Boxtypen, Auswertungen, Pflege von Systempartnern (ERP).",
