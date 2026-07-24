@@ -174,12 +174,13 @@
     {
       "id": "peter-hansen",
       "name": "Peter Hansen",
-      "title": "",
-      "role": "",
+      "title": "Head of Storage Systems Division",
+      "role": "Logistics Solutions",
       "email": "peter.hansen@ssi-schaefer.com",
       "phone": "",
       "groups": [
-        "signatory"
+        "signatory",
+        "storage-systems"
       ]
     },
     {
