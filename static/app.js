@@ -1221,9 +1221,9 @@
             <li><a href="#sec-scope">A1. Umfang WAMAS Lift &amp; Store</a>
               <ol>
                 <li><a href="#sec-functions">A1.1 Standard-Funktionen / Prozesse</a></li>
-                <li><a href="#sec-options">A1.2 Mögliche Optionen</a>
+                <li><a href="#sec-options">A1.2 Gewählte Software-Optionen</a>
                   <ol>
-                    <li><a href="#sec-hardware">A1.2.1 Hardware-Optionen</a></li>
+                    <li><a href="#sec-hardware">A1.2.1 Hardware-Optionen SSI LOGIMAT®</a></li>
                   </ol>
                 </li>
                 <li><a href="#sec-commercial">1. Leistungsumfang &amp; Preise</a></li>
@@ -1255,11 +1255,11 @@
         </section>
 
         <section class="offer-section" id="sec-options">
-          <h2>A1.2 Mögliche Optionen für WAMAS® Lift &amp; Store</h2>
+          <h2>A1.2 Gewählte Software-Optionen für WAMAS® Lift &amp; Store</h2>
           <p>${escapeHtml(doc.content.machineOptionsLead || "")}</p>
           <p class="offer-options-hint">Kurzbeschrieb der gewählten Module. Kalkulierte Positionen und Preise stehen nur unter «Leistungsumfang &amp; Preise».</p>
           <div class="offer-fn-list">${optionsHtml}</div>
-          <h3 id="sec-hardware">A1.2.1 Hardware-Optionen vom WAMAS® Lift &amp; Store</h3>
+          <h3 id="sec-hardware">A1.2.1 Hardware-Optionen SSI LOGIMAT®</h3>
           <div class="offer-hw-grid">${hardwareHtml}</div>
         </section>
 
