@@ -624,6 +624,9 @@ def _render_section_body(sec: Dict[str, Any], blocks: List[str], heading_prefix:
 
 def _render_bedingungen_text(terms: Dict[str, Any]) -> str:
     blocks: List[str] = []
+    intro = (terms.get("intro") or "").strip()
+    if intro:
+        blocks.append(intro)
     for sec in terms.get("sections") or []:
         if isinstance(sec, dict):
             _render_section_body(sec, blocks)

@@ -321,6 +321,24 @@ label.full { grid-column: 1 / -1; }
   color: var(--ssi-muted);
 }
 
+label.check-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.45rem 0.65rem;
+  font-weight: 600;
+}
+
+label.check-row input[type="checkbox"] {
+  margin-top: 0.2rem;
+  flex: 0 0 auto;
+}
+
+label.check-row .field-hint {
+  flex: 1 1 100%;
+  margin-left: 1.4rem;
+}
+
 .ssi-contact-pickers {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1823,6 +1841,12 @@ textarea:focus {
 .offer-terms-head p {
   margin: 0.2rem 0 0;
   font-size: 0.85rem;
+}
+
+.offer-terms-intro {
+  margin-top: 0.65rem !important;
+  max-width: 58rem;
+  line-height: 1.45;
 }
 
 .offer-terms-section {

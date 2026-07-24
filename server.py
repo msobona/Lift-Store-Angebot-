@@ -69,6 +69,27 @@ def load_commercial_terms() -> Dict[str, Any]:
     return json.loads(COMMERCIAL_TERMS_FILE.read_text(encoding="utf-8"))
 
 
+def prepare_commercial_terms(*, include_oracle: bool = False) -> Dict[str, Any]:
+    """Software-Vertragsbedingungen; optionale Klauseln (z. B. Oracle) nur bei Bedarf."""
+    terms = load_commercial_terms()
+    sections: List[Dict[str, Any]] = []
+    for sec in terms.get("sections") or []:
+        if not isinstance(sec, dict):
+            continue
+        optional = sec.get("optional")
+        if optional == "oracle" and not include_oracle:
+            continue
+        cleaned = {k: v for k, v in sec.items() if k != "optional"}
+        sections.append(cleaned)
+    # Fortlaufend nummerieren, damit optionale Klauseln keine Lücken erzeugen
+    for idx, sec in enumerate(sections, start=1):
+        sec["id"] = f"1.{idx}"
+    out = dict(terms)
+    out["sections"] = sections
+    out["includeOracle"] = bool(include_oracle)
+    return out
+
+
 def load_ssi_contacts() -> Dict[str, Any]:
     if not SSI_CONTACTS_FILE.exists():
         return {"meta": {"defaults": {}}, "contacts": []}
@@ -1285,8 +1306,8 @@ def get_offer_template():
 
 
 @app.get("/api/offer/commercial-terms")
-def get_commercial_terms():
-    return load_commercial_terms()
+def get_commercial_terms(includeOracle: bool = False):
+    return prepare_commercial_terms(include_oracle=includeOracle)
 
 
 @app.get("/api/ssi-contacts")
@@ -1310,6 +1331,8 @@ class ComposeOfferRequest(BaseModel):
     ssiContact2Id: Optional[str] = None
     signatory1Id: Optional[str] = None
     signatory2Id: Optional[str] = None
+    # Optionale Oracle-Lizenzklausel in den Vertragsbedingungen
+    includeOracleTerms: Optional[bool] = False
 
 
 def _load_saved_offer(offer_id: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -1722,7 +1745,9 @@ def compose_offer(payload: ComposeOfferRequest):
     }
 
     created = datetime.now()
-    commercial_terms = load_commercial_terms()
+    commercial_terms = prepare_commercial_terms(
+        include_oracle=bool(payload.includeOracleTerms)
+    )
     # Unterschriften getrennt von Cover-Ansprechpartnern
     closing = dict(commercial_terms.get("closing") or {})
     closing["signatories"] = [
@@ -1730,7 +1755,7 @@ def compose_offer(payload: ComposeOfferRequest):
         _person_snapshot(signatories_people[1] if len(signatories_people) > 1 else {}),
     ]
     commercial_terms = {**commercial_terms, "closing": closing}
-    validity_days = int(commercial_terms.get("validityDays") or 14)
+    validity_days = int(commercial_terms.get("validityDays") or 30)
     intro_variant_tpl = (
         template.get("introOrderHandling")
         if has_order_handling
@@ -1760,7 +1785,7 @@ def compose_offer(payload: ComposeOfferRequest):
             "ssiContact2Id": (ssi_contacts[1] or {}).get("id") or contact2_id,
             "signatory1Id": (signatories_people[0] or {}).get("id") or signatory1_id,
             "signatory2Id": (signatories_people[1] or {}).get("id") or signatory2_id,
-            "templateSource": "Anhang zu Software_v2.6.X.docx · Kaufmännische Bedingungen CH 09.2022",
+            "templateSource": "Anhang zu Software_v2.6.X.docx · Vertragsbedingungen Software/LS-CH 07.2026",
             "documentDate": created.strftime("%d.%m.%Y"),
         },
         "ssiContacts": ssi_contacts,

@@ -653,6 +653,7 @@
       basedOnOfferNumber: state.editingFromOfferId || null,
       discountPercent: Number(document.getElementById("offerDiscountPercent")?.value || 0) || 0,
       discountAmountChf: Math.round(Number(document.getElementById("offerDiscountAmount")?.value || 0) * 100) / 100,
+      includeOracleTerms: Boolean(document.getElementById("offerIncludeOracleTerms")?.checked),
       ...currentSsiContactIds(),
     };
     try {
@@ -1232,7 +1233,7 @@
             <li><a href="#sec-requirements">A3. Anforderungen</a></li>
             <li><a href="#sec-responsibilities">A4. Zuständigkeiten</a></li>
             <li><a href="#sec-documents">A5. Begleitende Dokumente</a></li>
-            <li><a href="#sec-terms">Kaufmännische Bedingungen (Schweiz)</a></li>
+              <li><a href="#sec-terms">Vertragsbedingungen (Software)</a></li>
           </ol>
         </nav>
 
@@ -1420,8 +1421,9 @@
       <section class="offer-section offer-terms" id="sec-terms">
         <div class="offer-terms-head">
           <p class="offer-doc-label">Rechtliche Bedingungen</p>
-          <h2>${escapeHtml(terms.title || "Kaufmännische Bedingungen")}</h2>
-          <p>Version ${escapeHtml(terms.version || "")} · Angebotsgültigkeit ${escapeHtml(String(terms.validityDays || 14))} Tage</p>
+          <h2>${escapeHtml(terms.title || "Vertragsbedingungen")}</h2>
+          <p>Version ${escapeHtml(terms.version || "")} · Angebotsgültigkeit ${escapeHtml(String(terms.validityDays || 30))} Tage</p>
+          ${terms.intro ? `<p class="offer-terms-intro">${linkifyUrls(terms.intro)}</p>` : ""}
         </div>
         ${sectionsHtml}
         <div class="offer-terms-closing">

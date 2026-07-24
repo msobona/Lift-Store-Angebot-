@@ -1,36 +1,29 @@
 {
-  "title": "Kaufmännische Bedingungen für Geschäfte in der Schweiz",
-  "version": "09.2022",
-  "validityDays": 14,
+  "title": "Vertragsbedingungen (Software / Logistics Solutions)",
+  "version": "LS-CH 07.2026",
+  "validityDays": 30,
+  "profile": "software",
+  "intro": "Das folgende Kapitel beschreibt die geltenden Vertragsbestimmungen dieses Angebots. Es gelten weder die Allgemeinen Geschäftsbedingungen (AGB) des Kunden noch die kaufmännischen Bedingungen für Products & Equipment (Stahl/Montage) der SSI SCHÄFER AG, sondern ausschliesslich die nachstehenden Bestimmungen.",
   "sections": [
     {
       "id": "1.1",
       "title": "Angebotsgültigkeit",
       "paragraphs": [
-        "Die genannten Preise sind Nettopreise. Preise, welche den einzelnen Positionen zugeordnet sind, haben nur in Verbindung mit dem Gesamtpreis Gültigkeit. Bei Bestellung einzelner Positionen müssen diese neu bewertet werden. Alle Preise verstehen sich exklusive gesetzlicher Abgaben wie Mehrwertsteuer. Angebotsgültigkeit beträgt 2 Wochen nach Angebotsabgabe.",
-        "Unabhängig der Angebotsgültigkeit behalten wir uns vor, bei einer Rohmaterialknappheit und Erhöhung der Rohmaterialpreise, Preis und Lieferzeit jederzeit den Marktverhältnissen anzupassen. Dies gilt auch bei Versorgungsengpässen, verursacht beispielsweise durch eine Epidemie/Pandemie.",
-        "Das vorliegende Angebot ist rechtlich unverbindlich und dient nur zu Informationszwecken."
+        "Die genannten Preise sind Nettopreise. Preise, welche den einzelnen Positionen zugeordnet sind, haben nur in Verbindung mit dem Gesamtpreis Gültigkeit. Bei Bestellung einzelner Positionen müssen diese neu bewertet werden. Alle Preise verstehen sich exklusive gesetzlicher Abgaben wie Mehrwertsteuer. Die Angebotsgültigkeit beträgt einen Monat (30 Tage) nach Angebotsabgabe.",
+        "Das vorliegende Angebot ist rechtlich unverbindlich und dient nur zu Informationszwecken, bis eine schriftliche Bestellung vorliegt oder ein Vertrag unterzeichnet ist."
       ]
     },
     {
       "id": "1.2",
-      "title": "Lieferbedingungen und Preisstellung",
-      "paragraphs": [
-        "Lieferbedingungen: DDP – Bestimmungsort, INCOTERMS® 2020. Der Preis versteht sich inklusive Verpackung und Fracht zuzüglich der gesetzlichen Umsatzsteuer.",
-        "Dauert die Produktionsfreigabe länger als 5 Wochen, oder erfolgt die Lieferung mehr als sechs Monate nach Vertragsschluss, kann der Lieferant den vereinbarten Vertragspreis unter Berücksichtigung von zwischenzeitlichen Erhöhungen von Material-, Personal- und/oder Energiekosten angemessen erhöhen."
-      ]
-    },
-    {
-      "id": "1.3",
       "title": "Zahlungsbedingungen",
       "paragraphs": [
         "Zu unserem Angebotspreis liegen folgende Zahlungsbedingungen zugrunde:"
       ],
       "bullets": [
         "40% bei Auftragseingang",
-        "30% bei Lieferung oder bei kundenseitiger Terminverschiebung bei Lieferbereitschaft",
-        "20% nach Montageende",
-        "10% nach Abnahme und Übergabe, jedoch spätestens 30 Tage nach Montageende",
+        "30% bei Lieferung / Bereitstellung oder bei kundenseitiger Terminverschiebung bei Lieferbereitschaft",
+        "20% nach Inbetriebnahme / Go-Live",
+        "10% nach Abnahme und Übergabe, jedoch spätestens 30 Tage nach Inbetriebnahme / Go-Live",
         "Jeweils 30 Tage, netto"
       ],
       "paragraphsAfter": [
@@ -38,154 +31,127 @@
       ]
     },
     {
-      "id": "1.4",
-      "title": "Eigentumsvorbehalt",
+      "id": "1.3",
+      "title": "Gewährleistung",
       "paragraphs": [
-        "Der Lieferant bleibt Eigentümer seiner gesamten Lieferungen, bis er die Zahlungen gemäss Vertrag, CR und mögliche Preisanpassungen, wie unter Pkt. 1.1 beschrieben, vollständig erhalten hat. Der Besteller ermächtigt den Lieferanten, die zur Wahrung dessen Eigentumsansprüche allenfalls erforderlichen Registereintragungen vorzunehmen."
+        "Die Gewährleistungsfrist für den Vertragsgegenstand beträgt 24 Monate. Mit Beginn der kommerziellen Nutzung (Produktivstart / Go-Live) der Anlage beginnt die Gewährleistungszeit.",
+        "Voraussetzung für die Mängelhaftung seitens SSI SCHÄFER:"
+      ],
+      "bullets": [
+        "Teilnahme von qualifiziertem Personal des Kunden an einer Grundschulung über Anlagenverständnis, Bedienung und Instandhaltung des Vertragsgegenstandes.",
+        "Aufgetretene Mängel sind binnen 5 Werktagen schriftlich an SSI SCHÄFER zu melden."
+      ],
+      "paragraphsAfter": [
+        "SSI SCHÄFER verpflichtet sich, nach Massgabe der folgenden Bestimmungen jeden die Gebrauchsfähigkeit beeinträchtigenden Mangel, der auf einem Fehler der Software beruht, zu beheben.",
+        "Die Gewährleistung gilt nicht für Mängel, die vom Kunden oder von Dritten verursacht wurden und zum Beispiel auf unsachgemässer Installation, unsachgemässem Gebrauch, unsachgemäss ausgeführten Konfigurationsanpassungen oder Änderungen ohne vorherige schriftliche Zustimmung von SSI SCHÄFER beruhen, sowie für Mängel, die durch äussere Einflüsse verursacht wurden."
+      ]
+    },
+    {
+      "id": "1.4",
+      "title": "Haftung und Versicherung",
+      "paragraphs": [
+        "Allgemeine Haftungsbegrenzung, Haftungsausschlüsse; Ansprüche Dritter",
+        "Schadensersatzansprüche des Auftraggebers sind der Höhe nach auf insgesamt maximal dem Auftragswert, projektspezifisch maximal CHF ______, beschränkt. Dies gilt für sämtliche Haftungen für Personenschäden, Schäden am vertragsgegenständlichen Liefergegenstand, die durch einen Mangel dieses Liefergegenstandes verursacht wurden, Sachschäden an anderen Sachen als dem vertragsgegenständlichen Liefergegenstand, Vermögensschäden durch Mängel der vom Auftragnehmer erbrachten IT-Leistung, auch wenn diese Schäden nicht Folge solcher Personen- oder Sachschäden sind, Erfüllungsschäden und etwaige Vertragsstrafen.",
+        "Dies gilt unabhängig von dem Haftungsgrund, also insbesondere unabhängig davon, ob die Haftung auf vertraglichen, gesetzlichen oder sonstigen Ansprüchen beruht. Die vorstehende Haftungsbegrenzung gilt nicht im Falle von Vorsatz oder grober Fahrlässigkeit bzw. im Falle einer schuldhaften Verletzung des Lebens oder der Gesundheit.",
+        "Die Haftung des Auftragnehmers dem Auftraggeber gegenüber für indirekte Schäden, Folgeschäden oder reine Vermögensschäden ist ausgeschlossen. Dies gilt insbesondere für Nutzungs- bzw. Produktionsausfall, entgangenen Gewinn bzw. entgangenen Umsatz, Verlust von Geschäftsmöglichkeiten bzw. von Aufträgen, Wegfall von erwarteten Einsparungen, Finanzierungskosten, erhöhte Betriebskosten oder jegliche weitere, indirekte finanzielle oder wirtschaftlichen Verluste bzw. Schäden. Das Vorstehende gilt entsprechend für etwaige Freistellungsansprüche des Auftraggebers gegen den Auftragnehmer aufgrund von etwaigen Ansprüchen Dritter gegen den Auftraggeber. Der vorstehende Haftungsausschluss gilt nicht im Falle von Vorsatz oder grober Fahrlässigkeit bzw. im Falle einer schuldhaften Verletzung des Lebens oder der Gesundheit.",
+        "Für Personenschäden haftet der Auftragnehmer bei Vorsatz, grober Fahrlässigkeit und Verletzung von Leben und Gesundheit unbegrenzt.",
+        "Der Auftragnehmer hält eine Haftpflichtversicherung mit einem Deckungsbetrag mindestens in Höhe der vereinbarten Haftungsbeträge vor."
       ]
     },
     {
       "id": "1.5",
-      "title": "Lieferzeit",
+      "title": "WAMAS® Standard-Software",
       "paragraphs": [
-        "Die Lieferzeit gilt nach individueller Absprache.",
-        "Der Lieferant haftet nicht für Unmöglichkeit der Lieferung oder Leistung oder für Liefer- oder Leistungsverzögerungen, soweit diese durch höhere Gewalt oder sonstige, zum Zeitpunkt des Vertragsabschlusses nicht vorhersehbare Ereignisse (z. B. Betriebsstörungen durch Ausfall von Maschinen, Streiks, rechtmässige Aussperrungen, Energie oder Rohstoffen, Schwierigkeiten bei der Beschaffung von notwendigen behördlichen Genehmigungen, behördliche Massnahmen oder die ausbleibende, nicht richtige oder nicht rechtzeitige Belieferung durch Lieferanten) verursacht worden sind, die der Lieferant nicht zu vertreten hat.",
-        "Wird dem Lieferant eine Lieferung oder Leistung, gleich aus welchem Grunde, unmöglich, so ist die Haftung des Lieferanten auf Schadensersatz nach Massgabe des Abschnittes „Haftung“ dieser kaufmännischen Bedingungen beschränkt. Der Lieferant ist zu Teillieferungen berechtigt, soweit diese für den Auftraggeber zumutbar sind."
+        "Die Benutzung von WAMAS unterliegt den WAMAS Endbenutzer-Lizenzbestimmungen, die unter https://www.ssi-schaefer.com/de-de/wamas-eula veröffentlicht sind. Dieser WAMAS® Endbenutzer-Lizenzvertrag hat Vorrang vor allen anderen widersprüchlichen, entgegenstehenden oder abweichenden Bestimmungen."
       ]
     },
     {
       "id": "1.6",
-      "title": "Kosten Terminverzögerungen",
+      "title": "Oracle Lizenzen",
+      "optional": "oracle",
       "paragraphs": [
-        "Bleibt eine Lieferung länger als 2 Wochen über den vereinbarten Montagetermin bei SSI Schäfer, so werden die daraus entstehenden Kosten an den Auftraggeber in Rechnung gestellt."
+        "Mit Kauf der Oracle Software akzeptiert der Käufer die Oracle Lizenzbestimmungen, welche in der Third Party Software Liste aufgeführt sind: https://www.ssi-schaefer.com/de-de/wamas-eula"
       ]
     },
     {
       "id": "1.7",
-      "title": "Verzug und pauschalierter Schadensersatz",
+      "title": "Verarbeitung von personenbezogenen Daten",
       "paragraphs": [
-        "Die Fristen im Terminplan stehen unter dem Vorbehalt, dass die bauseitigen Leistungen (z. B. Fertigstellung Bodenplatte, Vorgebäude etc.) sowie die sonstigen Mitwirkungspflichten des AG gem. Verantwortlichkeitsmatrix erfüllt sind.",
-        "Im Falle einer ausschliesslich vom AN zu vertretenden Überschreitung des Termins für die Bereitstellung des Vertragsgegenstands (BzA-Termin) schuldet der AN dem AG für jede vollendete Woche des Verzuges 0,5% (nullkommafünf), maximal 3% (drei) des Auftragswertes dieses Vertrages als pauschalierten Verzugsschadensersatz, vorausgesetzt der AG kann die Entstehung eines kausalen Verzugsschadens darlegen. Ein Nachweis zur Schadenshöhe ist nicht erforderlich. Diese Regelung in der vorliegenden Klausel 1.7 ist im Hinblick auf die Rechte des AG gegen den AN im Zusammenhang mit einem Verzug des AN abschliessend, befreit den AN aber nicht von seinen sonstigen vertraglichen Leistungspflichten, den geschuldeten Vertragsgegenstand zu erbringen. Der AG wird dem AN die Geltendmachung eines pauschalierten Schadenersatzes spätestens bei der Abnahme schriftlich mitteilen. Restmängel von untergeordneter Bedeutung (Bagatellarbeiten) lösen dann keine Verzugsentschädigung aus, wenn dadurch die Funktions- und Gebrauchsfähigkeit der Anlage und damit die bestimmungsgemässe Nutzung des Vertragsgegenstandes nicht wesentlich beeinträchtigt wird. Durch diese Vereinbarung wird die Verpflichtung des AN zur Einhaltung des vereinbarten Liefertermins sowie die Pflicht des AG zur Erfüllung seiner Mitwirkungspflichten nicht berührt."
+        "Bei der Erbringung der Leistungen gemäss diesem Angebot verarbeitet der Auftragnehmer personenbezogene Daten für den Auftraggeber. Für diese Datenverarbeitung gilt die unter https://www.ssi-schaefer.com/de-de/auftragsverarbeitung abrufbare Auftragsverarbeitungsvereinbarung in der deutschen Sprachfassung."
       ]
     },
     {
       "id": "1.8",
-      "title": "Abnahme",
+      "title": "Projektbeginn",
       "paragraphs": [
-        "Die Abnahme hat unverzüglich, spätestens jedoch zwei Wochen nach Abschluss der Montage des Lieferanten zu erfolgen. Wegen unwesentlicher Mängel kann die Abnahme nicht verweigert werden.",
-        "Die Lieferungen und Leistungen des Lieferanten gelten auch als abgenommen, wenn der Lieferant dem Auftraggeber nach Fertigstellung eine angemessene Frist zur Abnahme gesetzt hat und der Auftragnehmer die Abnahme nicht innerhalb dieser Frist unter Angabe mindestens eines wesentlichen Mangels verweigert hat. Der Lieferant ist jedoch verpflichtet, diese Mängel innerhalb einer angemessenen Frist zu beseitigen.",
-        "Eine Nutzung der Ware vor Abnahme bedarf der vorherigen schriftlichen Zustimmung des Lieferanten; andernfalls gilt die Ware auch als abgenommen."
+        "Der Auftragsstart erfolgt ausschliesslich nach Eingang einer schriftlichen Bestellung oder bei Vertragsunterzeichnung. Eine abgeschlossene technische und kaufmännische Klarstellung wird vorausgesetzt.",
+        "Über die genauen Termine ist in Abstimmung mit dem Kunden nach Auftragsvergabe ein verbindlicher Zeitplan zu erstellen. Zur Einhaltung der Termine ist es notwendig, dass die Mitwirkungspflichten des Kunden rechtzeitig erbracht werden. Erweiterungen des Liefer- und Leistungsumfanges nach Auftragsvergabe bedingen in der Regel eine Verlängerung der Gesamtliefer- und Leistungszeit."
       ]
     },
     {
       "id": "1.9",
-      "title": "Gefahrenübergang",
+      "title": "Lieferung",
       "paragraphs": [
-        "Die Gefahr geht unmittelbar nach Montageabschluss auf den Auftraggeber über. Sollte trotz einer Nutzung der Ware noch kein finaler Montageabschluss vorliegen, geht die Gefahr spätestens mit der Nutzung auf den Auftraggeber über."
+        "Es ist geplant, dass die Inbetriebnahmearbeiten gemäss Terminplan, ohne Unterbrechungen, durchgeführt werden. Behinderungen oder Unterbrechungen, z. B. durch den Kunden, andere Gewerke, laufenden Betrieb, höhere Gewalt oder gesetzlich nicht erlaubte Bedingungen, sind von SSI SCHÄFER nicht berücksichtigt.",
+        "Alle genannten Fristen für die Erfüllung oder Lieferung von Waren und Leistungen sind lediglich Abschätzungen und unterliegen der Klärung aller offenen kaufmännischen und technischen Punkte zur Auftragserfüllung."
       ]
     },
     {
       "id": "1.10",
-      "title": "Gewährleistung",
+      "title": "Verzug",
+      "paragraphs": [
+        "Es ist keine Verzugsentschädigung respektive Pönale vorgesehen."
+      ]
+    },
+    {
+      "id": "1.11",
+      "title": "Referenz",
+      "paragraphs": [
+        "SSI SCHÄFER ist berechtigt, illustrierte Pressemitteilungen, Fotos, Case Studies, Videos sowie das Logo des Eigentümers als Referenzmaterial zu veröffentlichen und zu Marketingzwecken in verschiedenen Medien weiterzugeben und zu kopieren, vorbehaltlich der vorherigen Zustimmung des Eigentümers, die nicht zu Unrecht verweigert werden darf. Zu diesen Medien gehören Broschüren, Anzeigen, Posters, Banner, Pressemitteilungen, unser Unternehmensmagazin „Update“, unsere Webseite, Social-Media-Kanäle sowie Bildschirme, Monitore und TV-Bildschirme, die bei Fachmessen und Veranstaltungen verwendet werden. Ungeachtet des Vorstehenden stimmt der Eigentümer zu, dass SSI SCHÄFER seinen Namen als Referenz in zukünftigen Angeboten oder Präsentationen für potenzielle Kunden verwendet; diese Nutzung unterliegt keiner zusätzlichen Genehmigung."
+      ]
+    },
+    {
+      "id": "1.12",
+      "title": "Nutzung von nicht-personenbezogenen Daten",
+      "paragraphs": [
+        "Präambel: Die Dienstleistungserbringung des Auftragnehmers («SSI») umfasst auch den Bereich der Verarbeitung von nicht-personenbezogenen Daten. SSI sammelt, analysiert und verarbeitet Daten, um die Produkte und Dienstleistungen von SSI zum Nutzen aller Kunden zu verbessern und dadurch die Servicequalität und das Serviceangebot kontinuierlich zu optimieren.",
+        "Durch die folgende Vereinbarung soll eine rechtssichere Grundlage für den Datenzugriff und die Datenverarbeitung geschaffen werden, welche die Rahmenbedingungen für eine zweck- und gesetzmässige Verarbeitung von nicht-personenbezogenen Daten durch SSI festlegt."
+      ],
       "subsections": [
         {
-          "title": "Dynamische Systeme",
+          "id": "1.12.1",
+          "title": "Verarbeitung von nicht-personenbezogenen Daten",
           "paragraphs": [
-            "Die Gewährleistungsfrist beträgt 12 Monate, die ab der Abnahme oder der kommerziellen Nutzung beginnt, wobei der frühere Zeitpunkt ausschlaggebend ist. Falls jedoch der Auftraggeber spätestens bis eine Woche vor Lieferung einen Wartungsvertrag inkl. Garantieverlängerung über die ordnungsgemässe Wartung der Ware mit dem Lieferanten über eine Laufzeit von mindestens 24 Monaten beginnend ab Abnahme abschliesst, beträgt die Gewährleistungsfrist 24 Monate ab der Abnahme oder der kommerziellen Nutzung, wobei der frühere Zeitpunkt ausschlaggebend ist.",
-            "Während der Gewährleistungsfrist werden Mängel auf Kosten des Lieferanten beseitigt. Eine Erneuerung, Neubeginn oder Hemmung der Gewährleistungsfrist bei Neulieferungen und Reparatur im Rahmen der Gewährleistung ist ausgeschlossen. Eine Selbst- oder Selbstvornahme durch den Kunden oder Dritte zur Mangelbeseitigung ist ausgeschlossen.",
-            "Ein Gewährleistungsanspruch setzt voraus, dass die Ware entsprechend der Bedienungs- und Betriebsanleitung bestimmungsgemäss genutzt wurde. Der Gewährleistungsanspruch bezieht sich auf den Einschichtbetrieb.",
-            "Weiter sind auch Schäden, die durch Falschbedienung oder Fremdeinwirkung entstanden sind, von der Gewährleistung ausgeschlossen. Übliche Abnutzung und Verschleiss stellen keinen Mangel dar.",
-            "Wir empfehlen den Abschluss eines Wartungsvertrages."
-          ]
-        },
-        {
-          "title": "Statische Systeme",
-          "paragraphs": [
-            "Gewährleistungs- und Verjährungsfristen beginnen mit der Abnahme des Gewerkes resp. mit der Nutzung der Anlage durch den Kunden. Die Gewährleistungsfrist erstreckt sich auf 24 Monate und schliesst Beschädigungen durch unsachgemässe Nutzung sowie Verschleiss aus. Für verdeckte Mängel beträgt die Gewährleistung 5 Jahre (60 Monate)."
+            "1.1 Diese Vereinbarung in dieser Ziffer wird auf unbestimmte Zeit abgeschlossen und ist unabhängig davon wirksam, ob zwischen Auftragnehmer und Auftraggeber ein aufrechtes Dienstleistungsverhältnis (z. B. über Serviceleistungen) besteht.",
+            "1.2 Unter nicht-personenbezogenen Daten sind sämtliche Daten zu verstehen, die keine personenbezogenen Daten iSv Art. 4 Abs. 1 der Verordnung (EU) 2016/679 («Datenschutz-Grundverordnung») sind und die im Rahmen dieser Vereinbarung oder im Rahmen einer Dienstleistungserbringung durch den Auftragnehmer entstehen. Dies umfasst auch sämtliche nicht-personenbezogene Daten, die in Hardware (z. B. Maschinen, Sensoren) oder Software (z. B. IT-Systemen) des Auftragnehmers, Auftraggebers oder von Dritten erzeugt werden und auf die sich die Dienstleistungserbringung des Auftragnehmers bezieht oder damit im Zusammenhang steht.",
+            "1.3 Unter Verarbeitung sind sämtliche automatisierten oder manuellen, kommerziellen oder nicht-kommerziellen, öffentlichen oder nicht-öffentlichen Vorgänge oder Prozesse im Zusammenhang mit nicht-personenbezogenen Daten zu verstehen, wie insbesondere das Erzeugen, das Erheben, das Erfassen, die Organisation, das Ordnen, das Sammeln, die Speicherung, die Anpassung oder Veränderung, das Auslesen, das Abfragen, das Analysieren, die Verwendung, die Übertragung, die Offenlegung durch Übermittlung, Verbreitung oder eine andere Form der Bereitstellung, den Abgleich oder die Verknüpfung, die Einschränkung, das Löschen oder die Vernichtung. Die Verarbeitung umfasst auch nicht-personenbezogene Daten, die in Hardware oder Software des Auftragnehmers, Auftraggebers oder von Dritten erzeugt werden und auf die sich die Dienstleistungserbringung des Auftragnehmers bezieht oder damit im Zusammenhang steht.",
+            "1.4 Sämtliche nicht-personenbezogenen Daten, sämtliche Informationen und Ergebnisse aus der Verarbeitung von nicht-personenbezogenen Daten sowie sämtliche Methoden und Verfahren zur und aus der Verarbeitung von nicht-personenbezogenen Daten und der daraus gewonnenen Informationen und Ergebnisse stehen – unbeschadet der Erfüllung allfälliger Mitwirkungs- und Sicherungspflichten des Auftraggebers bei der Datenverarbeitung (siehe Pkt. 1.8) – in der exklusiven, unbeschränkten und unbeschränkbaren Verfügungsmacht des Auftragnehmers. Dies gilt unabhängig davon, ob die Daten in Hardware oder Software erzeugt werden, die in der Verfügungsmacht des Auftragnehmers stehen oder nicht. Die Verarbeitung von nicht-personenbezogenen Daten, die Verarbeitung von sämtlichen Informationen und Ergebnissen aus der Verarbeitung von nicht-personenbezogenen Daten im Sinne von Pkt. 1.3 sowie sämtliche Methoden und Verfahren zur und aus der Verarbeitung von nicht-personenbezogenen Daten und der daraus gewonnenen Informationen und Ergebnisse kommen – unbeschadet der Erfüllung allfälliger Mitwirkungs- und Sicherungspflichten des Auftraggebers bei der Datenverarbeitung (siehe Pkt. 1.8) – exklusiv, unbeschränkt und unbeschränkbar dem Auftragnehmer zu.",
+            "1.5 Sofern nicht-personenbezogene Daten, sämtliche Informationen und Ergebnisse aus der Verarbeitung von nicht-personenbezogenen Daten sowie sämtliche Methoden und Verfahren zur und aus der Verarbeitung von nicht-personenbezogenen Daten und der daraus gewonnenen Informationen und Ergebnisse nicht von Vornherein ausschliesslich dem Auftragnehmer zukommen, überträgt der Auftraggeber hiermit – unbeschadet der Erfüllung allfälliger Mitwirkungs- und Sicherungspflichten des Auftraggebers bei der Datenverarbeitung (siehe Pkt. 1.8) – alle Rechte, insbesondere die gegenwärtigen und zukünftigen Nutzungsrechte, exklusiv, unbeschränkt und unwiderruflich an den Auftragnehmer. Dieses Nutzungsrecht umfasst insbesondere auch das Recht auf Verarbeitung gemäss Pkt. 1.3 und überdauert die Vertragsbeziehung unabhängig vom Beendigungsgrund.",
+            "1.6 Der Auftragnehmer verarbeitet nicht-personenbezogene Daten insbesondere zum Zweck der Verbesserung der vertragsgegenständlichen Produkte und Dienstleistungen. Die Festlegung des Verwendungszwecks ist nicht abschliessend und im Rahmen technischer (Weiter-)Entwicklungen veränderlich. Der Auftraggeber hat keinen Anspruch auf Verarbeitung nicht-personenbezogener Daten, sofern die Parteien nicht ausdrücklich schriftlich anderes vereinbart haben. Ein Anspruch auf Verarbeitung nicht-personenbezogener Daten auf Basis von vertraglichen oder gesetzlichen Hauptpflichten oder auf Basis von vertraglichen oder gesetzlichen Nebenpflichten (z. B. Treue- und Interessenwahrungspflichten, Warnpflichten etc.) ist ausgeschlossen.",
+            "1.7 Der Auftragnehmer wird bei jeder Verarbeitung von nicht-personenbezogenen Daten alle nach den Umständen entsprechenden angemessenen Geheimhaltungsmassnahmen setzen bzw. anwenden.",
+            "1.8 Sofern sich nicht-personenbezogene Daten in der rechtlichen oder physischen Einflusssphäre des Auftraggebers befinden, stellt dieser sicher, dass für die Dauer dieses Vertrages eine Verarbeitung durch den Auftragnehmer gemäss dieser Ziffer und insbesondere zu den in Pkt. 1.6 genannten Zwecken vollständig, uneingeschränkt, unverfälscht und jederzeit möglich ist. Der Auftraggeber sichert zu, dass über die in die Verarbeitung einbezogene Hardware oder Software inkl. drahtlose oder drahtgebundene Übertragungstechnologien, unabhängig von der Verfügungsbefugnis über die Hardware oder Software inkl. drahtlose oder drahtgebundene Übertragungstechnologien, eine vollständige, uneingeschränkte, unverfälschte und jederzeitige Verarbeitung durch den Auftragnehmer gewährleistet ist.",
+            "1.9 Der Auftraggeber gewährleistet, dass er, sofern er an der Sicherstellung der Datenverarbeitung des Auftragnehmers gemäss Pkt. 1.8 oder auf sonstige Weise rechtlich oder faktisch mitwirkt, alle nach dem Stand der Technik notwendigen Massnahmen setzen bzw. anwenden wird, um eine gemäss dieser Ziffer und insbesondere zu den in Pkt. 1.6 genannten Zwecken vollständige, uneingeschränkte, unverfälschte und jederzeitige Verarbeitung durch den Auftragnehmer zu ermöglichen.",
+            "1.10 Der Auftraggeber ist verpflichtet, diese Vereinbarung in dieser Ziffer auf sämtliche Arbeitnehmer, Subunternehmer und sonstige Dritte, die von der Datenverarbeitung gemäss dieser Ziffer mittelbar oder unmittelbar betroffen sind oder mittelbar oder unmittelbar an dieser Datenverarbeitung partizipieren, vollumfänglich zu überbinden."
           ]
         }
       ]
     },
     {
-      "id": "1.11",
-      "title": "Haftung",
-      "paragraphs": [
-        "(1) Einschliesslich des pauschalierten Verzugsschadensersatzes nach Klausel 1.7 dieses Vertrages ist sämtliche Haftung des AN, seiner Mitarbeiter, Subunternehmer, Lieferanten, sowie aller juristischen und natürlichen Personen, die im Rahmen dieses Vertrages auf Anweisung des AN tätig werden, im Zusammenhang mit diesem Vertrag, gleich ob aufgrund Vertrag, Gesetz oder anderweitig und soweit nach anwendbarem Recht zulässig, für verschuldete Sachschäden in Summe begrenzt auf einen Gesamtbetrag in Höhe von 100% (hundert Prozent) des Auftragswerts dieses Vertrages oder maximal CHF 3.5 Millionen (dreieinhalb), wobei der geringere Wert Anwendung findet.",
-        "(2) Mit Ausnahme des pauschalierten Verzugsschadensersatzes in Klausel 1.7 dieses Vertrages und der begrenzten Haftung nach Ziffer (1) dieser Klausel gilt vorrangig vor allen anderen vertraglichen Regelungen, soweit rechtlich zulässig, dass die Haftung – sei es aufgrund von Vertrag, Gesetz, oder anderweitig – des AN, seine Mitarbeiter, Subunternehmer und Lieferanten, sowie aller juristischen und natürlichen Personen, die im Rahmen dieses Vertrages auf Anweisung des AN tätig werden, für sämtliche Schäden, gleich welcher Art, wie zum Beispiel, aber nicht ausschliesslich indirekte und/oder mittelbare Schäden, entgangenen Gewinn oder entgangene Umsätze, Folge- und/oder Mangelfolgeschäden, Vermögensschäden, Kapitalkosten, den Verlust der Nutzung des Werks oder der zugehörigen Ausrüstung, Produktionsausfälle oder Betriebsunterbrechungen, Kosten für Ersatzgeräte, Ersatzeinrichtungen oder Ersatzdienstleistungen, Ausfallkosten, erhöhte Betriebskosten, Verlust von Geschäftswert („goodwill“), Verlust von Verträgen, Datenverlust, immaterielle Schäden, Reputationsschäden und/oder Ansprüche von Dritten gegenüber dem AG für die in diesem Abschnitt genannten Schäden, ausgeschlossen ist.",
-        "(3) Bei Vorsatz und grober Fahrlässigkeit, sowie bei schuldhafter Verletzung des Lebens, des Körpers oder der Gesundheit, die dem AN rechtlich zuzurechnen ist, gelten die in diesem Abschnitt vereinbarten Ausschlüsse und Begrenzungen der Haftung des ANs nicht, soweit diese gegen zwingendes anwendbares Recht verstossen.",
-        "Die vorstehenden Haftungsbegrenzungen und Haftungsausschlüsse haben Vorrang vor jeder hiermit im Konflikt stehenden Klausel an anderer Stelle dieses Vertrages."
-      ]
-    },
-    {
-      "id": "1.12",
-      "title": "Kündigung",
-      "paragraphs": [
-        "(1) Definition: Mit der Kündigung können die Parteien das Rechtsverhältnis des vorliegenden Vertrages ab Wirksamwerden der Kündigung mit Wirkung für die Zukunft beenden. Soweit im Vertrag nicht anderes vereinbart ist, wird die Kündigung innerhalb einer Frist von 30 Tagen ab dem Zugang der Mitteilung (schriftlich oder per E-Mail) wirksam.",
-        "(2) Kündigung des AG: Der AG kann nur kündigen, soweit ein Kündigungsrecht für den AG ausdrücklich infolge eines wichtigen Grundes vorgesehen ist. Ein wichtiger Grund im Sinne dieser Vorschrift erfordert stets ein ausschliessliches Verschulden, das dem AN rechtlich zugeordnet werden kann. Soweit nicht anderweitig in diesem Vertrag geregelt, behält der AN seinen Vergütungsanspruch für die zum Zeitpunkt des Wirksamwerdens der Kündigung erbrachten Leistungen.",
-        "(3) Kündigung des AN: Der AN kann nur kündigen, soweit ein Kündigungsrecht für den AN ausdrücklich infolge eines wichtigen Grundes vorgesehen ist. Ein wichtiger Grund ist insbesondere, aber nicht abschliessend, ein Zahlungsverzug des AG über 90 Tage. Soweit nicht anderweitig in diesem Vertrag geregelt, behält der AN den vollen einzeln nach diesem Vertrag vorgesehenen Vergütungsanspruch, sowie nachgewiesene Demobilisierungskosten."
-      ]
-    },
-    {
       "id": "1.13",
-      "title": "Höhere Gewalt und Covid-19; Lieferkettenengpässe",
-      "paragraphs": [
-        "(1) Definition: „Höhere Gewalt“ bedeutet das Eintreten eines Ereignisses oder Umstands, das eine Partei daran hindert, eine oder mehrere ihrer vertraglichen Verpflichtungen aus dem Vertrag zu erfüllen, wenn und soweit die von dem Hindernis betroffene Partei nachweist, dass: (a) dieses Hindernis ausserhalb der ihr zumutbaren Kontrolle liegt; und (b) es zum Zeitpunkt des Vertragsabschlusses nicht in zumutbarer Weise vorhersehbar war; und (c) die Auswirkungen des Hindernisses von der betroffenen Partei nicht in zumutbarer Weise hätten vermieden oder überwunden werden können.",
-        "(2) Vermutung für bestimmte Ereignisse: Bis zum Beweis des Gegenteils wird bei den folgenden Ereignissen vermutet, die eine Partei betreffen, sie würden die Voraussetzungen unter Absatz 1 lit. (a) und lit. (b) nach Absatz 1 dieser Klausel erfüllen: (i) Krieg (erklärt oder nicht erklärt), Feindseligkeiten, Angriff, Handlungen ausländischer Feinde, umfangreiche militärische Mobilisierung; (ii) Bürgerkrieg, Aufruhr, Rebellion und Revolution, militärische oder sonstige Machtergreifung, Aufstand, Terrorakte, Sabotage oder Piraterie; (iii) Währungs- und Handelsbeschränkungen, Embargo, Sanktionen; (iv) rechtmässige oder unrechtmässige Amtshandlungen, Befolgung von Gesetzen oder Regierungsanordnungen, Enteignung, Beschlagnahme von Werken, Requisition, Verstaatlichung; (v) Pest, Epidemie, Pandemie, Naturkatastrophe oder extremes Naturereignis; (vi) Explosion, Feuer, Zerstörung von Ausrüstung, längerer Ausfall von Transportmitteln, Telekommunikation, Informationssystemen oder Energie; (vii) allgemeine Arbeitsunruhen wie Boykott, Streik und Aussperrung, Bummelstreik, Besetzung von Fabriken und Gebäuden.",
-        "(3) Mitteilungen und Rechtsfolgen: Eine Partei, die sich mit Erfolg auf diese Klausel beruft, ist ab dem Zeitpunkt, zu dem das Hindernis ihr die Leistungserbringung unmöglich macht, von ihrer Pflicht zur Erfüllung ihrer vertraglichen Verpflichtungen und von jeder Schadenersatzpflicht oder von jedem anderen vertraglichen Rechtsbehelf wegen Vertragsverletzung befreit; sofern dies unverzüglich mitgeteilt wird. Erfolgt die Mitteilung nicht unverzüglich, so wird die Befreiung von dem Zeitpunkt an wirksam, zu dem die Mitteilung die andere Partei erreicht. Ist die Auswirkung des geltend gemachten Hindernisses oder Ereignisses vorübergehend, so gelten die eben dargelegten Folgen nur so lange, wie das geltend gemachte Hindernis die Vertragserfüllung durch die betroffene Partei verhindert. Hat die Dauer des geltend gemachten Hindernisses zur Folge, dass den Vertragsparteien dasjenige, was sie kraft des Vertrages berechtigterweise erwarten durften, in erheblichem Masse entzogen wird, so hat jede Partei das Recht, den Vertrag durch Benachrichtigung der anderen Partei innerhalb eines angemessenen Zeitraums nach den Vorschriften dieses Vertrages zu kündigen. Sofern nicht anders vereinbart, vereinbaren die Parteien ausdrücklich, dass der Vertrag von jeder Partei gekündigt werden kann, wenn die Dauer des Hindernisses 120 Tage überschreitet. Soweit die Kündigung aus Gründen Höherer Gewalt erfolgt, gilt speziell, dass AN den Anspruch auf die Vergütung für die bis zum Eintreten der Kündigung erbrachten Leistungen behält und Schadensersatz infolge der Kündigung nicht zu leisten ist. Die Kündigungsfrist und -form bestimmt sich nach Klausel 1.12.(1) dieses Vertrages.",
-        "(4) Covid-19 Krise: (i) Unabhängig von der Tatsache, dass die Parteien zum Zeitpunkt des Vertragsschlusses in Kenntnis der Existenz der Krise infolge des Covid-19-Virus und seinen Varianten („Covid-19-Krise“) sind, besteht ausserdem Einigkeit darüber, dass die Auswirkungen dieser Krise weiterhin unvorhersehbar sind und ausserhalb der Einflusssphäre der Parteien liegen. Aus diesen Gründen vereinbaren die Parteien, dass die Krise und deren Auswirkungen einen Fall Höherer Gewalt im Sinne dieses Vertrags im Lichte des Anwendbaren Rechts darstellen und die Rechtsfolgen für Höhere Gewalt entsprechend zur Anwendung kommen. (ii) Behinderungen als Höhere Gewalt aufgrund der Covid-19-Krise sind solche, die im Zusammenhang mit Covid-19 entweder den Erfüllungsort oder eines der Länder, in denen vom AN oder seinen Lieferanten Lieferungen und/oder Leistungen für den Vertragsgegenstand erbracht werden, betreffen, vorausgesetzt dass diese Behinderungen entweder Auswirkungen auf den freien Warenverkehr oder den freien Personenverkehr haben, und dadurch auch die Leistungsfähigkeit des AN beeinträchtigt wird. (iii) Die jeweiligen Ausführungsfristen sind unverbindlich, soweit deren Einhaltung durch die Auswirkungen im Zusammenhang mit der Covid-19-Krise beeinflusst werden; in diesem Falle verlängern sich diese um den Zeitraum, während dessen eine solche Behinderung des AN bestanden hat, zuzüglich eines Mobilisierungszeitraums von vier (4) Wochen. (iv) Der AG hat dem AN Reise- und Unterbringungskosten infolge von zwingenden Quarantänemassnahmen, Schliessungen oder anderer behördlicher Verfügungen im Zusammenhang mit der Covid-19-Krise zu erstatten, die die Mitarbeiter des AN betreffen, soweit diese Kosten sowohl vernünftigerweise angefallen als auch hinreichend nachgewiesen werden.",
-        "(5) Lieferkettenengpässe: Aufgrund der Schwierigkeiten und Engpässe infolge der Lieferkettensituation bei Vertragsschluss vereinbaren die Parteien, dass die in diesem Vertrag angegebenen Liefertermine auf den Lieferterminen der Lieferanten und Subunternehmer des AN basieren. Daher wird dem AN ausdrücklich das Recht eingeräumt, im Falle von Verzögerungen durch seine Lieferanten und/oder Subunternehmer, die nicht dem geplanten Zeitplan entsprechen, entsprechende Anpassungen gegenüber dem AG hinsichtlich der in diesem Vertrag vorgesehenen Liefertermine zu verlangen und in insoweit nicht in Verzug gerät."
-      ]
-    },
-    {
-      "id": "1.14",
-      "title": "Preisgleitklausel",
-      "paragraphs": [
-        "Aufgrund der extremen Situation am Stahl- und Rohstoffmarkt müssen wir Materialpreiserhöhungen, die nach Abgabe unseres Angebotes auftreten, in Rechnung stellen oder können Aufträge nur unter Vorbehalt der ausreichenden Materialverfügbarkeit bestätigen. Vor diesem Hintergrund vereinbaren die Vertragsparteien eine Preisanpassung, wenn sich die Materialpreise gemäss MEPS-Index zum Zeitpunkt der Produktionsfreigabe, jedoch spätestens 3 Monate vor Lieferbeginn ändern.",
-        "Diese Preisanpassung gilt nur für die entsprechenden Anteile (Materialanteil in den betreffenden Gewerken) eines Projekts.",
-        "Die Gewichtungsfaktoren für Stahlbaumaterialien müssen projektspezifisch festgelegt und vor Vergabe jeweils genau spezifiziert werden.",
-        "Die Preisanpassung erfolgt nach folgender Formel:",
-        "P1 = P0 + PM × Materialpreisanpassung (M1/M0 − 1)",
-        "P1 = Neuer Vertragspreis des Projekts; P0 = Angebotspreis des Projekts; PM = Preis Material (aufgeteilt in Kalt- und Warmstahlbau); M0 = MEPS-Indizes bei Angebotsabgabe; M1 = MEPS-Indizes bei Produktionsfreigabe.",
-        "Die Preisänderung wird auf der Grundlage des Index MEPS International Ltd., Europe, HD Galv. Coil (für kalt gewalztes Material) und Structural Sections and Beams (für warm gewalztes Material) veröffentlichten Preisentwicklung für Walzstahl ermittelt."
-      ],
-      "table": {
-        "headers": ["Grundlage / Index", "Materialanteil"],
-        "rows": [
-          ["Hot Dipped Galvanised Coil (Feuerverzinktes Band)", "CHF ______"],
-          ["Sections & Beams (Profile und Balken)", "CHF ______"]
-        ]
-      }
-    },
-    {
-      "id": "1.15",
-      "title": "WAMAS® Endbenutzer-Lizenzvertrag",
-      "paragraphs": [
-        "Sofern die WAMAS® Standardsoftware Vertragsgegenstand ist, werden die Lizenzbedingungen im WAMAS® End User License Agreement festgelegt, abrufbar unter https://www.ssi-schaefer.com/de-de/wamas-eula. Dieser WAMAS® Endbenutzer-Lizenzvertrag hat Vorrang vor allen anderen widersprüchlichen, entgegenstehenden oder abweichenden Bestimmungen."
-      ]
-    },
-    {
-      "id": "1.16",
-      "title": "Datenschutz",
-      "paragraphs": [
-        "Verarbeitung von personenbezogenen Daten. Weiter gilt, sofern die WAMAS® Standardsoftware Vertragsgegenstand ist, für die Verarbeitung von personenbezogenen Daten durch SSI im Auftrag des Kunden die unter https://www.ssi-schaefer.com/de-de/auftragsverarbeitung abrufbare Auftragsverarbeitungsvereinbarung in der deutschen Sprachfassung."
-      ]
-    },
-    {
-      "id": "1.17",
       "title": "Vertraulichkeit",
       "paragraphs": [
-        "Die Vertragsparteien werden vertrauliche Informationen, die sie jeweils von der anderen Vertragspartei erhalten oder von denen sie auf andere Weise im Zusammenhang mit diesem Vertrag erfahren, vertraulich behandeln und zu keinem Zeitpunkt an Dritte ohne vorherige schriftliche Zustimmung der anderen Partei weitergeben. Dies gilt nicht, soweit die (i) Offenlegung erforderlich ist, damit eine Vertragspartei ihren vertraglichen Verpflichtungen nachkommen oder den nach diesem Vertrag geschuldeten Vertragsgegenstand erbringen kann und (ii) bei Teilen vertraulicher Informationen mit externen Beratern, wie zum Beispiel Wirtschaftsprüfern und Rechtsanwälten, die einer beruflichen Verschwiegenheitspflicht unterliegen und (iii) beim Teilen vertraulicher Informationen innerhalb der SSI-Schäfer-Gruppe, bzw. verbundener Unternehmen im Sinne § 15 Aktiengesetz analog (Deutschland).",
+        "Die Vertragsparteien werden vertrauliche Informationen, die sie jeweils von der anderen Vertragspartei erhalten oder von denen sie auf andere Weise im Zusammenhang mit diesem Vertrag erfahren, vertraulich behandeln und zu keinem Zeitpunkt an Dritte ohne vorherige schriftliche Zustimmung der anderen Partei weitergeben. Dies gilt nicht, soweit die (i) Offenlegung erforderlich ist, damit eine Vertragspartei ihren vertraglichen Verpflichtungen nachkommen oder den nach diesem Vertrag geschuldeten Vertragsgegenstand erbringen kann und (ii) bei Teilen vertraulicher Informationen mit externen Beratern, wie zum Beispiel Wirtschaftsprüfern und Rechtsanwälten, die einer beruflichen Verschwiegenheitspflicht unterliegen und (iii) beim Teilen vertraulicher Informationen innerhalb der SSI-Schäfer-Gruppe bzw. verbundener Unternehmen im Sinne § 15 Aktiengesetz analog (Deutschland).",
         "Jede Vertragspartei ist verpflichtet zu verhindern, dass solche vertraulichen Informationen von ihren Mitarbeitern, Beratern, Subunternehmern und anderen Auftragnehmern, die über diese Vertragspartei Zugang zu diesen vertraulichen Informationen haben oder erhalten können, in grösserem Umfang offengelegt oder verwendet werden, als dies nach Absatz 1 dieser Klausel zulässig ist. Jede Vertragspartei gewährleistet die Vertraulichkeit der vertraulichen Informationen der anderen Vertragspartei mindestens mit dem gleichen Mass an Sicherheit, das sie für ihre eigenen vertraulichen Informationen ausübt.",
         "Die Rechte und Pflichten der Vertragsparteien gemäss dieser Vertraulichkeitsklausel bleiben während der Vertragslaufzeit und fünf (5) Jahre danach in Kraft, soweit die Parteien keine anderweitige schriftliche und ausdrückliche Regelung getroffen haben."
       ]
     },
     {
-      "id": "1.18",
+      "id": "1.14",
       "title": "Anwendbares Recht, Gerichtsstand",
       "paragraphs": [
-        "(1) Das Rechtsverhältnis untersteht Schweizer Recht, unter Ausschluss seines Kollisionsrechts, sowie dem Übereinkommen der Vereinten Nationen vom 11. April 1980 über Verträge über den internationalen Warenkauf („Anwendbares Recht“).",
+        "(1) Das Rechtsverhältnis untersteht Schweizer Recht, unter Ausschluss seines Kollisionsrechts, sowie dem Übereinkommen der Vereinten Nationen vom 11. April 1980 über Verträge über den internationalen Warenkauf («Anwendbares Recht»).",
         "(2) Soweit beide Parteien natürliche oder juristische Personen des Schweizer Rechts sind gilt: Im Falle von Streitigkeiten im Zusammenhang mit diesem Vertrag, die nicht anderweitig beigelegt werden können, ist der Gerichtsstand für beide Vertragsparteien Neunkirch (Schweiz). Der Lieferant ist jedoch berechtigt, den Besteller an dessen Sitz zu belangen.",
-        "(3) Soweit zumindest einer der Parteien eine natürliche oder juristische Person nicht Schweizer Rechts ist, gilt folgende Schiedsklausel: Wenn eine Streitigkeit nicht von den Parteien selbst beigelegt werden kann, wird diese durch ein Schiedsverfahren gemäss der Schiedsgerichtsordnung der Internationalen Handelskammer in Paris („ICC-Regeln“) benannten Schiedsrichtern endgültig entschieden. Die Bestimmungen der ICC-Regeln zum beschleunigten Verfahren und der Eilschiedsgerichtsbarkeit gelten nicht. Das Schiedsverfahren findet in Zürich (Schweiz) in englischer Sprache statt. Die Parteien werden sowohl die Existenz des Schiedsverfahrens, sowie Informationen und Dokumente, die sich darauf beziehen oder darin offengelegt werden, geheim und vertraulich behandeln."
+        "(3) Soweit zumindest einer der Parteien eine natürliche oder juristische Person nicht Schweizer Rechts ist, gilt folgende Schiedsklausel: Wenn eine Streitigkeit nicht von den Parteien selbst beigelegt werden kann, wird diese durch ein Schiedsverfahren gemäss der Schiedsgerichtsordnung der Internationalen Handelskammer in Paris («ICC-Regeln») benannten Schiedsrichtern endgültig entschieden. Die Bestimmungen der ICC-Regeln zum beschleunigten Verfahren und der Eilschiedsgerichtsbarkeit gelten nicht. Das Schiedsverfahren findet in Zürich (Schweiz) in englischer Sprache statt. Die Parteien werden sowohl die Existenz des Schiedsverfahrens sowie Informationen und Dokumente, die sich darauf beziehen oder darin offengelegt werden, geheim und vertraulich behandeln."
       ]
     }
   ],
