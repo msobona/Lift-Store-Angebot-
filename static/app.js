@@ -1159,6 +1159,7 @@
             <div><span>Name:</span><strong>${escapeHtml(c.contact || "—")}</strong></div>
             <div><span>Strasse:</span><strong>${escapeHtml(addrParts.street || "—")}</strong></div>
             <div><span>Postleitzahl, Ort:</span><strong>${escapeHtml(addrParts.city || "—")}</strong></div>
+            <div><span>Telefon:</span><strong>${escapeHtml(c.phone || "")}</strong></div>
             <div><span>E-Mail:</span><strong>${escapeHtml(c.email || "")}</strong></div>
           </aside>
           <div class="offer-cover-contacts">
