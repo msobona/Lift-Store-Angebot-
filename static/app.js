@@ -115,10 +115,19 @@
     };
   }
 
+  function formatSsiPosition(contact) {
+    if (!contact) return "";
+    const title = String(contact.title || "").trim();
+    const role = String(contact.role || "").trim();
+    if (title && role) return `${title} / ${role}`;
+    return title || role || "";
+  }
+
   function formatSsiContactMeta(contact) {
     if (!contact) return "";
     const bits = [];
-    if (contact.title) bits.push(contact.title);
+    const position = formatSsiPosition(contact);
+    if (position) bits.push(position);
     if (contact.email) bits.push(contact.email);
     if (contact.phone) bits.push(contact.phone);
     return bits.join(" · ");
@@ -1131,11 +1140,11 @@
     const ssi2 = resolvePreviewContact(ssiList[1], sig2);
     // Kein Mix: wenn Name gesetzt ist, Titel/Mail nur von derselben Person
     const ssi1Name = ssi1.name || doc.meta.preparedBy || "—";
-    const ssi1Pos = ssi1.name || doc.meta.preparedBy ? ssi1.title : "";
+    const ssi1Pos = ssi1.name || doc.meta.preparedBy ? formatSsiPosition(ssi1) : "";
     const ssi1Mail = ssi1.name || doc.meta.preparedBy ? ssi1.email : "";
     const ssi1Tel = ssi1.name || doc.meta.preparedBy ? ssi1.phone : "";
     const ssi2Name = ssi2.name || "";
-    const ssi2Pos = ssi2.name ? ssi2.title : "";
+    const ssi2Pos = ssi2.name ? formatSsiPosition(ssi2) : "";
     const ssi2Mail = ssi2.name ? ssi2.email : "";
     const ssi2Tel = ssi2.name ? ssi2.phone : "";
 

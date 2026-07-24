@@ -957,8 +957,19 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
     if not sf1["name"] and not sf2["name"]:
         sf1, sf2 = f1, f2
 
-    ssi1_name, ssi1_pos, ssi1_mail, ssi1_tel = f1["name"], f1["title"], f1["email"], f1["phone"]
-    ssi2_name, ssi2_pos, ssi2_mail, ssi2_tel = f2["name"], f2["title"], f2["email"], f2["phone"]
+    def _position(title: str, role: str = "") -> str:
+        title = (title or "").strip()
+        role = (role or "").strip()
+        if title and role:
+            return f"{title} / {role}"
+        return title or role
+
+    ssi1_name = f1["name"]
+    ssi1_pos = _position(f1["title"], f1["role"])
+    ssi1_mail, ssi1_tel = f1["email"], f1["phone"]
+    ssi2_name = f2["name"]
+    ssi2_pos = _position(f2["title"], f2["role"])
+    ssi2_mail, ssi2_tel = f2["email"], f2["phone"]
     sig1_name, sig1_title, sig1_role = sf1["name"], sf1["title"], sf1["role"]
     sig2_name, sig2_title, sig2_role = sf2["name"], sf2["title"], sf2["role"]
     sig1_mail, sig2_mail = sf1["email"], sf2["email"]

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "note": "SSI-Ansprechpartner für Cover und Unterschriften. Quellen: Dropdowns in Angebot Logimat DE.docx. Titel/E-Mail/Telefon bei Bedarf hier pflegen.",
+    "note": "SSI-Ansprechpartner für Cover und Unterschriften. Quellen: Dropdowns in Angebot Logimat DE.docx. Titel/Abteilung (role) bei Bedarf hier pflegen.",
     "emailDomain": "ssi-schaefer.com",
     "defaults": {
       "contact1Id": "andrej-pulfer",
@@ -13,49 +13,53 @@
     {
       "id": "adrian-bollinger",
       "name": "Adrian Bollinger",
-      "title": "",
-      "role": "",
+      "title": "Application Engineering PE",
+      "role": "Products & Equipment",
       "email": "adrian.bollinger@ssi-schaefer.com",
       "phone": "",
       "groups": [
         "innendienst",
-        "signatory"
+        "signatory",
+        "application-engineering"
       ]
     },
     {
       "id": "mario-gisler",
       "name": "Mario Gisler",
-      "title": "",
-      "role": "",
+      "title": "Application Engineering PE",
+      "role": "Products & Equipment",
       "email": "mario.gisler@ssi-schaefer.com",
       "phone": "",
       "groups": [
         "innendienst",
-        "signatory"
+        "signatory",
+        "application-engineering"
       ]
     },
     {
       "id": "oliver-meyer",
       "name": "Oliver Meyer",
-      "title": "",
-      "role": "",
+      "title": "Head of Projects",
+      "role": "Products & Equipment",
       "email": "oliver.meyer@ssi-schaefer.com",
       "phone": "",
       "groups": [
         "innendienst",
-        "signatory"
+        "signatory",
+        "projects"
       ]
     },
     {
       "id": "andrea-micanovic",
       "name": "Andrea Micanovic",
-      "title": "",
-      "role": "",
+      "title": "Application Engineering PE",
+      "role": "Products & Equipment",
       "email": "andrea.micanovic@ssi-schaefer.com",
       "phone": "",
       "groups": [
         "innendienst",
-        "signatory"
+        "signatory",
+        "application-engineering"
       ]
     },
     {
@@ -74,36 +78,39 @@
     {
       "id": "ursina-reich",
       "name": "Ursina Reich",
-      "title": "",
-      "role": "",
+      "title": "Application Engineering PE",
+      "role": "Products & Equipment",
       "email": "ursina.reich@ssi-schaefer.com",
       "phone": "",
       "groups": [
         "innendienst",
-        "signatory"
+        "signatory",
+        "application-engineering"
       ]
     },
     {
       "id": "annina-zancanaro",
       "name": "Annina Zancanaro",
-      "title": "",
-      "role": "",
+      "title": "Application Engineering PE",
+      "role": "Products & Equipment",
       "email": "annina.zancanaro@ssi-schaefer.com",
       "phone": "",
       "groups": [
         "innendienst",
-        "signatory"
+        "signatory",
+        "application-engineering"
       ]
     },
     {
       "id": "cenk-aytac",
       "name": "Cenk Aytac",
-      "title": "",
-      "role": "",
+      "title": "Sales Manager",
+      "role": "Products & Equipment",
       "email": "cenk.aytac@ssi-schaefer.com",
       "phone": "",
       "groups": [
-        "aussendienst"
+        "aussendienst",
+        "sales-manager"
       ]
     },
     {
@@ -120,23 +127,25 @@
     {
       "id": "marek-sobona",
       "name": "Marek Sobona",
-      "title": "",
-      "role": "",
+      "title": "Sales Manager",
+      "role": "Products & Equipment",
       "email": "marek.sobona@ssi-schaefer.com",
       "phone": "",
       "groups": [
-        "aussendienst"
+        "aussendienst",
+        "sales-manager"
       ]
     },
     {
       "id": "kristijan-zornjak",
       "name": "Kristijan Zornjak",
-      "title": "",
-      "role": "",
+      "title": "Sales Manager",
+      "role": "Products & Equipment",
       "email": "kristijan.zornjak@ssi-schaefer.com",
       "phone": "",
       "groups": [
-        "aussendienst"
+        "aussendienst",
+        "sales-manager"
       ]
     },
     {
@@ -153,12 +162,13 @@
     {
       "id": "luca-cathomen",
       "name": "Luca Cathomen",
-      "title": "",
-      "role": "",
+      "title": "VP, Regional Head of Finance South Europe",
+      "role": "Finance",
       "email": "luca.cathomen@ssi-schaefer.com",
       "phone": "",
       "groups": [
-        "signatory"
+        "signatory",
+        "finance"
       ]
     },
     {
@@ -175,23 +185,25 @@
     {
       "id": "armin-kaufmann",
       "name": "Armin Kaufmann",
-      "title": "",
-      "role": "",
+      "title": "Head of Realization Switzerland, Member of General Management",
+      "role": "Logistics Solutions",
       "email": "armin.kaufmann@ssi-schaefer.com",
       "phone": "",
       "groups": [
-        "signatory"
+        "signatory",
+        "realization"
       ]
     },
     {
       "id": "marc-mangold",
       "name": "Marc Mangold",
-      "title": "",
-      "role": "",
+      "title": "Director Customer Services, Member of General Management",
+      "role": "Customer Service",
       "email": "marc.mangold@ssi-schaefer.com",
       "phone": "",
       "groups": [
-        "signatory"
+        "signatory",
+        "customer-service"
       ]
     },
     {
