@@ -1814,11 +1814,68 @@
   }
 
   // -------------------- ARCHIVE --------------------
+  function selectedArchiveIds() {
+    return [...archiveList.querySelectorAll(".archive-select:checked")]
+      .map((el) => el.value)
+      .filter(Boolean);
+  }
+
+  function updateArchiveSelectionUi() {
+    const toolbar = document.getElementById("archiveToolbar");
+    const selectAll = document.getElementById("archiveSelectAll");
+    const countEl = document.getElementById("archiveSelectedCount");
+    const deleteBtn = document.getElementById("btnArchiveDeleteSelected");
+    if (!toolbar || !selectAll || !countEl || !deleteBtn) return;
+    const boxes = [...archiveList.querySelectorAll(".archive-select")];
+    const selected = boxes.filter((b) => b.checked);
+    countEl.textContent = `${selected.length} ausgewählt`;
+    deleteBtn.disabled = selected.length === 0;
+    selectAll.checked = boxes.length > 0 && selected.length === boxes.length;
+    selectAll.indeterminate = selected.length > 0 && selected.length < boxes.length;
+  }
+
+  async function deleteArchiveOffers(ids) {
+    const unique = [...new Set((ids || []).filter(Boolean))];
+    if (!unique.length) return;
+    const label = unique.length === 1
+      ? "Dieses Angebot wirklich löschen?"
+      : `${unique.length} Angebote wirklich löschen?`;
+    if (!confirm(label)) return;
+    try {
+      if (unique.length === 1) {
+        await api(`/api/offers/${encodeURIComponent(unique[0])}`, { method: "DELETE" });
+      } else {
+        await api("/api/offers/bulk-delete", {
+          method: "POST",
+          body: JSON.stringify({ ids: unique }),
+        });
+      }
+      // Offene Ansicht zurücksetzen, falls gelöschtes Angebot angezeigt wird
+      const openId = state.savedOfferId || state.offerDocument?.id || state.offerDocument?.meta?.offerNumber;
+      if (openId && unique.includes(openId)) {
+        state.offerDocument = null;
+        state.savedOfferId = null;
+        state.editingFromOfferId = null;
+        updateSessionChrome();
+        const preview = document.getElementById("offerPreview");
+        if (preview) {
+          preview.innerHTML = '<p class="empty-state">Noch kein Angebot erzeugt. Lizenz/IT konfigurieren und „Angebot erzeugen“ wählen.</p>';
+        }
+      }
+      await loadArchive();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   async function loadArchive() {
     const data = await api("/api/offers");
     const offers = data.offers || [];
+    const toolbar = document.getElementById("archiveToolbar");
+    if (toolbar) toolbar.hidden = !offers.length;
     if (!offers.length) {
       archiveList.innerHTML = '<p class="empty-state">Noch keine Kalkulationen gespeichert.</p>';
+      updateArchiveSelectionUi();
       return;
     }
     archiveList.innerHTML = offers.map((o) => {
@@ -1844,6 +1901,9 @@
       if (o.revisionOf) subtitleParts.push(`aus ${o.revisionOf}`);
       return `
       <article class="archive-item" data-id="${escapeHtml(o.id)}" data-kind="${escapeHtml(o.kind || "")}">
+        <label class="archive-check">
+          <input type="checkbox" class="archive-select" value="${escapeHtml(o.id)}" aria-label="Auswählen: ${escapeHtml(projectTitle)}" />
+        </label>
         <div>
           <h3>${escapeHtml(projectTitle)} ${revBadge}<span class="muted">(${kindLabel})</span></h3>
           <p>${escapeHtml(subtitleParts.join(" · ") || "—")}</p>
@@ -1858,6 +1918,7 @@
         </div>
       </article>`;
     }).join("");
+    updateArchiveSelectionUi();
   }
 
   function bindEvents() {
@@ -1982,13 +2043,29 @@
           window.location.href = `/api/offers/${encodeURIComponent(id)}/excel`;
         }
         if (btn.dataset.action === "delete") {
-          if (!confirm("Eintrag löschen?")) return;
-          await api(`/api/offers/${encodeURIComponent(id)}`, { method: "DELETE" });
-          await loadArchive();
+          await deleteArchiveOffers([id]);
         }
       } catch (err) {
         alert(err.message);
       }
+    });
+
+    archiveList.addEventListener("change", (event) => {
+      if (event.target?.classList?.contains("archive-select")) {
+        updateArchiveSelectionUi();
+      }
+    });
+
+    document.getElementById("archiveSelectAll")?.addEventListener("change", (event) => {
+      const checked = Boolean(event.target.checked);
+      archiveList.querySelectorAll(".archive-select").forEach((box) => {
+        box.checked = checked;
+      });
+      updateArchiveSelectionUi();
+    });
+
+    document.getElementById("btnArchiveDeleteSelected")?.addEventListener("click", async () => {
+      await deleteArchiveOffers(selectedArchiveIds());
     });
 
     document.getElementById("btnComposeOffer").addEventListener("click", () => composeOfferDocument({ save: true }));

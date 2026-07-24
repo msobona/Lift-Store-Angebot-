@@ -2009,6 +2009,28 @@ def api_delete_offer(offer_id: str):
     return {"ok": True}
 
 
+class BulkDeleteRequest(BaseModel):
+    ids: List[str] = Field(default_factory=list)
+
+
+@app.post("/api/offers/bulk-delete")
+def api_bulk_delete_offers(payload: BulkDeleteRequest):
+    """Löscht mehrere gespeicherte Angebote auf einmal."""
+    ids = [str(x).strip() for x in (payload.ids or []) if str(x).strip()]
+    if not ids:
+        raise HTTPException(status_code=400, detail="Keine Angebote ausgewählt")
+    deleted: List[str] = []
+    missing: List[str] = []
+    for offer_id in ids:
+        path = offer_path(offer_id)
+        if not path.exists():
+            missing.append(offer_id)
+            continue
+        path.unlink()
+        deleted.append(offer_id)
+    return {"ok": True, "deleted": deleted, "missing": missing, "count": len(deleted)}
+
+
 @app.get("/api/offers/{offer_id}/excel")
 def api_export_excel(offer_id: str):
     path = offer_path(offer_id)

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260724ort-datum" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260724archive-del" />
 </head>
 <body>
   <header class="topbar">
@@ -391,6 +391,14 @@
           <strong>A1</strong>, <strong>A2</strong>, … bei Bearbeitung.
           Mit <strong>Bearbeiten</strong> laden, anpassen und unter „Angebot“ die nächste Version erzeugen.
         </p>
+        <div class="archive-toolbar" id="archiveToolbar" hidden>
+          <label class="archive-select-all">
+            <input type="checkbox" id="archiveSelectAll" />
+            Alle auswählen
+          </label>
+          <span class="archive-selected-count" id="archiveSelectedCount">0 ausgewählt</span>
+          <button type="button" class="btn danger" id="btnArchiveDeleteSelected" disabled>Auswahl löschen</button>
+        </div>
       </div>
       <div id="archiveList" class="archive-list"></div>
     </section>
@@ -404,6 +412,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260724cover-phone"></script>
+  <script src="/static/app.js?v=20260724archive-del"></script>
 </body>
 </html>

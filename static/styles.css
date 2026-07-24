@@ -731,15 +731,50 @@ textarea:focus {
 .archive-head h2 { margin: 0; font-size: 1.6rem; font-weight: 800; }
 .archive-head p { margin: 0.35rem 0 0; color: var(--ssi-ink); }
 
+.archive-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.archive-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.archive-selected-count {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
+}
+
 .archive-list { display: grid; gap: 0.7rem; }
 .archive-item {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1rem;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.85rem 1rem;
   align-items: center;
   padding: 0.95rem 1.05rem;
   background: #fff;
   border: 1px solid var(--ssi-line);
+}
+.archive-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  cursor: pointer;
+}
+.archive-check input {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 .archive-item h3 { margin: 0 0 0.2rem; font-size: 1rem; }
 .archive-item p { margin: 0; color: var(--ssi-muted); font-size: 0.86rem; }
@@ -819,7 +854,10 @@ textarea:focus {
   .client-hints,
   .grid-2,
   .archive-item {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto 1fr;
+  }
+  .archive-item .archive-actions {
+    grid-column: 1 / -1;
   }
   .preview { position: static; }
   .hero-logos { justify-content: flex-start; }
