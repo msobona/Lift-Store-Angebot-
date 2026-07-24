@@ -1158,6 +1158,7 @@
           <img class="offer-cover-wamas" src="/static/assets/SSI_WAMAS.png?v=20260723wamas" alt="WAMAS" />
           <div class="offer-cover-titleblock">
             <h1>${escapeHtml((doc.content.title || "Angebot WAMAS® Lift & Store").replace("Lift & Store", "Lift Store"))}</h1>
+            <p class="offer-cover-projectno">${escapeHtml(doc.meta.archiveTitle || doc.meta.projectLabel || doc.meta.offerNumber || "")}</p>
             <p class="offer-cover-date">${escapeHtml(offerDate)}</p>
             <p class="offer-cover-banner">${escapeHtml(subtitle)}</p>
           </div>
@@ -1204,7 +1205,7 @@
         <header class="offer-page-header">
           <div class="offer-page-header-text">
             <strong>SSI SCHÄFER</strong>
-            <span>WAMAS® Lift &amp; Store · ${escapeHtml(doc.meta.offerNumber || "Angebot")}</span>
+            <span>WAMAS® Lift &amp; Store</span>
           </div>
           <img class="offer-page-header-logo" src="/static/assets/ssi-schaefer.png" alt="SSI SCHÄFER" />
         </header>

@@ -671,6 +671,28 @@ def _insert_page_break_before(element) -> None:
     element.addprevious(p)
 
 
+def _set_paragraph_lines(paragraph, lines: List[str]) -> None:
+    """Setzt Absatz mit weichen Zeilenumbrüchen (Titel / Projektnr. / Datum)."""
+    from docx.oxml import OxmlElement
+
+    clean = [str(x).strip() for x in lines if str(x or "").strip()]
+    if not clean:
+        _set_paragraph_text(paragraph, "")
+        return
+    # Clear existing runs
+    if paragraph.runs:
+        paragraph.runs[0].text = clean[0]
+        for run in paragraph.runs[1:]:
+            run.text = ""
+    else:
+        paragraph.add_run(clean[0])
+    for line in clean[1:]:
+        run = paragraph.add_run()
+        br = OxmlElement("w:br")
+        run._r.append(br)
+        paragraph.add_run(line)
+
+
 def polish_offer_docx(docx_bytes: bytes, context: Dict[str, Any]) -> bytes:
     """Nachbearbeitung: Cover/Index, Anrede, Versionstabelle, Seitenumbrüche."""
     from docx import Document
@@ -683,19 +705,18 @@ def polish_offer_docx(docx_bytes: bytes, context: Dict[str, Any]) -> bytes:
     anrede = str(context.get("anrede") or "").strip()
     einleitung = str(context.get("einleitung") or "").strip()
     erstellt_von = str(context.get("erstellt_von") or "").strip()
+    project_no = angebotsnummer or revision_code
 
-    # Cover-Titelzeile: Duplikate entfernen, Index/Angebotsnr. sichtbar machen
+    # Cover: Titel · Projektnr. · Datum als getrennte Zeilen (nicht in einer Headline)
     for p in doc.paragraphs[:8]:
         t = (p.text or "").strip()
         if "WAMAS" in t and ("Angebot" in t or "Lift" in t):
-            parts = [titel or "Angebot WAMAS® Lift & Store"]
-            if angebotsnummer:
-                parts.append(angebotsnummer)
-            elif revision_code:
-                parts.append(revision_code)
+            lines = [titel or "Angebot WAMAS® Lift & Store"]
+            if project_no:
+                lines.append(project_no)
             if datum:
-                parts.append(datum)
-            _set_paragraph_text(p, "  ·  ".join(parts))
+                lines.append(datum)
+            _set_paragraph_lines(p, lines)
             break
 
     # Anrede dynamisch
@@ -753,17 +774,36 @@ def polish_offer_docx(docx_bytes: bytes, context: Dict[str, Any]) -> bytes:
         "zusammenfassung",
         "kaufmännische bedingungen",
         "kaufmaennische bedingungen",
+        "vertragsbedingungen",
+        "zuständigkeiten",
+        "zustaendigkeiten",
+        "a4.",
+        "a4 ",
     )
     seen = set()
     for table in doc.tables:
         if not table.rows:
             continue
         header = (table.rows[0].cells[0].text or "").strip().lower()
-        key = next((h for h in break_headers if header.startswith(h)), None)
+        key = next((h for h in break_headers if header.startswith(h) or h in header), None)
         if not key or key in seen:
             continue
         seen.add(key)
         _insert_page_break_before(table._tbl)
+
+    for p in doc.paragraphs:
+        t = (p.text or "").strip().lower()
+        if not t:
+            continue
+        key = None
+        if t.startswith("a4") or "zuständigkeit" in t or "zustaendigkeit" in t:
+            key = "zuständigkeiten"
+        elif t.startswith("vertragsbedingungen") or t.startswith("kaufmännische bedingungen"):
+            key = "vertragsbedingungen"
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        _insert_page_break_before(p._p)
 
     out = io.BytesIO()
     doc.save(out)

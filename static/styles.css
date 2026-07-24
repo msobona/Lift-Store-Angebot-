@@ -1013,6 +1013,15 @@ textarea:focus {
   color: #111;
 }
 
+.offer-cover-projectno {
+  margin: 6mm 0 0;
+  font-size: 13pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #111;
+  line-height: 1.25;
+}
+
 .offer-cover-date {
   margin: 3.5mm 0 0;
   font-size: 12pt;
@@ -2230,7 +2239,8 @@ textarea:focus {
   #sec-terms,
   #sec-commercial,
   #sec-architecture,
-  #sec-requirements {
+  #sec-requirements,
+  #sec-responsibilities {
     break-before: page !important;
     page-break-before: always !important;
   }
