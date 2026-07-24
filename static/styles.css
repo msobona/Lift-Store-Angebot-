@@ -1963,6 +1963,16 @@ textarea:focus {
   color: var(--ssi-muted);
 }
 
+.offer-place-date {
+  margin: 0.2rem 0 0 !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  color: #111 !important;
+  line-height: 1.35;
+}
+
 .offer-terms-section a {
   color: inherit;
   text-decoration: underline;

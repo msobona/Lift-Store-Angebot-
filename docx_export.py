@@ -1034,6 +1034,11 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         or "SSI SCHÄFER · Softwarelösung für Vertical Lift Modules (SSI LOGIMAT®)",
         "angebotsnummer": angebotsnummer,
         "datum": datum,
+        "ort_datum": (
+            f"Schaffhauserstrasse 10, 8213 Neunkirch · {datum}"
+            if datum
+            else "Schaffhauserstrasse 10, 8213 Neunkirch"
+        ),
         "gueltig_bis": gueltig_bis,
         "meta_zeile": meta_zeile,
         "revision_code": meta.get("revisionCode") or "",
