@@ -155,11 +155,14 @@ def _add_bullets(doc: Document, items: List[str]) -> None:
         text = str(item or "").strip()
         if not text:
             continue
-        p = doc.add_paragraph(style="List Bullet")
-        # Stil-Absatz leeren und eigenen Run setzen
-        for r in list(p.runs):
-            r._element.getparent().remove(r._element)
-        run = p.add_run(text)
+        try:
+            p = doc.add_paragraph(style="List Bullet")
+            for r in list(p.runs):
+                r._element.getparent().remove(r._element)
+            run = p.add_run(text)
+        except KeyError:
+            p = doc.add_paragraph()
+            run = p.add_run(f"• {text}")
         _set_run_font(run, size_pt=10, color=SSI_INK)
         p.paragraph_format.space_after = Pt(2)
 
@@ -370,13 +373,136 @@ def _add_terms(doc: Document, terms: Dict[str, Any], offer_date: str) -> None:
     )
 
 
+
+def _element_text(el) -> str:
+    return " ".join(t.text for t in el.iter(qn("w:t")) if t.text).strip()
+
+
+def _element_has_page_break(el) -> bool:
+    for br in el.iter(qn("w:br")):
+        if br.get(qn("w:type")) == "page":
+            return True
+    return False
+
+
+def _trim_to_cover_and_philosophy(doc: Document) -> None:
+    """Behält Titelseite (Cover) und SSI-Philosophie; Rest der Logimat-Vorlage fällt weg."""
+    body = doc.element.body
+    children = list(body)
+    if not children:
+        return
+
+    first_pb = None
+    for i, child in enumerate(children):
+        if child.tag == qn("w:p") and _element_has_page_break(child):
+            first_pb = i
+            break
+    if first_pb is None:
+        first_pb = min(20, len(children) - 1)
+
+    phil_start = None
+    for i, child in enumerate(children):
+        text = _element_text(child).lower()
+        compact = re.sub(r"\s+", "", text)
+        if "ihrpartnerssi" in compact or "partnerssischaefer" in compact or "partnerssischäfer" in compact:
+            phil_start = i
+            break
+    if phil_start is None:
+        for i, child in enumerate(children):
+            text = _element_text(child).strip().lower()
+            compact = re.sub(r"\s+", "", text)
+            if compact == "philosophie" or compact.startswith("philosophie"):
+                phil_start = i
+                break
+            if "unternehmensprofil" in compact:
+                phil_start = i
+                break
+    # Wenn wir bei PHILOSOPHIE gelandet sind, 1–3 Blöcke davor mitnehmen (Partner/Profil)
+    if phil_start is not None:
+        for back in range(1, 4):
+            idx = phil_start - back
+            if idx <= first_pb:
+                break
+            compact = re.sub(r"\s+", "", _element_text(children[idx]).lower())
+            if (
+                "partner" in compact
+                or "unternehmensprofil" in compact
+                or "philosophie" in compact
+                or not compact
+            ):
+                phil_start = idx
+            else:
+                break
+
+    phil_end = None
+    start_at = phil_start if phil_start is not None else first_pb + 1
+    for i, child in enumerate(children):
+        if i <= start_at:
+            continue
+        text = _element_text(child).lower()
+        if child.tag == qn("w:tbl") and (
+            "einleitung" in text
+            or "leistungsumfang" in text
+            or "optionen" in text
+            or "{{" in text
+        ):
+            phil_end = i
+            break
+        if "kundenseitige voraussetzungen" in text:
+            phil_end = i
+            break
+    if phil_end is None:
+        # Philosophie endet vor dem nächsten Seitenumbruch nach dem Start
+        for i, child in enumerate(children):
+            if i <= start_at:
+                continue
+            if _element_has_page_break(child):
+                phil_end = i
+                break
+    if phil_end is None:
+        phil_end = len(children)
+
+    keep = set(range(0, first_pb + 1))
+    if phil_start is not None:
+        keep.update(range(phil_start, phil_end))
+    # Sicherstellen, dass nach dem Cover ein Seitenumbruch bleibt
+    keep.add(first_pb)
+
+    for i, child in enumerate(children):
+        if child.tag == qn("w:sectPr"):
+            continue
+        if i not in keep:
+            body.remove(child)
+
+
+def _build_ssi_cover_philosophy_document(offer: Dict[str, Any]) -> Document:
+    """Logimat-Vorlage: Cover + Philosophie befüllt, restlicher Alt-Inhalt entfernt."""
+    from docxtpl import DocxTemplate
+
+    from docx_export import (
+        apply_sdt_contact_fields,
+        build_template_context,
+        find_placeholder_template,
+    )
+
+    template_path = find_placeholder_template()
+    context = build_template_context(offer)
+    tpl = DocxTemplate(str(template_path))
+    tpl.render(context, autoescape=True)
+    buf = io.BytesIO()
+    tpl.save(buf)
+    filled = apply_sdt_contact_fields(buf.getvalue(), context)
+    doc = Document(io.BytesIO(filled))
+    _trim_to_cover_and_philosophy(doc)
+    return doc
+
+
 def build_offer_docx_html(offer: Dict[str, Any]) -> bytes:
-    """Erzeugt ein DOCX analog zur HTML-Vorschau."""
+    """DOCX: SSI-Cover + Philosophie aus Logimat-Vorlage, danach HTML-Vorschau-Inhalt."""
     if offer.get("kind") != "offer_document":
         raise ValueError("Word-Export ist nur für Gesamtangebote (offer_document) verfügbar.")
 
     meta = offer.get("meta") or {}
-    customer = offer.get("customer") or {}
     content = offer.get("content") or {}
     cfg = content.get("configurationSummary") or {}
     summary = offer.get("priceSummary") or {}
@@ -384,104 +510,54 @@ def build_offer_docx_html(offer: Dict[str, Any]) -> bytes:
     arch = content.get("architecture") or {}
     req = content.get("requirements") or {}
     terms = content.get("commercialTerms") or {}
-
-    addr = _split_address(customer.get("address") or "")
     offer_date = meta.get("documentDate") or _format_date_de(meta.get("createdAt"))
-    title = str(content.get("title") or "Angebot WAMAS® Lift & Store").replace("Lift & Store", "Lift Store")
-    subtitle = content.get("subtitle") or "SSI SCHÄFER · Softwarelösung für Vertical Lift Modules (SSI LOGIMAT®)"
-    project_line = meta.get("archiveTitle") or meta.get("projectLabel") or meta.get("offerNumber") or ""
 
-    ssi = offer.get("ssiContacts") or []
-    closing_sigs = (terms.get("closing") or {}).get("signatories") or []
-    ssi1 = ssi[0] if len(ssi) > 0 else (closing_sigs[0] if closing_sigs else {})
-    ssi2 = ssi[1] if len(ssi) > 1 else (closing_sigs[1] if len(closing_sigs) > 1 else {})
+    # Basis: SSI-Titelseite + Philosophie aus der Logimat-Vorlage
+    try:
+        doc = _build_ssi_cover_philosophy_document(offer)
+        _page_break(doc)
+    except Exception:
+        # Fallback ohne Vorlage: bisheriges programmatisches Cover
+        doc = Document()
+        section = doc.sections[0]
+        section.page_width = Cm(21.0)
+        section.page_height = Cm(29.7)
+        section.left_margin = Cm(1.8)
+        section.right_margin = Cm(1.8)
+        section.top_margin = Cm(1.5)
+        section.bottom_margin = Cm(1.5)
+        customer = offer.get("customer") or {}
+        addr = _split_address(customer.get("address") or "")
+        title = str(content.get("title") or "Angebot WAMAS® Lift & Store").replace("Lift & Store", "Lift Store")
+        subtitle = content.get("subtitle") or "SSI SCHÄFER · Softwarelösung für Vertical Lift Modules (SSI LOGIMAT®)"
+        project_line = meta.get("archiveTitle") or meta.get("projectLabel") or meta.get("offerNumber") or ""
+        ssi = offer.get("ssiContacts") or []
+        closing_sigs = (terms.get("closing") or {}).get("signatories") or []
+        ssi1 = ssi[0] if len(ssi) > 0 else (closing_sigs[0] if closing_sigs else {})
+        ssi2 = ssi[1] if len(ssi) > 1 else (closing_sigs[1] if len(closing_sigs) > 1 else {})
+        cover_img = ASSETS_DIR / "offer-cover-logimat.jpg"
+        if cover_img.exists():
+            _add_image_if_exists(doc, cover_img, width_cm=17.4)
+        _add_para(doc, title, size_pt=22, bold=True, color=SSI_NAVY, space_before=10, space_after=4)
+        _add_para(doc, str(project_line), size_pt=14, bold=True, space_after=2)
+        _add_para(doc, offer_date, size_pt=11, color=SSI_MUTED, space_after=4)
+        _add_para(doc, str(subtitle), size_pt=10, color=SSI_MUTED, space_after=12)
+        cust = doc.add_table(rows=6, cols=2)
+        cust.style = "Table Grid"
+        for i, (label, value) in enumerate([
+            ("Firmenname", customer.get("company") or "—"),
+            ("Name", customer.get("contact") or "—"),
+            ("Strasse", addr["street"]),
+            ("Postleitzahl, Ort", addr["city"]),
+            ("Telefon", customer.get("phone") or ""),
+            ("E-Mail", customer.get("email") or ""),
+        ]):
+            _shade_cell(cust.rows[i].cells[0], "F5F5F5")
+            _set_cell_text(cust.rows[i].cells[0], label, bold=True, size_pt=9)
+            _set_cell_text(cust.rows[i].cells[1], str(value), size_pt=9)
+        _page_break(doc)
 
-    doc = Document()
-    section = doc.sections[0]
-    section.page_width = Cm(21.0)
-    section.page_height = Cm(29.7)
-    section.left_margin = Cm(1.8)
-    section.right_margin = Cm(1.8)
-    section.top_margin = Cm(1.5)
-    section.bottom_margin = Cm(1.5)
-
-    # ---- Cover ----
-    cover_img = ASSETS_DIR / "offer-cover-logimat.jpg"
-    if cover_img.exists():
-        _add_image_if_exists(doc, cover_img, width_cm=17.4)
-
-    logos = doc.add_table(rows=1, cols=2)
-    logos.autofit = True
-    left_logo = ASSETS_DIR / "ssi-schaefer.png"
-    right_logo = ASSETS_DIR / "SSI_WAMAS.png"
-    if left_logo.exists():
-        try:
-            logos.rows[0].cells[0].paragraphs[0].add_run().add_picture(str(left_logo), width=Cm(3.2))
-        except Exception:
-            pass
-    if right_logo.exists():
-        p = logos.rows[0].cells[1].paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        try:
-            p.add_run().add_picture(str(right_logo), width=Cm(3.6))
-        except Exception:
-            pass
-
-    _add_para(doc, title, size_pt=22, bold=True, color=SSI_NAVY, space_before=10, space_after=4)
-    _add_para(doc, str(project_line), size_pt=14, bold=True, space_after=2)
-    _add_para(doc, offer_date, size_pt=11, color=SSI_MUTED, space_after=4)
-    _add_para(doc, str(subtitle), size_pt=10, color=SSI_MUTED, space_after=12)
-
-    cust = doc.add_table(rows=6, cols=2)
-    cust.style = "Table Grid"
-    cust_rows = [
-        ("Firmenname", customer.get("company") or "—"),
-        ("Name", customer.get("contact") or "—"),
-        ("Strasse", addr["street"]),
-        ("Postleitzahl, Ort", addr["city"]),
-        ("Telefon", customer.get("phone") or ""),
-        ("E-Mail", customer.get("email") or ""),
-    ]
-    for i, (label, value) in enumerate(cust_rows):
-        _shade_cell(cust.rows[i].cells[0], "F5F5F5")
-        _set_cell_text(cust.rows[i].cells[0], label, bold=True, size_pt=9)
-        _set_cell_text(cust.rows[i].cells[1], str(value), size_pt=9)
-    _add_para(doc, "", space_after=8)
-
-    contacts = doc.add_table(rows=3, cols=4)
-    contacts.style = "Table Grid"
-    head = contacts.rows[0].cells
-    head[0].merge(head[3])
-    _shade_cell(head[0], "FFED00")
-    _set_cell_text(head[0], "SSI Schäfer Ansprechpartner", bold=True, size_pt=10)
-    for i, h in enumerate(["Name", "Position", "E-Mail", "Telefon"]):
-        _shade_cell(contacts.rows[1].cells[i], "EEEEEE")
-        _set_cell_text(contacts.rows[1].cells[i], h, bold=True, size_pt=8)
-    row_people = [
-        (
-            ssi1.get("name") or meta.get("preparedBy") or "—",
-            ssi1.get("title") or ssi1.get("role") or "",
-            ssi1.get("email") or "",
-            ssi1.get("phone") or "",
-        ),
-        (
-            ssi2.get("name") or "",
-            ssi2.get("title") or ssi2.get("role") or "",
-            ssi2.get("email") or "",
-            ssi2.get("phone") or "",
-        ),
-    ]
-    # Nur eine Personen-Zeile im Template oben — wir nutzen row 2 und fügen ggf. hinzu
-    for col, val in enumerate(row_people[0]):
-        _set_cell_text(contacts.rows[2].cells[col], str(val), size_pt=8)
-    if any(row_people[1]):
-        contacts.add_row()
-        for col, val in enumerate(row_people[1]):
-            _set_cell_text(contacts.rows[3].cells[col], str(val), size_pt=8)
-
-    _page_break(doc)
-
-    # ---- Body ----
+    # ---- Body (Vorschau-Inhalt) ----
     _add_para(doc, content.get("annexLabel") or "Anhang zur Software", size_pt=9, bold=True, color=SSI_MUTED, space_after=2)
     _add_heading(doc, "Leistungsbeschreibung WAMAS® Lift & Store", level=1)
 

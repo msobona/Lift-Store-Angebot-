@@ -1,8 +1,8 @@
 {
   "docxLayout": "html",
   "docxLayouts": {
-    "html": "Vorschau-Layout (HTML-Parität)",
-    "template": "Klassische Logimat-Vorlage"
+    "html": "Vorschau-Inhalt mit SSI-Cover und Philosophie",
+    "template": "Klassische Logimat-Vorlage (vollständig)"
   },
-  "note": "docxLayout steuert Word/PDF-Export. 'template' stellt den vorherigen Zustand wieder her."
+  "note": "html = Cover+Philosophie aus Logimat, Rest wie Bildschirmvorschau. template = kompletter bisheriger Export."
 }
