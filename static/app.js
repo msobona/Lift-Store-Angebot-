@@ -2515,18 +2515,17 @@
 
   function renderArchiveFolder(folder) {
     const count = folder.offers.length;
-    const isFolder = count > 1;
-    if (!isFolder) {
-      return renderArchiveOfferItem(folder.offers[0]);
-    }
-    const queryActive = Boolean(state.archiveQuery);
-    const expanded = queryActive || Boolean(state.archiveExpanded[folder.key]);
+    // Auch Einzelversionen als Ordner — zugeklappt hält das Archiv kompakt
+    const queryActive = Boolean(String(state.archiveQuery || "").trim());
+    const explicit = state.archiveExpanded[folder.key];
+    // Standard: zugeklappt; bei Suche offen, ausser der Nutzer hat explizit zugeklappt
+    const expanded = explicit === true || (explicit !== false && queryActive);
     const latest = folder.latest || folder.offers[0];
     const latestRev = latest?.revisionCode || "—";
     const amountText = latest?.amount || "—";
     const metaParts = [
-      `${count} Versionen`,
-      `aktuell ${latestRev}`,
+      count === 1 ? "1 Version" : `${count} Versionen`,
+      count > 1 ? `aktuell ${latestRev}` : latestRev,
       folder.company || null,
       amountText,
       latest?.createdAt || null,
@@ -2534,18 +2533,18 @@
     const children = folder.offers.map((o) => renderArchiveOfferItem(o, { nested: true })).join("");
     return `
       <section class="archive-folder${expanded ? " is-open" : ""}" data-series="${escapeHtml(folder.key)}">
-        <div class="archive-folder-head">
-          <label class="archive-check">
+        <div class="archive-folder-head" data-action="toggle-folder" role="button" tabindex="0" aria-expanded="${expanded ? "true" : "false"}">
+          <label class="archive-check" data-stop-toggle="1">
             <input type="checkbox" class="archive-folder-select" aria-label="Ordner auswählen: ${escapeHtml(folder.label)}" />
           </label>
-          <button type="button" class="archive-folder-toggle" data-action="toggle-folder" aria-expanded="${expanded ? "true" : "false"}">
+          <div class="archive-folder-toggle">
             <span class="archive-folder-icon" aria-hidden="true">${expanded ? "▼" : "▶"}</span>
             <span class="archive-folder-title">${escapeHtml(folder.label)}</span>
             <span class="archive-folder-count">${count}</span>
-          </button>
+          </div>
           <p class="archive-folder-meta">${escapeHtml(metaParts.join(" · "))}</p>
         </div>
-        <div class="archive-folder-body" ${expanded ? "" : "hidden"}>
+        <div class="archive-folder-body">
           ${children}
         </div>
       </section>`;
@@ -2568,14 +2567,25 @@
     const key = folder.dataset.series;
     if (key) state.archiveExpanded[key] = Boolean(expanded);
     folder.classList.toggle("is-open", Boolean(expanded));
-    const body = folder.querySelector(".archive-folder-body");
-    if (body) body.hidden = !expanded;
-    const toggle = folder.querySelector(".archive-folder-toggle");
-    if (toggle) {
-      toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-      const icon = toggle.querySelector(".archive-folder-icon");
-      if (icon) icon.textContent = expanded ? "▼" : "▶";
-    }
+    const head = folder.querySelector(".archive-folder-head");
+    if (head) head.setAttribute("aria-expanded", expanded ? "true" : "false");
+    const icon = folder.querySelector(".archive-folder-icon");
+    if (icon) icon.textContent = expanded ? "▼" : "▶";
+  }
+
+  function collapseAllArchiveFolders() {
+    (state.archiveOffers || []).forEach((o) => {
+      if (o.seriesKey) state.archiveExpanded[o.seriesKey] = false;
+    });
+    archiveList.querySelectorAll(".archive-folder").forEach((folder) => {
+      setArchiveFolderExpanded(folder, false);
+    });
+  }
+
+  function expandAllArchiveFolders() {
+    archiveList.querySelectorAll(".archive-folder").forEach((folder) => {
+      setArchiveFolderExpanded(folder, true);
+    });
   }
 
   function renderArchive() {
@@ -2767,9 +2777,10 @@
     });
 
     archiveList.addEventListener("click", async (event) => {
-      const toggleBtn = event.target.closest("[data-action='toggle-folder']");
-      if (toggleBtn) {
-        const folder = toggleBtn.closest(".archive-folder");
+      const toggleEl = event.target.closest("[data-action='toggle-folder']");
+      if (toggleEl) {
+        if (event.target.closest("[data-stop-toggle]")) return;
+        const folder = toggleEl.closest(".archive-folder");
         if (!folder) return;
         const willOpen = !folder.classList.contains("is-open");
         setArchiveFolderExpanded(folder, willOpen);
@@ -2798,6 +2809,16 @@
       } catch (err) {
         alert(err.message);
       }
+    });
+
+    archiveList.addEventListener("keydown", (event) => {
+      const head = event.target.closest(".archive-folder-head[data-action='toggle-folder']");
+      if (!head) return;
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      const folder = head.closest(".archive-folder");
+      if (!folder) return;
+      setArchiveFolderExpanded(folder, !folder.classList.contains("is-open"));
     });
 
     archiveList.addEventListener("change", (event) => {

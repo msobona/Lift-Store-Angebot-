@@ -965,6 +965,11 @@ textarea:focus {
   align-items: center;
   padding: 0.85rem 1.05rem;
   background: color-mix(in srgb, var(--ssi-navy, #003366) 6%, #fff);
+  cursor: pointer;
+  user-select: none;
+}
+.archive-folder-head:hover {
+  background: color-mix(in srgb, var(--ssi-navy, #003366) 10%, #fff);
 }
 .archive-folder-toggle {
   display: flex;
@@ -977,8 +982,8 @@ textarea:focus {
   font: inherit;
   font-weight: 800;
   text-align: left;
-  cursor: pointer;
   color: var(--ssi-ink);
+  min-width: 0;
 }
 .archive-folder-icon {
   display: inline-flex;
@@ -1010,11 +1015,14 @@ textarea:focus {
   font-size: 0.86rem;
 }
 .archive-folder-body {
-  display: grid;
+  display: none;
   gap: 0.55rem;
   padding: 0.65rem 0.85rem 0.85rem 2.4rem;
   border-top: 1px solid var(--ssi-line);
   background: #fafafa;
+}
+.archive-folder.is-open .archive-folder-body {
+  display: grid;
 }
 .archive-item {
   display: grid;
