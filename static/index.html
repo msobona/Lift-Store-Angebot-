@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260728archive" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260728dynrows" />
 </head>
 <body>
   <header class="topbar">
@@ -293,6 +293,9 @@
               Verrechnung über <strong>Stunden</strong> oder <strong>Betrag CHF</strong>.
             </p>
             <div id="itExtensions" class="it-extensions"></div>
+            <div class="it-ext-actions">
+              <button type="button" class="btn" id="btnAddExtension">+ Position hinzufügen</button>
+            </div>
           </section>
 
           <section class="block">
@@ -307,6 +310,9 @@
               </label>
             </div>
             <div id="itMaterials" class="it-extensions"></div>
+            <div class="it-ext-actions">
+              <button type="button" class="btn" id="btnAddMaterial">+ Material hinzufügen</button>
+            </div>
           </section>
 
           <section class="block">
@@ -481,6 +487,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260728archive"></script>
+  <script src="/static/app.js?v=20260728dynrows"></script>
 </body>
 </html>

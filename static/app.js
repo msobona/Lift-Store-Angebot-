@@ -13,7 +13,12 @@
     archiveOffers: [],
     archiveQuery: "",
     archiveExpanded: {},
+    itExtCount: 1,
+    itMatCount: 1,
   };
+
+  const IT_EXT_MAX = 5;
+  const IT_MAT_MAX = 8;
 
   const licenseForm = document.getElementById("licenseForm");
   const itForm = document.getElementById("itForm");
@@ -849,35 +854,24 @@
       el.checked = Boolean(opts[el.value]);
     });
 
-    const exts = cfg.customExtensions || [];
-    for (let i = 1; i <= 5; i += 1) {
-      const ext = exts[i - 1] || {};
-      setFormValue(itForm, `extTitle${i}`, ext.title || "");
-      setFormValue(itForm, `extDesc${i}`, ext.description || "");
-      setFormValue(itForm, `extHours${i}`, ext.hours ?? 0);
-      setFormValue(itForm, `extAmount${i}`, ext.amountChf ?? 0);
-      const billing = ext.billing === "amount" ? "amount" : "hours";
-      const radio = itForm.querySelector(`input[name="extBilling${i}"][value="${billing}"]`);
-      if (radio) {
-        radio.checked = true;
-        radio.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    }
-    const mats = cfg.materialItems || [];
-    for (let i = 1; i <= 6; i += 1) {
-      const mat = mats[i - 1] || {};
-      setFormValue(itForm, `matTitle${i}`, mat.title || "");
-      setFormValue(itForm, `matDesc${i}`, mat.description || "");
-      setFormValue(itForm, `matPurchase${i}`, mat.purchaseChf ?? 0);
-      setFormValue(itForm, `matHours${i}`, mat.hours ?? 0);
-      setFormValue(itForm, `matAmount${i}`, mat.amountChf ?? 0);
-      const billing = ["material", "hours", "amount"].includes(mat.billing) ? mat.billing : "material";
-      const radio = itForm.querySelector(`input[name="matBilling${i}"][value="${billing}"]`);
-      if (radio) {
-        radio.checked = true;
-        radio.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    }
+    const exts = (cfg.customExtensions || []).map((ext) => ({
+      title: ext.title || "",
+      desc: ext.description || "",
+      hours: String(ext.hours ?? 0),
+      amount: String(ext.amountChf ?? 0),
+      billing: ext.billing === "amount" ? "amount" : "hours",
+    }));
+    renderItExtensions(exts.length ? exts : undefined);
+
+    const mats = (cfg.materialItems || []).map((mat) => ({
+      title: mat.title || "",
+      desc: mat.description || "",
+      purchase: String(mat.purchaseChf ?? 0),
+      hours: String(mat.hours ?? 0),
+      amount: String(mat.amountChf ?? 0),
+      billing: ["material", "hours", "amount"].includes(mat.billing) ? mat.billing : "material",
+    }));
+    renderItMaterials(mats.length ? mats : undefined);
   }
 
   async function openArchiveForEdit(id) {
@@ -1930,36 +1924,98 @@
     });
   }
 
-  function renderItExtensions() {
-    const root = document.getElementById("itExtensions");
-    const prev = {};
-    for (let i = 1; i <= 5; i += 1) {
-      prev[i] = {
+  function emptyItExtension() {
+    return { title: "", desc: "", hours: "0", amount: "0", billing: "hours" };
+  }
+
+  function emptyItMaterial() {
+    return {
+      title: "",
+      desc: "",
+      hours: "0",
+      amount: "0",
+      purchase: "0",
+      billing: "material",
+    };
+  }
+
+  function readItExtensionsFromForm() {
+    const cards = [...document.querySelectorAll("#itExtensions .it-ext-card")];
+    if (!cards.length) return [];
+    return cards.map((card, idx) => {
+      const i = Number(card.dataset.rowIndex) || (idx + 1);
+      return {
         title: itForm[`extTitle${i}`]?.value || "",
         desc: itForm[`extDesc${i}`]?.value || "",
         hours: itForm[`extHours${i}`]?.value || "0",
         amount: itForm[`extAmount${i}`]?.value || "0",
         billing: itForm.querySelector(`input[name="extBilling${i}"]:checked`)?.value || "hours",
       };
+    });
+  }
+
+  function readItMaterialsFromForm() {
+    const cards = [...document.querySelectorAll("#itMaterials .it-mat-card")];
+    if (!cards.length) return [];
+    return cards.map((card, idx) => {
+      const i = Number(card.dataset.rowIndex) || (idx + 1);
+      return {
+        title: itForm[`matTitle${i}`]?.value || "",
+        desc: itForm[`matDesc${i}`]?.value || "",
+        hours: itForm[`matHours${i}`]?.value || "0",
+        amount: itForm[`matAmount${i}`]?.value || "0",
+        purchase: itForm[`matPurchase${i}`]?.value || "0",
+        billing: itForm.querySelector(`input[name="matBilling${i}"]:checked`)?.value || "material",
+      };
+    });
+  }
+
+  function updateItRowAddButtons() {
+    const addExt = document.getElementById("btnAddExtension");
+    const addMat = document.getElementById("btnAddMaterial");
+    if (addExt) {
+      addExt.disabled = state.itExtCount >= IT_EXT_MAX;
+      addExt.title = state.itExtCount >= IT_EXT_MAX
+        ? `Maximal ${IT_EXT_MAX} Positionen`
+        : "Weitere Position hinzufügen";
     }
+    if (addMat) {
+      addMat.disabled = state.itMatCount >= IT_MAT_MAX;
+      addMat.title = state.itMatCount >= IT_MAT_MAX
+        ? `Maximal ${IT_MAT_MAX} Positionen`
+        : "Weitere Materialposition hinzufügen";
+    }
+  }
+
+  function renderItExtensions(seedItems) {
+    const root = document.getElementById("itExtensions");
+    if (!root) return;
+    const source = Array.isArray(seedItems) ? seedItems : readItExtensionsFromForm();
+    const rows = (source.length ? source : [emptyItExtension()]).slice(0, IT_EXT_MAX);
+    state.itExtCount = Math.max(1, rows.length);
     root.innerHTML = "";
-    for (let i = 1; i <= 5; i += 1) {
-      const p = prev[i];
+    rows.forEach((p, idx) => {
+      const i = idx + 1;
       const card = document.createElement("div");
       card.className = "it-ext-card";
-      card.dataset.extIndex = String(i);
+      card.dataset.rowIndex = String(i);
       card.innerHTML = `
         <div class="it-ext-head">
           <strong>Position ${i}</strong>
-          <div class="it-ext-billing" role="group" aria-label="Verrechnung Position ${i}">
-            <label class="chip-radio">
-              <input type="radio" name="extBilling${i}" value="hours" ${p.billing !== "amount" ? "checked" : ""} />
-              Stunden
-            </label>
-            <label class="chip-radio">
-              <input type="radio" name="extBilling${i}" value="amount" ${p.billing === "amount" ? "checked" : ""} />
-              Betrag CHF
-            </label>
+          <div class="it-ext-head-actions">
+            <div class="it-ext-billing" role="group" aria-label="Verrechnung Position ${i}">
+              <label class="chip-radio">
+                <input type="radio" name="extBilling${i}" value="hours" ${p.billing !== "amount" ? "checked" : ""} />
+                Stunden
+              </label>
+              <label class="chip-radio">
+                <input type="radio" name="extBilling${i}" value="amount" ${p.billing === "amount" ? "checked" : ""} />
+                Betrag CHF
+              </label>
+            </div>
+            ${state.itExtCount > 1
+              ? `<button type="button" class="btn danger btn-ext-remove" data-action="remove-ext" data-index="${i}" title="Position entfernen">Entfernen</button>`
+              : ""}
           </div>
         </div>
         <label>Titel
@@ -1995,7 +2051,8 @@
         });
       });
       syncBilling();
-    }
+    });
+    updateItRowAddButtons();
   }
 
   function materialSellHint(purchaseChf) {
@@ -2008,41 +2065,39 @@
     return `→ VK ca. ${money(vk, "CHF")}`;
   }
 
-  function renderItMaterials() {
+  function renderItMaterials(seedItems) {
     const root = document.getElementById("itMaterials");
     if (!root) return;
-    const prev = {};
-    for (let i = 1; i <= 6; i += 1) {
-      prev[i] = {
-        title: itForm[`matTitle${i}`]?.value || "",
-        desc: itForm[`matDesc${i}`]?.value || "",
-        hours: itForm[`matHours${i}`]?.value || "0",
-        amount: itForm[`matAmount${i}`]?.value || "0",
-        purchase: itForm[`matPurchase${i}`]?.value || "0",
-        billing: itForm.querySelector(`input[name="matBilling${i}"]:checked`)?.value || "material",
-      };
-    }
+    const source = Array.isArray(seedItems) ? seedItems : readItMaterialsFromForm();
+    const rows = (source.length ? source : [emptyItMaterial()]).slice(0, IT_MAT_MAX);
+    state.itMatCount = Math.max(1, rows.length);
     root.innerHTML = "";
-    for (let i = 1; i <= 6; i += 1) {
-      const p = prev[i];
+    rows.forEach((p, idx) => {
+      const i = idx + 1;
       const card = document.createElement("div");
       card.className = "it-ext-card it-mat-card";
+      card.dataset.rowIndex = String(i);
       card.innerHTML = `
         <div class="it-ext-head">
           <strong>Material ${i}</strong>
-          <div class="it-ext-billing" role="group" aria-label="Art Material ${i}">
-            <label class="chip-radio">
-              <input type="radio" name="matBilling${i}" value="material" ${p.billing === "material" || !p.billing ? "checked" : ""} />
-              Material EP
-            </label>
-            <label class="chip-radio">
-              <input type="radio" name="matBilling${i}" value="hours" ${p.billing === "hours" ? "checked" : ""} />
-              Stunden
-            </label>
-            <label class="chip-radio">
-              <input type="radio" name="matBilling${i}" value="amount" ${p.billing === "amount" ? "checked" : ""} />
-              Betrag CHF
-            </label>
+          <div class="it-ext-head-actions">
+            <div class="it-ext-billing" role="group" aria-label="Art Material ${i}">
+              <label class="chip-radio">
+                <input type="radio" name="matBilling${i}" value="material" ${p.billing === "material" || !p.billing ? "checked" : ""} />
+                Material EP
+              </label>
+              <label class="chip-radio">
+                <input type="radio" name="matBilling${i}" value="hours" ${p.billing === "hours" ? "checked" : ""} />
+                Stunden
+              </label>
+              <label class="chip-radio">
+                <input type="radio" name="matBilling${i}" value="amount" ${p.billing === "amount" ? "checked" : ""} />
+                Betrag CHF
+              </label>
+            </div>
+            ${state.itMatCount > 1
+              ? `<button type="button" class="btn danger btn-ext-remove" data-action="remove-mat" data-index="${i}" title="Position entfernen">Entfernen</button>`
+              : ""}
           </div>
         </div>
         <label>Titel
@@ -2090,7 +2145,44 @@
       });
       syncBilling();
       updateHint();
-    }
+    });
+    updateItRowAddButtons();
+  }
+
+  function addItExtensionRow() {
+    if (state.itExtCount >= IT_EXT_MAX) return;
+    const rows = readItExtensionsFromForm();
+    rows.push(emptyItExtension());
+    renderItExtensions(rows);
+    recalcIt();
+  }
+
+  function removeItExtensionRow(index) {
+    const rows = readItExtensionsFromForm();
+    if (rows.length <= 1) return;
+    const idx = Number(index) - 1;
+    if (idx < 0 || idx >= rows.length) return;
+    rows.splice(idx, 1);
+    renderItExtensions(rows);
+    recalcIt();
+  }
+
+  function addItMaterialRow() {
+    if (state.itMatCount >= IT_MAT_MAX) return;
+    const rows = readItMaterialsFromForm();
+    rows.push(emptyItMaterial());
+    renderItMaterials(rows);
+    recalcIt();
+  }
+
+  function removeItMaterialRow(index) {
+    const rows = readItMaterialsFromForm();
+    if (rows.length <= 1) return;
+    const idx = Number(index) - 1;
+    if (idx < 0 || idx >= rows.length) return;
+    rows.splice(idx, 1);
+    renderItMaterials(rows);
+    recalcIt();
   }
 
   function collectItPayload() {
@@ -2100,29 +2192,21 @@
     itForm.querySelectorAll('input[name="itOption"]:checked').forEach((el) => {
       options[el.value] = true;
     });
-    const customExtensions = [];
-    for (let i = 1; i <= 5; i += 1) {
-      const billing = itForm.querySelector(`input[name="extBilling${i}"]:checked`)?.value || "hours";
-      customExtensions.push({
-        title: String(data.get(`extTitle${i}`) || "").trim(),
-        description: String(data.get(`extDesc${i}`) || "").trim(),
-        hours: Number(data.get(`extHours${i}`) || 0),
-        amountChf: Number(data.get(`extAmount${i}`) || 0),
-        billing,
-      });
-    }
-    const materialItems = [];
-    for (let i = 1; i <= 6; i += 1) {
-      const billing = itForm.querySelector(`input[name="matBilling${i}"]:checked`)?.value || "material";
-      materialItems.push({
-        title: String(data.get(`matTitle${i}`) || "").trim(),
-        description: String(data.get(`matDesc${i}`) || "").trim(),
-        billing,
-        purchaseChf: Number(data.get(`matPurchase${i}`) || 0),
-        hours: Number(data.get(`matHours${i}`) || 0),
-        amountChf: Number(data.get(`matAmount${i}`) || 0),
-      });
-    }
+    const customExtensions = readItExtensionsFromForm().map((row) => ({
+      title: String(row.title || "").trim(),
+      description: String(row.desc || "").trim(),
+      hours: Number(row.hours || 0),
+      amountChf: Number(row.amount || 0),
+      billing: row.billing || "hours",
+    }));
+    const materialItems = readItMaterialsFromForm().map((row) => ({
+      title: String(row.title || "").trim(),
+      description: String(row.desc || "").trim(),
+      billing: row.billing || "material",
+      purchaseChf: Number(row.purchase || 0),
+      hours: Number(row.hours || 0),
+      amountChf: Number(row.amount || 0),
+    }));
     return {
       customer: {
         company: String(data.get("company") || "").trim(),
@@ -2616,6 +2700,18 @@
     document.getElementById("btnItRecalc").addEventListener("click", recalcIt);
     document.getElementById("btnTravelAuto")?.addEventListener("click", () => {
       applyTravelDefaultsFromLicense({ recalc: true });
+    });
+    document.getElementById("btnAddExtension")?.addEventListener("click", () => addItExtensionRow());
+    document.getElementById("btnAddMaterial")?.addEventListener("click", () => addItMaterialRow());
+    document.getElementById("itExtensions")?.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-action='remove-ext']");
+      if (!btn) return;
+      removeItExtensionRow(btn.dataset.index);
+    });
+    document.getElementById("itMaterials")?.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-action='remove-mat']");
+      if (!btn) return;
+      removeItMaterialRow(btn.dataset.index);
     });
     document.getElementById("btnItPrint").addEventListener("click", () => window.print());
     document.getElementById("btnItExcel").addEventListener("click", () => {

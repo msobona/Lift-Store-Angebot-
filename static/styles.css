@@ -280,6 +280,22 @@ main {
   gap: 0.5rem 1rem;
 }
 
+.it-ext-head-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.it-ext-actions {
+  margin-top: 0.75rem;
+}
+
+.btn-ext-remove {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.8rem;
+}
+
 .it-ext-billing {
   display: inline-flex;
   gap: 0.35rem;
