@@ -361,7 +361,46 @@
     });
   }
 
-  function applyLicenseSelectionToIt() {
+  // Zuletzt automatisch gesetztes Reise-Paket (damit Instanzwechsel Basic↔Advanced greift)
+  let travelAutoState = { instanceId: null, trips: null, meals: null };
+
+  function travelPackageForInstance(instanceId) {
+    const travelCfg = state.itCatalog?.travelDefaults || {};
+    const key = instanceId === "advanced" ? "advanced" : "basic";
+    const fallback = travelCfg[key] || travelCfg.basic || { trips: 5, meals: 5 };
+    return {
+      instanceId: key,
+      trips: Number(fallback.trips || (key === "advanced" ? 7 : 5)),
+      meals: Number(fallback.meals || (key === "advanced" ? 7 : 5)),
+    };
+  }
+
+  function markTravelAutoFromForm() {
+    travelAutoState = {
+      instanceId: selectedInstanceId() || "basic",
+      trips: Number(itForm.trips?.value || 0),
+      meals: Number(itForm.mealCount?.value || 0),
+    };
+  }
+
+  function updateTravelPackageHint(instanceId, pkg, extra = "") {
+    const hint = document.getElementById("travelAutoHint");
+    const licenseHint = document.getElementById("instanceTravelHint");
+    const pkgLabel =
+      instanceId === "advanced"
+        ? `Advanced-Paket: ${pkg.trips} Fahrten / ${pkg.meals} Verpflegungen`
+        : `Basic-Paket: ${pkg.trips} Fahrten / ${pkg.meals} Verpflegungen`;
+    if (licenseHint) {
+      licenseHint.textContent =
+        `${pkgLabel} — wird bei Instanzwechsel in den Reisekosten übernommen (manuell überschreibbar).`;
+    }
+    if (hint && extra) hint.textContent = extra;
+    else if (hint && !hint.textContent) {
+      hint.textContent = `${pkgLabel}. km/Fahrzeit aus Kundenadresse; Fahrten/Verpflegung manuell anpassbar.`;
+    }
+  }
+
+  async function applyLicenseSelectionToIt({ travel = true, forceTravelPackage = false } = {}) {
     // Kunde / Projekt / Ersteller
     syncCustomerProject(licenseForm, itForm);
 
@@ -394,31 +433,54 @@
       if (ext) ext.checked = true;
     }
 
-    // Reisekosten: Defaults + Distanz aus Kundenadresse (async, rechnet IT neu)
-    applyTravelDefaultsFromLicense({ recalc: true });
+    // Reisekosten: Paket nach Instanz + Distanz aus Kundenadresse
+    if (travel) {
+      await applyTravelDefaultsFromLicense({ recalc: true, forcePackage: forceTravelPackage });
+    }
   }
 
-  async function applyTravelDefaultsFromLicense({ recalc = true } = {}) {
+  async function applyTravelDefaultsFromLicense({ recalc = true, forcePackage = false } = {}) {
     const address = String(licenseForm.address?.value || "").trim();
     const instanceId = selectedInstanceId() || "basic";
     const hint = document.getElementById("travelAutoHint");
     const travelCfg = state.itCatalog?.travelDefaults || {};
     const originLabel = travelCfg.origin?.label || "Kesslerstrasse 1, 5037 Muhen";
-    const fallback = travelCfg[instanceId] || travelCfg.basic || { trips: 5, meals: 5 };
+    const pkg = travelPackageForInstance(instanceId);
+    const pkgTrips = pkg.trips;
+    const pkgMeals = pkg.meals;
 
-    // Mindestens Fahrten/Verpflegung nach Instanz setzen
     const curTrips = Number(itForm.trips?.value || 0);
     const curMeals = Number(itForm.mealCount?.value || 0);
-    const minTrips = Number(fallback.trips || 5);
-    const minMeals = Number(fallback.meals || 5);
-    if (curTrips < minTrips) itForm.trips.value = minTrips;
-    if (curMeals < minMeals) itForm.mealCount.value = minMeals;
+    const instanceChanged =
+      travelAutoState.instanceId != null && travelAutoState.instanceId !== instanceId;
+    const firstApply = travelAutoState.instanceId == null;
+
+    // Basic 5/5 · Advanced 7/7:
+    // bei Instanzwechsel / Erstlauf / force immer setzen; sonst nur anheben auf Paket-Minimum
+    if (forcePackage || firstApply || instanceChanged) {
+      itForm.trips.value = pkgTrips;
+      itForm.mealCount.value = pkgMeals;
+    } else {
+      if (curTrips < pkgTrips) itForm.trips.value = pkgTrips;
+      if (curMeals < pkgMeals) itForm.mealCount.value = pkgMeals;
+    }
+    travelAutoState = {
+      instanceId,
+      trips: Number(itForm.trips.value || pkgTrips),
+      meals: Number(itForm.mealCount.value || pkgMeals),
+    };
+
+    const pkgLabel =
+      instanceId === "advanced"
+        ? `Advanced: ${pkgTrips} Fahrten / ${pkgMeals} Verpflegungen`
+        : `Basic: ${pkgTrips} Fahrten / ${pkgMeals} Verpflegungen`;
+    updateTravelPackageHint(instanceId, pkg);
 
     if (address.length < 3) {
       if (hint) {
         hint.textContent =
           `Startpunkt: ${originLabel}. Bitte Kundenadresse im Lizenzkalkulator setzen — dann km/Fahrzeit automatisch. ` +
-          `${instanceId === "advanced" ? "Advanced: mind. 7 Fahrten / 7 Verpflegungen." : "Basic: mind. 5 Fahrten / 5 Verpflegungen."}`;
+          `${pkgLabel} (aktuell Fahrten ${itForm.trips.value}, Verpflegungen ${itForm.mealCount.value}).`;
       }
       if (recalc) recalcIt();
       return;
@@ -431,14 +493,21 @@
       if (data.ok) {
         itForm.kmPerTrip.value = data.kmPerTrip;
         itForm.travelHoursPerTrip.value = data.travelHoursPerTrip;
-        // Trips/meals: auf Instanz-Default anheben, höhere manuelle Werte behalten
-        itForm.trips.value = Math.max(Number(itForm.trips.value || 0), Number(data.trips || minTrips));
-        itForm.mealCount.value = Math.max(Number(itForm.mealCount.value || 0), Number(data.meals || minMeals));
+        // Paket bereits oben gesetzt; API-Defaults nur als zusätzliche Untergrenze
+        const apiTrips = Number(data.trips || pkgTrips);
+        const apiMeals = Number(data.meals || pkgMeals);
+        if (Number(itForm.trips.value || 0) < apiTrips) itForm.trips.value = apiTrips;
+        if (Number(itForm.mealCount.value || 0) < apiMeals) itForm.mealCount.value = apiMeals;
+        travelAutoState = {
+          instanceId,
+          trips: Number(itForm.trips.value || pkgTrips),
+          meals: Number(itForm.mealCount.value || pkgMeals),
+        };
         if (hint) {
           const dest = data.destination?.label || address;
           hint.textContent =
             `Route: ${originLabel} → ${dest} · Roundtrip ${data.kmPerTrip} km / ${data.travelHoursPerTrip} h · ` +
-            `Fahrten ${itForm.trips.value}, Verpflegungen ${itForm.mealCount.value} (anpassbar).`;
+            `Fahrten ${itForm.trips.value}, Verpflegungen ${itForm.mealCount.value} (${pkgLabel}, anpassbar).`;
         }
       } else if (hint) {
         hint.textContent = data.reason || "Reiseberechnung nicht möglich.";
@@ -451,7 +520,7 @@
 
   function switchView(name) {
     if (name === "it") {
-      applyLicenseSelectionToIt();
+      applyLicenseSelectionToIt({ forceTravelPackage: false });
     }
     if (name === "license") {
       syncCustomerProject(itForm, licenseForm);
@@ -558,6 +627,7 @@
     setFormValue(itForm, "kmPerTrip", 0);
     setFormValue(itForm, "overnightCount", 0);
     setFormValue(itForm, "mealCount", 0);
+    travelAutoState = { instanceId: null, trips: null, meals: null };
 
     renderInstances();
     renderAddons();
@@ -571,6 +641,8 @@
     if (discPct) discPct.value = "0";
     if (discAmt) discAmt.value = "0";
     updateInternalContributionBox();
+    // Basic/Advanced-Reise-Paket nach Reset erneut setzen
+    applyTravelDefaultsFromLicense({ recalc: false, forcePackage: true });
   }
 
   async function leaveOfferSession(mode = "auto") {
@@ -685,7 +757,7 @@
 
   async function ensureCurrentCalcs() {
     // frische Live-Daten aus den Formularen holen
-    applyLicenseSelectionToIt();
+    await applyLicenseSelectionToIt({ forceTravelPackage: false });
     await Promise.all([recalcLicense(), recalcIt()]);
   }
 
@@ -839,6 +911,7 @@
     setFormValue(itForm, "kmPerTrip", cfg.kmPerTrip ?? 0);
     setFormValue(itForm, "overnightCount", cfg.overnightCount ?? 0);
     setFormValue(itForm, "mealCount", cfg.mealCount ?? 0);
+    markTravelAutoFromForm();
     const totals = offer.totals || {};
     const defaultMargin = state.itCatalog?.rates?.marginPercent ?? 0;
     setFormValue(
@@ -894,7 +967,7 @@
 
     if (offer.kind === "license") {
       fillLicenseFormFromOffer(offer);
-      applyLicenseSelectionToIt();
+      await applyLicenseSelectionToIt({ forceTravelPackage: true });
       await Promise.all([recalcLicense(), recalcIt()]);
       switchView("license");
       alert(`Lizenzkalkulation geladen: ${state.editingFromOfferId}\nAnpassen und danach unter „Angebot“ neu erzeugen.`);
@@ -951,10 +1024,12 @@
             materialItems: [],
           },
         });
+        travelAutoState = { instanceId: null, trips: null, meals: null };
+        await applyLicenseSelectionToIt({ forceTravelPackage: true });
       } else {
         if (lic) fillLicenseFormFromOffer(lic);
         if (itOffer) fillItFormFromOffer(itOffer);
-        if (lic && !itOffer) applyLicenseSelectionToIt();
+        if (lic && !itOffer) await applyLicenseSelectionToIt({ forceTravelPackage: true });
       }
       setSsiContactIds(
         offer.meta?.ssiContact1Id
@@ -1738,6 +1813,7 @@
         renderIncluded();
         renderAddons();
         updateClientHints();
+        // Reise-Paket + IT-Sync laufen über licenseForm-change (bubble)
         recalcLicense();
       });
       root.appendChild(label);
@@ -2740,9 +2816,11 @@
       }
       recalcLicense();
     });
-    licenseForm.addEventListener("change", (event) => {
+    licenseForm.addEventListener("change", async (event) => {
       // Bei Lizenzänderungen IT-Vorschläge mitziehen (inkl. External Storage → IT)
-      applyLicenseSelectionToIt();
+      // Instanzwechsel: Reise-Paket Basic 5/5 ↔ Advanced 7/7 neu setzen
+      const forceTravelPackage = event.target?.name === "instanceId";
+      await applyLicenseSelectionToIt({ forceTravelPackage });
       syncCustomerProject(licenseForm, itForm);
       const name = event.target?.name;
       if (name === "licenseMarginPercent" || name === "eurToChfRate") {
@@ -2751,15 +2829,15 @@
         updateClientHints();
       }
       recalcLicense();
-      // Falls IT-Tab aktiv ist, sofort neu rechnen
-      if (document.getElementById("view-it").classList.contains("active")) {
+      // Nach Reise-Update IT neu rechnen (auch wenn Lizenz-Tab aktiv — Werte im Formular)
+      if (forceTravelPackage || document.getElementById("view-it").classList.contains("active")) {
         recalcIt();
       }
     });
 
     document.getElementById("btnItRecalc").addEventListener("click", recalcIt);
     document.getElementById("btnTravelAuto")?.addEventListener("click", () => {
-      applyTravelDefaultsFromLicense({ recalc: true });
+      applyTravelDefaultsFromLicense({ recalc: true, forcePackage: true });
     });
     document.getElementById("btnAddExtension")?.addEventListener("click", () => addItExtensionRow());
     document.getElementById("btnAddMaterial")?.addEventListener("click", () => addItMaterialRow());
@@ -2977,7 +3055,8 @@
     initAddressAutocomplete(document.getElementById("customerAddress"));
     initSsiContactPickers();
     bindEvents();
-    // Initiale Live-Vorschau (auch ohne Firmenname)
+    // Initiale Live-Vorschau + Reise-Paket zur gewählten Instanz (Basic 5/5)
+    await applyTravelDefaultsFromLicense({ recalc: false, forcePackage: true });
     recalcLicense();
     recalcIt();
   }

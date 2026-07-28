@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260728ssihtml" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260728travelpkg" />
 </head>
 <body>
   <header class="topbar">
@@ -110,6 +110,9 @@
           <section class="block">
             <h2>Instanz</h2>
             <p class="block-lead">Jede Instanz enthält 1 Opening Client und 1 Admin Client.</p>
+            <p class="block-lead" id="instanceTravelHint">
+              Reisekosten-Paket: Basic 5 Fahrten / 5 Verpflegungen · Advanced 7 / 7 — wechselt automatisch mit der Instanz.
+            </p>
             <div id="instanceOptions" class="option-list"></div>
             <div class="grid-2" style="margin-top:1rem">
               <label>Anzahl Instanzen (Fest)
@@ -319,8 +322,8 @@
             <h2>Reisekosten</h2>
             <p class="block-lead" id="travelAutoHint">
               Startpunkt: Kesslerstrasse 1, 5037 Muhen. km und Fahrzeit werden als Roundtrip
-              aus der Kundenadresse berechnet. Basic: mind. 5 Fahrten / 5 Verpflegungen,
-              Advanced: mind. 7 / 7 — manuell überschreibbar.
+              aus der Kundenadresse berechnet. Fahrten/Verpflegung folgen dem Instanz-Paket
+              (Basic 5/5, Advanced 7/7) und aktualisieren sich bei Instanzwechsel — manuell überschreibbar.
             </p>
             <div class="form-actions" style="margin:0 0 0.75rem">
               <button type="button" class="btn" id="btnTravelAuto">Reisekosten aus Adresse berechnen</button>
@@ -534,6 +537,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260728ssihtml"></script>
+  <script src="/static/app.js?v=20260728travelpkg"></script>
 </body>
 </html>
