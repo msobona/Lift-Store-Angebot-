@@ -2853,6 +2853,13 @@
       await deleteArchiveOffers(selectedArchiveIds());
     });
 
+    document.getElementById("btnArchiveCollapseAll")?.addEventListener("click", () => {
+      collapseAllArchiveFolders();
+    });
+    document.getElementById("btnArchiveExpandAll")?.addEventListener("click", () => {
+      expandAllArchiveFolders();
+    });
+
     const archiveSearch = document.getElementById("archiveSearch");
     archiveSearch?.addEventListener("input", () => {
       state.archiveQuery = archiveSearch.value || "";
