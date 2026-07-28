@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260728sll-qty" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260728opt-lic" />
 </head>
 <body>
   <header class="topbar">
@@ -111,27 +111,57 @@
             <p class="block-lead">Jede Instanz enthält 1 Opening Client und 1 Admin Client.</p>
             <div id="instanceOptions" class="option-list"></div>
             <div class="grid-2" style="margin-top:1rem">
-              <label>Anzahl Instanzen<input name="instanceCount" type="number" min="1" max="50" value="1" /></label>
+              <label>Anzahl Instanzen (Fest)
+                <input name="instanceCount" type="number" min="1" max="50" value="1" />
+              </label>
+              <label>Zusätzlich als Option
+                <input name="optionalInstanceCount" type="number" min="0" max="50" value="0" />
+              </label>
             </div>
             <ul id="includedFunctions" class="included-list"></ul>
           </section>
 
           <section class="block">
             <h2>Add-on-Lizenzen</h2>
-            <p class="block-lead">Einmalgebühr je Instanz.</p>
+            <p class="block-lead">Einmalgebühr je Instanz. Optionale Mengen erscheinen im Angebot unter «Optionen», nicht im Total.</p>
             <div id="addonOptions" class="option-rows"></div>
           </section>
 
           <section class="block">
             <h2>Client-Lizenzen</h2>
             <div id="clientHints" class="option-rows"></div>
-            <div class="grid-2">
-              <label>Zusätzliche Opening Clients<input name="extraOpeningClients" type="number" min="0" max="200" value="0" /></label>
-              <label>Zusätzliche Admin Clients<input name="extraAdminClients" type="number" min="0" max="200" value="0" /></label>
-              <label>Mobile-Terminal-Clients <span class="hint">(Advanced)</span><input name="mobileTerminalClients" type="number" min="0" max="200" value="0" /></label>
-              <label>Fremd-VLM-Typen<input name="thirdPartyVlmTypes" type="number" min="0" max="50" value="0" /></label>
-              <label>Test-Instanzen<input name="testInstances" type="number" min="0" max="20" value="0" /></label>
-              <label>Upgrade-Gebühr (Jahre)<input name="upgradeYears" type="number" min="0" max="20" value="0" /></label>
+            <p class="block-lead">Festumfang zählt zum Angebotstotal; Optionen sind preislich ausgewiesen, aber nicht enthalten.</p>
+            <div class="qty-pair-grid">
+              <div class="qty-pair">
+                <span class="qty-pair-label">Zusätzliche Opening Clients</span>
+                <label>Fest<input name="extraOpeningClients" type="number" min="0" max="200" value="0" /></label>
+                <label>Option<input name="optionalExtraOpeningClients" type="number" min="0" max="200" value="0" /></label>
+              </div>
+              <div class="qty-pair">
+                <span class="qty-pair-label">Zusätzliche Admin Clients</span>
+                <label>Fest<input name="extraAdminClients" type="number" min="0" max="200" value="0" /></label>
+                <label>Option<input name="optionalExtraAdminClients" type="number" min="0" max="200" value="0" /></label>
+              </div>
+              <div class="qty-pair">
+                <span class="qty-pair-label">Mobile-Terminal-Clients <span class="hint">(Advanced)</span></span>
+                <label>Fest<input name="mobileTerminalClients" type="number" min="0" max="200" value="0" /></label>
+                <label>Option<input name="optionalMobileTerminalClients" type="number" min="0" max="200" value="0" /></label>
+              </div>
+              <div class="qty-pair">
+                <span class="qty-pair-label">Fremd-VLM-Typen</span>
+                <label>Fest<input name="thirdPartyVlmTypes" type="number" min="0" max="50" value="0" /></label>
+                <label>Option<input name="optionalThirdPartyVlmTypes" type="number" min="0" max="50" value="0" /></label>
+              </div>
+              <div class="qty-pair">
+                <span class="qty-pair-label">Test-Instanzen</span>
+                <label>Fest<input name="testInstances" type="number" min="0" max="20" value="0" /></label>
+                <label>Option<input name="optionalTestInstances" type="number" min="0" max="20" value="0" /></label>
+              </div>
+              <div class="qty-pair">
+                <span class="qty-pair-label">Upgrade-Gebühr (Jahre)</span>
+                <label>Fest<input name="upgradeYears" type="number" min="0" max="20" value="0" /></label>
+                <label>Option<input name="optionalUpgradeYears" type="number" min="0" max="20" value="0" /></label>
+              </div>
             </div>
             <p class="block-lead" id="sllHint" style="margin-top:1rem"></p>
             <label class="full">Notizen<textarea name="notes" rows="2"></textarea></label>
@@ -421,6 +451,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260728sll-qty"></script>
+  <script src="/static/app.js?v=20260728opt-lic"></script>
 </body>
 </html>

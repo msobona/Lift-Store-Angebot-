@@ -520,6 +520,14 @@
     setFormValue(licenseForm, "thirdPartyVlmTypes", 0);
     setFormValue(licenseForm, "testInstances", 0);
     setFormValue(licenseForm, "upgradeYears", 0);
+    setFormValue(licenseForm, "optionalInstanceCount", 0);
+    setFormValue(licenseForm, "optionalExtraOpeningClients", 0);
+    setFormValue(licenseForm, "optionalExtraAdminClients", 0);
+    setFormValue(licenseForm, "optionalMobileTerminalClients", 0);
+    setFormValue(licenseForm, "optionalThirdPartyVlmTypes", 0);
+    setFormValue(licenseForm, "optionalTestInstances", 0);
+    setFormValue(licenseForm, "optionalUpgradeYears", 0);
+    if (licenseForm.applySllDiscount) licenseForm.applySllDiscount.checked = false;
 
     const rates = state.itCatalog?.rates || {};
     setFormValue(itForm, "itMarginPercent", rates.marginPercent ?? 0);
@@ -732,6 +740,13 @@
     setFormValue(licenseForm, "thirdPartyVlmTypes", cfg.thirdPartyVlmTypes ?? 0);
     setFormValue(licenseForm, "testInstances", cfg.testInstances ?? 0);
     setFormValue(licenseForm, "upgradeYears", cfg.upgradeYears ?? 0);
+    setFormValue(licenseForm, "optionalInstanceCount", cfg.optionalInstanceCount ?? 0);
+    setFormValue(licenseForm, "optionalExtraOpeningClients", cfg.optionalExtraOpeningClients ?? 0);
+    setFormValue(licenseForm, "optionalExtraAdminClients", cfg.optionalExtraAdminClients ?? 0);
+    setFormValue(licenseForm, "optionalMobileTerminalClients", cfg.optionalMobileTerminalClients ?? 0);
+    setFormValue(licenseForm, "optionalThirdPartyVlmTypes", cfg.optionalThirdPartyVlmTypes ?? 0);
+    setFormValue(licenseForm, "optionalTestInstances", cfg.optionalTestInstances ?? 0);
+    setFormValue(licenseForm, "optionalUpgradeYears", cfg.optionalUpgradeYears ?? 0);
     const productDefaults = state.licenseCatalog?.product || {};
     const totals = offer.totals || {};
     setFormValue(
@@ -764,6 +779,11 @@
     const selected = new Set(cfg.selectedAddons || []);
     licenseForm.querySelectorAll('input[name="addon"]').forEach((el) => {
       el.checked = selected.has(el.value) && !el.disabled;
+    });
+    const optQtys = cfg.optionalAddonQtys || {};
+    licenseForm.querySelectorAll('input[name^="optionalAddonQty"]').forEach((el) => {
+      const id = el.getAttribute("data-addon-id");
+      el.value = id && optQtys[id] != null ? Number(optQtys[id]) : 0;
     });
   }
 
@@ -1015,7 +1035,13 @@
       const licenseGroups = scopeGroups.filter((g) => {
         const id = String(g.id || "").toLowerCase();
         const title = String(g.title || "").toLowerCase();
+        if (id === "licenseoptions" || title.includes("optionen")) return false;
         return id === "license" || title.includes("lizenz") || title.includes("software");
+      });
+      const licenseOptionGroups = scopeGroups.filter((g) => {
+        const id = String(g.id || "").toLowerCase();
+        const title = String(g.title || "").toLowerCase();
+        return id === "licenseoptions" || (title.includes("optionen") && title.includes("software"));
       });
       const itGroups = scopeGroups.filter((g) => {
         const id = String(g.id || "").toLowerCase();
@@ -1023,36 +1049,61 @@
         return id === "it" || title.includes("it-") || title.includes("it ") || title.includes("reise");
       });
       // Falls Filter nichts trifft: alles in Lizenzen belassen
-      const lic = licenseGroups.length || itGroups.length ? licenseGroups : scopeGroups;
-      const it = licenseGroups.length || itGroups.length ? itGroups : [];
+      const lic = licenseGroups.length || itGroups.length || licenseOptionGroups.length
+        ? licenseGroups
+        : scopeGroups;
+      const licOpt = licenseGroups.length || itGroups.length || licenseOptionGroups.length
+        ? licenseOptionGroups
+        : [];
+      const it = licenseGroups.length || itGroups.length || licenseOptionGroups.length ? itGroups : [];
 
-      const renderBlock = (groups, headerTitle, totalLabel, { showQty = false } = {}) => {
+      const renderBlock = (groups, headerTitle, totalLabel, {
+        showQty = false,
+        showPrice = false,
+        note = "",
+      } = {}) => {
         if (!groups.length) return "";
         let pos = 0;
         const bodyRows = [];
-        const colCount = showQty ? 3 : 2;
-        if (showQty) {
+        const colCount = showQty || showPrice ? 3 : 2;
+        if (showQty || showPrice) {
           bodyRows.push(`
             <tr class="offer-scope-colheads">
               <th scope="col" class="col-content">Position</th>
-              <th scope="col" class="col-qty">Anzahl</th>
-              <th scope="col" class="col-price"></th>
+              <th scope="col" class="col-qty">${showQty ? "Anzahl" : ""}</th>
+              <th scope="col" class="col-price">${showPrice ? "Preis" : ""}</th>
+            </tr>`);
+        }
+        if (note) {
+          bodyRows.push(`
+            <tr class="offer-scope-note">
+              <td colspan="${colCount}" class="col-content"><em>${escapeHtml(note)}</em></td>
             </tr>`);
         }
         groups.forEach((group) => {
+          if (group.note && group.note !== note) {
+            bodyRows.push(`
+              <tr class="offer-scope-note">
+                <td colspan="${colCount}" class="col-content"><em>${escapeHtml(group.note)}</em></td>
+              </tr>`);
+          }
           (group.items || []).forEach((item) => {
             pos += 1;
             const desc = String(item.description || "").trim();
             const qtyText = formatScopeQty(item);
-            if (showQty) {
+            const amount = item.amount != null ? Number(item.amount) : null;
+            const priceText = showPrice && amount != null
+              ? money(amount, item.currency || group.currency || "CHF")
+              : "";
+            if (showQty || showPrice) {
               bodyRows.push(`
               <tr class="offer-scope-content">
                 <td class="col-content">
                   <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
                   ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
                 </td>
-                <td class="col-qty">${escapeHtml(qtyText)}</td>
-                <td class="col-price"></td>
+                <td class="col-qty">${showQty ? escapeHtml(qtyText) : ""}</td>
+                <td class="col-price">${priceText ? escapeHtml(priceText) : ""}</td>
               </tr>`);
             } else {
               bodyRows.push(`
@@ -1065,7 +1116,7 @@
             }
           });
           if (group.total != null) {
-            if (showQty) {
+            if (showQty || showPrice) {
               bodyRows.push(`
               <tr class="offer-scope-subtotal">
                 <td colspan="2" class="col-total-label">${escapeHtml(totalLabel)}</td>
@@ -1081,7 +1132,7 @@
           }
         });
         return `
-          <table class="offer-options-table offer-scope-price-table${showQty ? " has-qty" : ""}">
+          <table class="offer-options-table offer-scope-price-table${showQty || showPrice ? " has-qty" : ""}">
             <thead>
               <tr>
                 <th colspan="${colCount}" class="offer-summary-banner">${escapeHtml(headerTitle)}</th>
@@ -1094,6 +1145,11 @@
       const parts = [
         renderBlock(lic, "Zusammenfassung – Softwarelizenzen", "Total A · Softwarelizenzen", {
           showQty: lic.some((g) => g.showQty !== false),
+        }),
+        renderBlock(licOpt, "Optionen – Softwarelizenzen", "Optionen (nicht im Total)", {
+          showQty: true,
+          showPrice: true,
+          note: "Preislich ausgewiesen, nicht im Gesamttotal enthalten.",
         }),
         renderBlock(it, "Zusammenfassung – IT-Aufwand", "Total B · IT-Aufwand"),
       ].filter(Boolean);
@@ -1490,6 +1546,12 @@
   function collectLicensePayload() {
     const data = new FormData(licenseForm);
     const pricing = licensePricing();
+    const optionalAddonQtys = {};
+    licenseForm.querySelectorAll('input[name^="optionalAddonQty"]').forEach((el) => {
+      const id = el.getAttribute("data-addon-id") || el.name.replace(/^optionalAddonQty_/, "");
+      const qty = Number(el.value || 0);
+      if (id && qty > 0) optionalAddonQtys[id] = qty;
+    });
     return {
       customer: {
         company: String(data.get("company") || "").trim(),
@@ -1508,6 +1570,14 @@
       thirdPartyVlmTypes: Number(data.get("thirdPartyVlmTypes") || 0),
       testInstances: Number(data.get("testInstances") || 0),
       upgradeYears: Number(data.get("upgradeYears") || 0),
+      optionalInstanceCount: Number(data.get("optionalInstanceCount") || 0),
+      optionalAddonQtys,
+      optionalExtraOpeningClients: Number(data.get("optionalExtraOpeningClients") || 0),
+      optionalExtraAdminClients: Number(data.get("optionalExtraAdminClients") || 0),
+      optionalMobileTerminalClients: Number(data.get("optionalMobileTerminalClients") || 0),
+      optionalThirdPartyVlmTypes: Number(data.get("optionalThirdPartyVlmTypes") || 0),
+      optionalTestInstances: Number(data.get("optionalTestInstances") || 0),
+      optionalUpgradeYears: Number(data.get("optionalUpgradeYears") || 0),
       notes: String(data.get("notes") || "").trim(),
       ...(() => {
         const ids = currentSsiContactIds();
@@ -1570,25 +1640,44 @@
     const root = document.getElementById("addonOptions");
     const instId = selectedInstanceId();
     const prev = new Set([...root.querySelectorAll('input[name="addon"]:checked')].map((el) => el.value));
+    const prevOpt = {};
+    root.querySelectorAll('input[name^="optionalAddonQty"]').forEach((el) => {
+      const id = el.getAttribute("data-addon-id");
+      if (id) prevOpt[id] = Number(el.value || 0);
+    });
     root.innerHTML = "";
     state.licenseCatalog.addons.forEach((addon) => {
       const available = addon.availableFor.includes(instId);
-      const el = document.createElement("label");
+      const el = document.createElement("div");
       el.className = `option-row${available ? "" : " locked"}`;
       el.innerHTML = `
-        <input type="checkbox" name="addon" value="${addon.id}"
-          ${available && prev.has(addon.id) ? "checked" : ""} ${available ? "" : "disabled"} />
+        <label class="addon-fest-check">
+          <input type="checkbox" name="addon" value="${addon.id}"
+            ${available && prev.has(addon.id) ? "checked" : ""} ${available ? "" : "disabled"} />
+        </label>
         <div class="row-main">
           <strong>${addon.name}</strong>
           <span>${addon.functionalDescription || addon.description || ""}</span>
           ${available ? "" : "<span>Nur für Advanced</span>"}
+        </div>
+        <div class="row-optional">
+          <span>Option</span>
+          <input type="number" min="0" max="50" step="1"
+            name="optionalAddonQty_${addon.id}" data-addon-id="${addon.id}"
+            value="${available ? (prevOpt[addon.id] || 0) : 0}"
+            ${available ? "" : "disabled"} />
         </div>
         <div class="row-price">
           ${available
             ? `${money(icEurToSellChf(addon.price), "CHF")}<small>Einkauf ${money(addon.price, "EUR")}</small>`
             : "—"}
         </div>`;
-      if (available) el.querySelector("input").addEventListener("change", () => recalcLicense());
+      if (available) {
+        el.querySelector('input[name="addon"]').addEventListener("change", () => recalcLicense());
+        const optInput = el.querySelector(`input[data-addon-id="${addon.id}"]`);
+        optInput.addEventListener("change", () => recalcLicense());
+        optInput.addEventListener("input", () => recalcLicense());
+      }
       root.appendChild(el);
     });
   }
@@ -1596,7 +1685,15 @@
   function updateClientHints() {
     const advanced = selectedInstanceId() === "advanced";
     licenseForm.mobileTerminalClients.disabled = !advanced;
-    if (!advanced) licenseForm.mobileTerminalClients.value = 0;
+    if (licenseForm.optionalMobileTerminalClients) {
+      licenseForm.optionalMobileTerminalClients.disabled = !advanced;
+    }
+    if (!advanced) {
+      licenseForm.mobileTerminalClients.value = 0;
+      if (licenseForm.optionalMobileTerminalClients) {
+        licenseForm.optionalMobileTerminalClients.value = 0;
+      }
+    }
     document.getElementById("clientHints").innerHTML = (state.licenseCatalog.clientLicenses || [])
       .map((c) => {
         const locked = !c.availableFor.includes(selectedInstanceId());
@@ -1646,18 +1743,29 @@
       <div><strong>${offer.customer.company}</strong>${offer.customer.projectName ? ` · ${offer.customer.projectName}` : ""}</div>
       <div>${offer.configuration.instanceCount}× ${offer.configuration.instanceName}</div>
       <div>Einkauf EUR → Kurs ${fx} → Einkauf CHF → +${marginPercent}% Marge → Verkauf CHF</div>`;
-    document.getElementById("licenseLines").innerHTML = offer.lines.map((line) => {
-      const icTotal = line.totalIcEur != null ? Number(line.totalIcEur) : null;
-      const chfTotal = line.currency === "CHF" && line.totalIcEur != null
-        ? Number(line.total)
-        : icEurToSellChf(icTotal != null ? icTotal : line.total);
-      return `
+    document.getElementById("licenseLines").innerHTML = [
+      ...offer.lines.map((line) => {
+        const icTotal = line.totalIcEur != null ? Number(line.totalIcEur) : null;
+        const chfTotal = line.currency === "CHF" && line.totalIcEur != null
+          ? Number(line.total)
+          : icEurToSellChf(icTotal != null ? icTotal : line.total);
+        return `
       <tr>
         <td>${line.name}<div class="muted">${line.description || ""}${icTotal != null ? ` · Einkauf ${money(icTotal, ic)}` : ""}</div></td>
         <td>${line.qty}</td>
         <td>${money(chfTotal, sell)}</td>
       </tr>`;
-    }).join("");
+      }),
+      ...(offer.optionalLines || []).map((line) => {
+        const chfTotal = Number(line.total || 0);
+        return `
+      <tr class="optional-line">
+        <td>${line.name}<div class="muted">Option · nicht im Total${line.description ? ` · ${line.description}` : ""}</div></td>
+        <td>${line.qty}</td>
+        <td>${money(chfTotal, sell)}</td>
+      </tr>`;
+      }),
+    ].join("");
     const dbChf = t.contributionMarginChf != null
       ? Number(t.contributionMarginChf)
       : sellChf - costChf;
@@ -1665,6 +1773,7 @@
       ? Number(t.contributionMarginPercent)
       : (sellChf > 0 ? Math.round((dbChf / sellChf) * 1000) / 10 : 0);
     const linesSum = t.sellLinesSumChf != null ? Number(t.sellLinesSumChf) : null;
+    const optionalSell = Number(t.optionalSellChf || 0);
     document.getElementById("licenseTotals").innerHTML = `
       <div class="row"><span>Einkauf Total (nach internem SLL-Rabatt)</span><span>${money(t.net, ic)}</span></div>
       <div class="row"><span>Einkauf CHF (× ${fx})</span><span>${money(costChf, sell)}</span></div>
@@ -1672,7 +1781,8 @@
       ${linesSum != null ? `<div class="row"><span>Verkauf Positionen</span><span>${money(linesSum, sell)}</span></div>` : ""}
       <div class="row"><span>SLL-Mengenrabatt Verkauf${applySll ? "" : " (nicht freigegeben)"}</span><span>${applySll && discSell ? `− ${money(discSell, sell)}` : "—"}</span></div>
       <div class="row"><span>Verkauf EUR (Referenz)</span><span>${money(sellEur, ic)}</span></div>
-      <div class="row strong"><span>Verkauf CHF</span><span>${money(sellChf, sell)}</span></div>
+      <div class="row strong"><span>Verkauf CHF (Festumfang)</span><span>${money(sellChf, sell)}</span></div>
+      ${optionalSell > 0 ? `<div class="row"><span>Optionen (nicht im Total)</span><span>${money(optionalSell, sell)}</span></div>` : ""}
       <div class="row db"><span>DB (intern)</span><span>${money(dbChf, sell)} · ${dbPercent}%</span></div>`;
     document.getElementById("licenseScope").innerHTML =
       (offer.scopeOfSupply || []).map((s) => `<li>${s}</li>`).join("");

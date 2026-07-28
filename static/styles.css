@@ -256,6 +256,59 @@ main {
   gap: 0.8rem 1rem;
 }
 
+.qty-pair-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem 1rem;
+}
+
+.qty-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 0.65rem;
+  align-items: end;
+  padding: 0.65rem 0.75rem;
+  background: #fafafa;
+  border: 1px solid #ececec;
+}
+
+.qty-pair-label {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.qty-pair label {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
+}
+
+.qty-pair label input {
+  margin-top: 0.25rem;
+}
+
+.option-row .row-optional {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 5.5rem;
+  text-align: right;
+}
+
+.option-row .row-optional span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
+}
+
+.option-row .row-optional input {
+  width: 100%;
+  max-width: 5.5rem;
+  margin-left: auto;
+}
+
 label {
   display: flex;
   flex-direction: column;
@@ -646,6 +699,9 @@ textarea:focus {
   text-align: right;
   white-space: nowrap;
 }
+.preview-table tr.optional-line td {
+  background: #fffdf5;
+}
 .muted { color: var(--ssi-muted); font-size: 0.76rem; font-weight: 400; }
 
 .preview-totals {
@@ -855,6 +911,9 @@ textarea:focus {
   .grid-2,
   .archive-item {
     grid-template-columns: auto 1fr;
+  }
+  .qty-pair-grid {
+    grid-template-columns: 1fr;
   }
   .archive-item .archive-actions {
     grid-column: 1 / -1;
@@ -1639,6 +1698,13 @@ textarea:focus {
   color: var(--ssi-muted);
   padding: 0.55rem 0.85rem;
   border-bottom: 1px solid #e5e5e5;
+}
+
+.offer-options-table tr.offer-scope-note td {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+  color: var(--ssi-muted);
+  font-size: 0.9rem;
 }
 
 .offer-options-table .col-content strong {

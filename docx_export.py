@@ -367,18 +367,21 @@ def apply_zusammenfassung_table(
 
     def classify_groups() -> Dict[str, List[Dict[str, Any]]]:
         lic: List[Dict[str, Any]] = []
+        lic_opt: List[Dict[str, Any]] = []
         it: List[Dict[str, Any]] = []
         for group in scope_groups or []:
             gid = str(group.get("id") or "").lower()
             title = str(group.get("title") or "").lower()
-            if gid == "license" or "lizenz" in title or "software" in title:
+            if gid == "licenseoptions" or ("optionen" in title and "software" in title):
+                lic_opt.append(group)
+            elif gid == "license" or "lizenz" in title or "software" in title:
                 lic.append(group)
             elif gid == "it" or "it-" in title or "it " in title or "reise" in title:
                 it.append(group)
             else:
                 # Fallback: unklare Gruppen zu Lizenzen
                 lic.append(group)
-        return {"license": lic, "it": it}
+        return {"license": lic, "licenseOptions": lic_opt, "it": it}
 
     def _grid_col_count(table) -> int:
         grid = table._tbl.tblGrid
@@ -534,6 +537,8 @@ def apply_zusammenfassung_table(
         total_prefix: str,
         header_title: str,
         show_qty: bool = False,
+        show_price: bool = False,
+        note: str = "",
     ) -> None:
         set_header(table, header_title)
         clear_data_rows(table)
@@ -541,10 +546,19 @@ def apply_zusammenfassung_table(
         if not groups:
             add_content_row(table, ["Keine Positionen in diesem Bereich."], min_height=800, first_bold=False)
             return
-        if show_qty:
-            # Spaltenköpfe: Position | Anzahl
-            add_content_row(table, ["Position"], min_height=420, first_bold=True, qty="Anzahl")
+        if show_qty or show_price:
+            # Spaltenköpfe: Position | Anzahl [| Preis]
+            head_right = "Anzahl" if show_qty and not show_price else ("Preis" if show_price and not show_qty else "Anzahl")
+            add_content_row(table, ["Position"], min_height=420, first_bold=True, qty=head_right)
+            if show_qty and show_price:
+                # Preis kommt in der Datenzeile rechts neben der Anzahl — Word: Anzahl | Betrag im qty-Feld als "n · CHF …"
+                pass
+        if note:
+            add_content_row(table, [note], min_height=500, first_bold=False)
         for group in groups:
+            group_note = (group.get("note") or "").strip()
+            if group_note and group_note != note:
+                add_content_row(table, [group_note], min_height=500, first_bold=False)
             for item in group.get("items") or []:
                 pos += 1
                 name = (item.get("name") or "").strip() or f"Position {pos}"
@@ -555,15 +569,20 @@ def apply_zusammenfassung_table(
                 lines.append("")
                 qty_val = item.get("qty")
                 qty_text = None
-                if show_qty:
+                if show_qty or show_price:
                     if qty_val is None or qty_val == "":
-                        qty_text = "—"
+                        qty_part = "—"
                     else:
                         try:
                             qn_val = float(qty_val)
-                            qty_text = str(int(qn_val)) if qn_val == int(qn_val) else str(qn_val)
+                            qty_part = str(int(qn_val)) if qn_val == int(qn_val) else str(qn_val)
                         except (TypeError, ValueError):
-                            qty_text = str(qty_val)
+                            qty_part = str(qty_val)
+                    if show_price and item.get("amount") is not None:
+                        price_part = _money(item.get("amount"), item.get("currency") or group.get("currency") or "CHF")
+                        qty_text = f"{qty_part}\n{price_part}" if show_qty else price_part
+                    else:
+                        qty_text = qty_part if show_qty else None
                 add_content_row(
                     table,
                     lines,
@@ -574,6 +593,8 @@ def apply_zusammenfassung_table(
             total = group.get("total")
             if total_prefix == "A":
                 label = "Total A · Softwarelizenzen"
+            elif total_prefix == "OPT":
+                label = "Optionen (nicht im Total)"
             elif total_prefix == "B":
                 label = "Total B · IT-Aufwand"
             else:
@@ -587,7 +608,20 @@ def apply_zusammenfassung_table(
                 )
 
     buckets = classify_groups()
-    # Tabelle 1: bestehende Zusammenfassung → Softwarelizenzen
+    from docx.table import Table
+
+    def _append_table_copy() -> Any:
+        tbl = deepcopy(z_table._tbl)
+        parent = z_table._tbl.getparent()
+        parent.append(OxmlElement("w:p"))
+        parent.append(tbl)
+        table = Table(tbl, z_table._parent)
+        if not table.rows:
+            tbl.append(deepcopy(header_tr_template))
+            table = Table(tbl, z_table._parent)
+        return table
+
+    # Tabelle 1: Softwarelizenzen (Festumfang)
     fill_group_table(
         z_table,
         buckets["license"],
@@ -596,24 +630,21 @@ def apply_zusammenfassung_table(
         show_qty=True,
     )
 
-    # Tabelle 2: Kopie mit gleichem gelben Kopf → IT-Aufwand
-    z_tbl = z_table._tbl
-    it_tbl = deepcopy(z_tbl)
-    # Nach der ersten Zusammenfassung einfügen (+ Leerabsatz dazwischen)
-    parent = z_tbl.getparent()
-    insert_at = list(parent).index(z_tbl) + 1
-    spacer = OxmlElement("w:p")
-    parent.insert(insert_at, spacer)
-    parent.insert(insert_at + 1, it_tbl)
+    # Optionen (falls vorhanden)
+    if buckets["licenseOptions"]:
+        opt_table = _append_table_copy()
+        fill_group_table(
+            opt_table,
+            buckets["licenseOptions"],
+            total_prefix="OPT",
+            header_title="Optionen – Softwarelizenzen",
+            show_qty=True,
+            show_price=True,
+            note="Preislich ausgewiesen, nicht im Gesamttotal enthalten.",
+        )
 
-    # python-docx Table-Wrapper für die Kopie
-    from docx.table import Table
-
-    it_table = Table(it_tbl, z_table._parent)
-    # Headerzeile der Kopie ggf. ersetzen falls beim Clear beschädigt
-    if not it_table.rows:
-        it_tbl.append(deepcopy(header_tr_template))
-        it_table = Table(it_tbl, z_table._parent)
+    # IT-Aufwand
+    it_table = _append_table_copy()
     fill_group_table(
         it_table,
         buckets["it"],
@@ -621,13 +652,8 @@ def apply_zusammenfassung_table(
         header_title="Zusammenfassung – IT-Aufwand",
     )
 
-    # Gesamttotal als eigene Mini-Tabelle (gelb/fett hervorgehoben)
-    grand_tbl = deepcopy(z_tbl)
-    # Nur Kopf + eine Datenzeile behalten
-    # Zuerst leeren und neu füllen über Table-API
-    parent.insert(insert_at + 2, OxmlElement("w:p"))
-    parent.insert(insert_at + 3, grand_tbl)
-    grand_table = Table(grand_tbl, z_table._parent)
+    # Gesamttotal
+    grand_table = _append_table_copy()
     set_header(grand_table, "Gesamttotal")
     clear_data_rows(grand_table)
 

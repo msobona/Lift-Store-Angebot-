@@ -415,6 +415,15 @@ class OfferRequest(BaseModel):
     thirdPartyVlmTypes: int = Field(0, ge=0, le=50)
     testInstances: int = Field(0, ge=0, le=20)
     upgradeYears: int = Field(0, ge=0, le=20)
+    # Optionale Zusatzmengen (preislich ausgewiesen, nicht im Angebotstotal)
+    optionalInstanceCount: int = Field(0, ge=0, le=50)
+    optionalAddonQtys: Dict[str, int] = Field(default_factory=dict)
+    optionalExtraOpeningClients: int = Field(0, ge=0, le=200)
+    optionalExtraAdminClients: int = Field(0, ge=0, le=200)
+    optionalMobileTerminalClients: int = Field(0, ge=0, le=200)
+    optionalThirdPartyVlmTypes: int = Field(0, ge=0, le=50)
+    optionalTestInstances: int = Field(0, ge=0, le=20)
+    optionalUpgradeYears: int = Field(0, ge=0, le=20)
     notes: str = ""
     preparedBy: str = ""
     ssiContact1Id: str = ""
@@ -436,6 +445,31 @@ def resolve_discount(catalog: Dict[str, Any], sll: int) -> Dict[str, Any]:
         if sll >= min_s and (max_s is None or sll <= int(max_s)):
             chosen = row
     return chosen
+
+
+def _apply_license_sell_prices(
+    lines: List[Dict[str, Any]],
+    *,
+    eur_to_chf: float,
+    margin_factor: float,
+    currency: str,
+) -> None:
+    """Setzt Verkaufspreise (CHF, aufgerundet) auf Lizenzzeilen."""
+    for line in lines:
+        ic_unit = float(line.get("unitPrice") or 0)
+        ic_total = float(line.get("total") or 0)
+        qty = float(line.get("qty") or 0)
+        line["unitPriceIcEur"] = ic_unit
+        line["totalIcEur"] = ic_total
+        unit_cost_chf = round(ic_unit * eur_to_chf, 2)
+        total_cost_chf = round(ic_total * eur_to_chf, 2)
+        unit_sell = round_sell_chf(unit_cost_chf * margin_factor)
+        line["unitPrice"] = unit_sell
+        if qty:
+            line["total"] = round_sell_chf(unit_sell * qty)
+        else:
+            line["total"] = round_sell_chf(total_cost_chf * margin_factor)
+        line["currency"] = currency
 
 
 def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
@@ -460,21 +494,68 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         for fid in instance.get("includedFunctionIds", [])
     ]
     lines: List[Dict[str, Any]] = []
+    optional_lines: List[Dict[str, Any]] = []
     sll = 0
 
-    lines.append(
-        {
-            "sku": f"INST-{instance['id'].upper()}",
-            "name": instance["name"],
-            "description": instance.get("functionalSummary") or instance["description"],
-            "qty": payload.instanceCount,
-            "unitPrice": instance["price"],
-            "total": instance["price"] * payload.instanceCount,
-            "category": "instance",
-            "sllUnits": payload.instanceCount,
+    def _append_line(
+        target: List[Dict[str, Any]],
+        *,
+        sku: str,
+        name: str,
+        description: str,
+        qty: int,
+        unit_price: float,
+        category: str,
+        sll_units: int = 0,
+        count_sll: bool = True,
+        is_optional: bool = False,
+        recurring: bool = False,
+        manual_refs: Optional[List[str]] = None,
+    ) -> None:
+        nonlocal sll
+        if qty <= 0:
+            return
+        row: Dict[str, Any] = {
+            "sku": sku,
+            "name": name,
+            "description": description,
+            "qty": qty,
+            "unitPrice": unit_price,
+            "total": unit_price * qty,
+            "category": category,
+            "sllUnits": sll_units if count_sll else 0,
+            "isOptional": is_optional,
         }
+        if recurring:
+            row["recurring"] = True
+        if manual_refs:
+            row["manualRefs"] = manual_refs
+        target.append(row)
+        if count_sll and not is_optional:
+            sll += sll_units
+
+    _append_line(
+        lines,
+        sku=f"INST-{instance['id'].upper()}",
+        name=instance["name"],
+        description=instance.get("functionalSummary") or instance["description"],
+        qty=payload.instanceCount,
+        unit_price=instance["price"],
+        category="instance",
+        sll_units=payload.instanceCount,
     )
-    sll += payload.instanceCount
+    _append_line(
+        optional_lines,
+        sku=f"INST-{instance['id'].upper()}-OPT",
+        name=f"{instance['name']} (Option)",
+        description=instance.get("functionalSummary") or instance["description"],
+        qty=payload.optionalInstanceCount,
+        unit_price=instance["price"],
+        category="instance",
+        sll_units=payload.optionalInstanceCount,
+        count_sll=False,
+        is_optional=True,
+    )
 
     for addon_id in payload.selectedAddons:
         addon = addons.get(addon_id)
@@ -487,26 +568,60 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             )
         qty = payload.instanceCount
         units = int(addon.get("sllUnits", 1)) * qty
-        lines.append(
-            {
-                "sku": f"ADD-{addon_id.upper()}",
-                "name": addon["name"],
-                "description": addon.get("functionalDescription") or addon.get("description", ""),
-                "qty": qty,
-                "unitPrice": addon["price"],
-                "total": addon["price"] * qty,
-                "category": "addon",
-                "sllUnits": units,
-                "manualRefs": addon.get("manualRefs", []),
-            }
+        _append_line(
+            lines,
+            sku=f"ADD-{addon_id.upper()}",
+            name=addon["name"],
+            description=addon.get("functionalDescription") or addon.get("description", ""),
+            qty=qty,
+            unit_price=addon["price"],
+            category="addon",
+            sll_units=units,
+            manual_refs=addon.get("manualRefs", []),
         )
-        sll += units
+
+    # Optionale Add-ons: Menge unabhängig vom Festumfang (nicht im SLL-Band)
+    for addon_id, raw_qty in (payload.optionalAddonQtys or {}).items():
+        try:
+            opt_qty = int(raw_qty or 0)
+        except (TypeError, ValueError):
+            opt_qty = 0
+        if opt_qty <= 0:
+            continue
+        addon = addons.get(addon_id)
+        if not addon:
+            raise HTTPException(status_code=400, detail=f"Unbekanntes optionales Add-on: {addon_id}")
+        if payload.instanceId not in addon["availableFor"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Add-on '{addon['name']}' ist für {instance['name']} nicht verfügbar",
+            )
+        units = int(addon.get("sllUnits", 1)) * opt_qty
+        _append_line(
+            optional_lines,
+            sku=f"ADD-{addon_id.upper()}-OPT",
+            name=f"{addon['name']} (Option)",
+            description=addon.get("functionalDescription") or addon.get("description", ""),
+            qty=opt_qty,
+            unit_price=addon["price"],
+            category="addon",
+            sll_units=units,
+            count_sll=False,
+            is_optional=True,
+            manual_refs=addon.get("manualRefs", []),
+        )
 
     client_qty = {
         "extra_opening": payload.extraOpeningClients,
         "extra_admin": payload.extraAdminClients,
         "mobile_terminal": payload.mobileTerminalClients,
         "third_party_vlm": payload.thirdPartyVlmTypes,
+    }
+    optional_client_qty = {
+        "extra_opening": payload.optionalExtraOpeningClients,
+        "extra_admin": payload.optionalExtraAdminClients,
+        "mobile_terminal": payload.optionalMobileTerminalClients,
+        "third_party_vlm": payload.optionalThirdPartyVlmTypes,
     }
     for cid, qty in client_qty.items():
         if qty <= 0:
@@ -518,52 +633,98 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
                 detail=f"'{client['name']}' ist für {instance['name']} nicht verfügbar",
             )
         units = int(client.get("sllUnitsPerQty", 1)) * qty
-        lines.append(
-            {
-                "sku": f"CLI-{cid.upper()}",
-                "name": client["name"],
-                "description": client.get("functionalDescription") or client["description"],
-                "qty": qty,
-                "unitPrice": client["price"],
-                "total": client["price"] * qty,
-                "category": "client",
-                "sllUnits": units,
-                "manualRefs": client.get("manualRefs", []),
-            }
+        _append_line(
+            lines,
+            sku=f"CLI-{cid.upper()}",
+            name=client["name"],
+            description=client.get("functionalDescription") or client["description"],
+            qty=qty,
+            unit_price=client["price"],
+            category="client",
+            sll_units=units,
+            manual_refs=client.get("manualRefs", []),
         )
-        sll += units
+    for cid, qty in optional_client_qty.items():
+        if qty <= 0:
+            continue
+        client = clients[cid]
+        if payload.instanceId not in client["availableFor"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Option '{client['name']}' ist für {instance['name']} nicht verfügbar",
+            )
+        units = int(client.get("sllUnitsPerQty", 1)) * qty
+        _append_line(
+            optional_lines,
+            sku=f"CLI-{cid.upper()}-OPT",
+            name=f"{client['name']} (Option)",
+            description=client.get("functionalDescription") or client["description"],
+            qty=qty,
+            unit_price=client["price"],
+            category="client",
+            sll_units=units,
+            count_sll=False,
+            is_optional=True,
+            manual_refs=client.get("manualRefs", []),
+        )
 
     if payload.testInstances > 0:
         test = misc["test_instance"]
         units = int(test.get("sllUnitsPerQty", 1)) * payload.testInstances
-        lines.append(
-            {
-                "sku": "MISC-TEST",
-                "name": test["name"],
-                "description": test.get("functionalDescription") or test["description"],
-                "qty": payload.testInstances,
-                "unitPrice": test["price"],
-                "total": test["price"] * payload.testInstances,
-                "category": "misc",
-                "sllUnits": units,
-            }
+        _append_line(
+            lines,
+            sku="MISC-TEST",
+            name=test["name"],
+            description=test.get("functionalDescription") or test["description"],
+            qty=payload.testInstances,
+            unit_price=test["price"],
+            category="misc",
+            sll_units=units,
         )
-        sll += units
+    if payload.optionalTestInstances > 0:
+        test = misc["test_instance"]
+        units = int(test.get("sllUnitsPerQty", 1)) * payload.optionalTestInstances
+        _append_line(
+            optional_lines,
+            sku="MISC-TEST-OPT",
+            name=f"{test['name']} (Option)",
+            description=test.get("functionalDescription") or test["description"],
+            qty=payload.optionalTestInstances,
+            unit_price=test["price"],
+            category="misc",
+            sll_units=units,
+            count_sll=False,
+            is_optional=True,
+        )
 
     if payload.upgradeYears > 0:
         upgrade = misc["upgrade_fee"]
-        lines.append(
-            {
-                "sku": "MISC-UPGRADE",
-                "name": upgrade["name"],
-                "description": upgrade.get("functionalDescription") or upgrade["description"],
-                "qty": payload.upgradeYears,
-                "unitPrice": upgrade["price"],
-                "total": upgrade["price"] * payload.upgradeYears,
-                "category": "misc",
-                "sllUnits": 0,
-                "recurring": True,
-            }
+        _append_line(
+            lines,
+            sku="MISC-UPGRADE",
+            name=upgrade["name"],
+            description=upgrade.get("functionalDescription") or upgrade["description"],
+            qty=payload.upgradeYears,
+            unit_price=upgrade["price"],
+            category="misc",
+            sll_units=0,
+            count_sll=False,
+            recurring=True,
+        )
+    if payload.optionalUpgradeYears > 0:
+        upgrade = misc["upgrade_fee"]
+        _append_line(
+            optional_lines,
+            sku="MISC-UPGRADE-OPT",
+            name=f"{upgrade['name']} (Option)",
+            description=upgrade.get("functionalDescription") or upgrade["description"],
+            qty=payload.optionalUpgradeYears,
+            unit_price=upgrade["price"],
+            category="misc",
+            sll_units=0,
+            count_sll=False,
+            is_optional=True,
+            recurring=True,
         )
 
     subtotal = round(sum(l["total"] for l in lines), 2)
@@ -588,26 +749,18 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     cost_chf = round(net * eur_to_chf, 2)
     margin_amount_eur = round(net * (margin_percent / 100.0), 2)
     vat_rate = float(product.get("vatRate") or 0)
+    offer_currency = product.get("offerCurrency", "CHF")
 
-    # Verkaufspreise je Position: auf ganze CHF aufrunden; Total = Stück × Menge (ebenfalls)
-    for line in lines:
-        ic_unit = float(line.get("unitPrice") or 0)
-        ic_total = float(line.get("total") or 0)
-        qty = float(line.get("qty") or 0)
-        line["unitPriceIcEur"] = ic_unit
-        line["totalIcEur"] = ic_total
-        unit_cost_chf = round(ic_unit * eur_to_chf, 2)
-        total_cost_chf = round(ic_total * eur_to_chf, 2)
-        unit_sell = round_sell_chf(unit_cost_chf * margin_factor)
-        line["unitPrice"] = unit_sell
-        if qty:
-            line["total"] = round_sell_chf(unit_sell * qty)
-        else:
-            line["total"] = round_sell_chf(total_cost_chf * margin_factor)
-        line["currency"] = product.get("offerCurrency", "CHF")
+    _apply_license_sell_prices(
+        lines, eur_to_chf=eur_to_chf, margin_factor=margin_factor, currency=offer_currency
+    )
+    _apply_license_sell_prices(
+        optional_lines, eur_to_chf=eur_to_chf, margin_factor=margin_factor, currency=offer_currency
+    )
 
     # Verkaufs-Nettototal; SLL-Mengenrabatt nur wenn explizit freigegeben
     lines_sell_sum = round_chf2(sum(float(l.get("total") or 0) for l in lines))
+    optional_sell_chf = round_chf2(sum(float(l.get("total") or 0) for l in optional_lines))
     discount_sell_chf = 0.0
     if apply_sll_discount and discount["percent"] and lines_sell_sum:
         discount_sell_chf = round_chf2(lines_sell_sum * (float(discount["percent"]) / 100.0))
@@ -638,6 +791,11 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         addon = addons.get(addon_id)
         if addon:
             scope.append(f"{addon['name']}: {addon.get('functionalDescription') or addon.get('description', '')}")
+    if optional_lines:
+        scope.append(
+            "Optionen (nicht im Total): "
+            + ", ".join(f"{l['qty']}× {l['name']}" for l in optional_lines)
+        )
     scope.append(
         f"SLL-Einheiten: {sll} → Rabatt {discount['percent']}% ({discount['label']})"
         + (" · im Verkaufspreis" if apply_sll_discount else " · nur intern, nicht im Verkaufspreis")
@@ -646,6 +804,12 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
 
     ssi_contacts = resolve_ssi_contacts(payload.ssiContact1Id, payload.ssiContact2Id)
     prepared_by = (payload.preparedBy or "").strip() or (ssi_contacts[0].get("name") or "")
+
+    optional_addon_qtys = {
+        str(k): int(v)
+        for k, v in (payload.optionalAddonQtys or {}).items()
+        if int(v or 0) > 0
+    }
 
     return {
         "kind": "license",
@@ -662,6 +826,14 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "thirdPartyVlmTypes": payload.thirdPartyVlmTypes,
             "testInstances": payload.testInstances,
             "upgradeYears": payload.upgradeYears,
+            "optionalInstanceCount": payload.optionalInstanceCount,
+            "optionalAddonQtys": optional_addon_qtys,
+            "optionalExtraOpeningClients": payload.optionalExtraOpeningClients,
+            "optionalExtraAdminClients": payload.optionalExtraAdminClients,
+            "optionalMobileTerminalClients": payload.optionalMobileTerminalClients,
+            "optionalThirdPartyVlmTypes": payload.optionalThirdPartyVlmTypes,
+            "optionalTestInstances": payload.optionalTestInstances,
+            "optionalUpgradeYears": payload.optionalUpgradeYears,
             "includedOpeningClients": included_opening,
             "includedAdminClients": included_admin,
             "includedFunctions": included_functions,
@@ -681,6 +853,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         },
         "scopeOfSupply": scope,
         "lines": lines,
+        "optionalLines": optional_lines,
         "totals": {
             "sllCount": sll,
             "subtotal": subtotal,
@@ -697,13 +870,14 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "sellLinesSumChf": lines_sell_sum,
             "discountSellChf": discount_sell_chf,
             "sellNetChf": sell_net_chf,
+            "optionalSellChf": optional_sell_chf,
             "contributionMarginEur": contribution_margin_eur,
             "contributionMarginChf": contribution_margin_chf,
             "contributionMarginPercent": contribution_margin_percent,
             "vatRate": vat_rate,
             "vat": vat,
             "gross": gross,
-            "currency": product.get("offerCurrency", "CHF"),
+            "currency": offer_currency,
             "amount": sell_net_chf,
         },
         "meta": {
@@ -1603,23 +1777,25 @@ def compose_offer(payload: ComposeOfferRequest):
     if lic_sell_chf is not None or it_total_chf is not None:
         subtotal_chf = round_chf2(float(lic_sell_chf or 0) + float(it_total_chf or 0))
 
-    # Kunden-Leistungsumfang ohne Positionspreise / Stunden
+    # Kunden-Leistungsumfang ohne Positionspreise / Stunden (Optionen separat mit Preis)
+    def _scope_qty(raw: Any) -> Any:
+        try:
+            qty_val = float(raw) if raw is not None else None
+        except (TypeError, ValueError):
+            return raw
+        if qty_val is not None and qty_val == int(qty_val):
+            return int(qty_val)
+        return qty_val
+
     scope_groups: List[Dict[str, Any]] = []
     if license_offer:
         lic_items = []
         for line in license_offer.get("lines") or []:
-            qty_raw = line.get("qty")
-            try:
-                qty_val = float(qty_raw) if qty_raw is not None else None
-            except (TypeError, ValueError):
-                qty_val = None
-            if qty_val is not None and qty_val == int(qty_val):
-                qty_val = int(qty_val)
             lic_items.append(
                 {
                     "name": line.get("name") or "",
                     "description": line.get("description") or "",
-                    "qty": qty_val,
+                    "qty": _scope_qty(line.get("qty")),
                     "unit": line.get("unit") or "",
                 }
             )
@@ -1638,13 +1814,44 @@ def compose_offer(payload: ComposeOfferRequest):
         scope_groups.append(
             {
                 "id": "license",
-                "title": "A · Softwarelizenzen",
+                "title": "A · Softwarelizenzen (Festumfang)",
                 "items": lic_items,
                 "total": lic_sell_chf,
                 "currency": (license_totals or {}).get("currency", "CHF"),
                 "showQty": True,
+                "inGrandTotal": True,
             }
         )
+
+        opt_items = []
+        for line in license_offer.get("optionalLines") or []:
+            opt_items.append(
+                {
+                    "name": line.get("name") or "",
+                    "description": (line.get("description") or "").strip()
+                    or "Optionale Position — nicht im Angebotstotal enthalten.",
+                    "qty": _scope_qty(line.get("qty")),
+                    "unit": line.get("unit") or "",
+                    "unitPrice": line.get("unitPrice"),
+                    "amount": line.get("total"),
+                    "currency": line.get("currency") or (license_totals or {}).get("currency", "CHF"),
+                }
+            )
+        optional_sell = round_chf2(float((license_totals or {}).get("optionalSellChf") or 0))
+        if opt_items:
+            scope_groups.append(
+                {
+                    "id": "licenseOptions",
+                    "title": "Optionen · Softwarelizenzen",
+                    "note": "Preislich ausgewiesen, nicht im Gesamttotal enthalten.",
+                    "items": opt_items,
+                    "total": optional_sell,
+                    "currency": (license_totals or {}).get("currency", "CHF"),
+                    "showQty": True,
+                    "showPrice": True,
+                    "inGrandTotal": False,
+                }
+            )
 
     if it_offer:
         it_cfg = it_offer.get("configuration") or {}
@@ -1739,6 +1946,7 @@ def compose_offer(payload: ComposeOfferRequest):
             "sellNetEur": (license_totals or {}).get("sellNetEur"),
             "eurToChfRate": (license_totals or {}).get("eurToChfRate"),
             "total": lic_sell_chf,
+            "optionalSellChf": (license_totals or {}).get("optionalSellChf"),
             "sllCount": (license_totals or {}).get("sllCount"),
         }
         if license_totals
@@ -1755,6 +1963,11 @@ def compose_offer(payload: ComposeOfferRequest):
         if it_totals
         else None,
         "subtotalChf": subtotal_chf,
+        "optionsTotalChf": (
+            round_chf2(float((license_totals or {}).get("optionalSellChf") or 0))
+            if license_totals and float((license_totals or {}).get("optionalSellChf") or 0)
+            else None
+        ),
         "commercialDiscountChf": commercial_discount if commercial_discount else None,
         "discountPercent": discount_percent if discount_percent else None,
         "discountAmountChf": discount_amount_chf if discount_amount_chf else None,
@@ -1765,6 +1978,7 @@ def compose_offer(payload: ComposeOfferRequest):
         "note": (
             "Alle Preise in ganzen CHF, exkl. MwSt. "
             "Leistungsumfang ohne Einzelpreise; Gesamttotal = Summe der Positionen."
+            " Optionale Lizenzen sind preislich ausgewiesen, aber nicht im Total enthalten."
             + ((" · " + " · ".join(adj_notes)) if adj_notes else "")
         ),
     }
