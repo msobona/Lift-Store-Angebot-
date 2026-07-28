@@ -10,8 +10,8 @@
     "validityDays": 30,
     "licenseMarginPercent": 28,
     "eurToChfRate": 0.93,
-    "priceBasis": "IC Prices ab 01.01.2024 · Verkauf = EP/(1−Marge) mit DB-Marge 28% · Rundung auf 10 CHF · EUR→CHF 0.93",
-    "disclaimer": "IC Prices laut WAMAS Lift & Store License Price List (gültig für Projekte ab 01.01.2024). Verkaufspreis mit 28% DB-Marge vom VK (EP/(1−0.28)), Rundung auf 10 CHF, Umrechnung EUR→CHF mit Kurs 0.93. Kein verbindliches Endkundenangebot."
+    "priceBasis": "IC Prices ab 01.01.2026 · Verkauf = EP/(1−Marge) mit DB-Marge 28% · Rundung auf 10 CHF · EUR→CHF 0.93",
+    "disclaimer": "IC Prices laut WAMAS Lift & Store License Price List (gültig für Projekte ab 01.01.2026). Verkaufspreis mit 28% DB-Marge vom VK (EP/(1−0.28)), Rundung auf 10 CHF, Umrechnung EUR→CHF mit Kurs 0.93. Kein verbindliches Endkundenangebot."
   },
   "functionCatalog": {
     "storage_demands": {
