@@ -973,6 +973,7 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
     summary = offer.get("priceSummary") or {}
     lic = summary.get("license") or {}
     it = summary.get("it") or {}
+    mat = summary.get("material") or {}
     terms = content.get("commercialTerms") or {}
     closing = terms.get("closing") or {}
     signatories = closing.get("signatories") or [{}, {}]
