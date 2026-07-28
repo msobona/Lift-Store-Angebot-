@@ -1087,29 +1087,16 @@
         if (!groups.length) return "";
         let pos = 0;
         const bodyRows = [];
-        // Anzahl ganz rechts; bei Preisen: Position | Preis | Anzahl
-        const colCount = showQty && showPrice ? 3 : showQty || showPrice ? 2 : 2;
+        // Preis + Anzahl in einer schmalen rechten Spalte → maximal Platz für Positionstext
+        const combineMeta = showQty && showPrice;
+        const colCount = showQty || showPrice ? 2 : 2;
         if (showQty || showPrice) {
-          if (showQty && showPrice) {
-            bodyRows.push(`
+          const rightHead = combineMeta ? "CHF · Anz." : showQty ? "Anz." : "CHF";
+          bodyRows.push(`
             <tr class="offer-scope-colheads">
               <th scope="col" class="col-content">Position</th>
-              <th scope="col" class="col-price">CHF</th>
-              <th scope="col" class="col-qty">Anz.</th>
+              <th scope="col" class="col-meta">${escapeHtml(rightHead)}</th>
             </tr>`);
-          } else if (showQty) {
-            bodyRows.push(`
-            <tr class="offer-scope-colheads">
-              <th scope="col" class="col-content">Position</th>
-              <th scope="col" class="col-qty">Anz.</th>
-            </tr>`);
-          } else {
-            bodyRows.push(`
-            <tr class="offer-scope-colheads">
-              <th scope="col" class="col-content">Position</th>
-              <th scope="col" class="col-price">CHF</th>
-            </tr>`);
-          }
         }
         if (note) {
           bodyRows.push(`
@@ -1132,33 +1119,24 @@
             const priceText = showPrice && amount != null
               ? moneyCompact(amount)
               : "";
-            if (showQty && showPrice) {
-              bodyRows.push(`
-              <tr class="offer-scope-content">
-                <td class="col-content">
-                  <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
-                  ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
-                </td>
-                <td class="col-price">${priceText ? escapeHtml(priceText) : ""}</td>
-                <td class="col-qty">${escapeHtml(qtyText)}</td>
-              </tr>`);
+            let metaHtml = "";
+            if (combineMeta) {
+              metaHtml = `
+                <span class="meta-price">${escapeHtml(priceText || "—")}</span>
+                <span class="meta-qty">${escapeHtml(qtyText)}×</span>`;
             } else if (showQty) {
-              bodyRows.push(`
-              <tr class="offer-scope-content">
-                <td class="col-content">
-                  <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
-                  ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
-                </td>
-                <td class="col-qty">${escapeHtml(qtyText)}</td>
-              </tr>`);
+              metaHtml = escapeHtml(qtyText);
             } else if (showPrice) {
+              metaHtml = escapeHtml(priceText || "—");
+            }
+            if (showQty || showPrice) {
               bodyRows.push(`
               <tr class="offer-scope-content">
                 <td class="col-content">
                   <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
                   ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
                 </td>
-                <td class="col-price">${priceText ? escapeHtml(priceText) : ""}</td>
+                <td class="col-meta">${metaHtml}</td>
               </tr>`);
             } else {
               bodyRows.push(`
@@ -1172,34 +1150,20 @@
           });
           if (group.total != null) {
             const totalCompact = moneyCompact(group.total);
-            if (showQty && showPrice) {
-              bodyRows.push(`
+            bodyRows.push(`
               <tr class="offer-scope-subtotal">
                 <td class="col-total-label">${escapeHtml(totalLabel)}</td>
-                <td class="col-price"><strong>${escapeHtml(totalCompact)}</strong></td>
-                <td class="col-qty"></td>
+                <td class="col-meta"><strong>${escapeHtml(totalCompact)}</strong></td>
               </tr>`);
-            } else if (showQty) {
-              // Anzahl-Spalte rechts: in der Totalzeile steht dort der Preis (kompakt)
-              bodyRows.push(`
-              <tr class="offer-scope-subtotal">
-                <td class="col-total-label">${escapeHtml(totalLabel)}</td>
-                <td class="col-qty col-price"><strong>${escapeHtml(totalCompact)}</strong></td>
-              </tr>`);
-            } else {
-              bodyRows.push(`
-              <tr class="offer-scope-subtotal">
-                <td class="col-total-label">${escapeHtml(totalLabel)}</td>
-                <td class="col-price"><strong>${escapeHtml(totalCompact)}</strong></td>
-              </tr>`);
-            }
           }
         });
         const tableClass = [
           "offer-options-table",
           "offer-scope-price-table",
+          "has-meta",
           showQty ? "has-qty" : "",
           showPrice ? "has-price" : "",
+          combineMeta ? "has-combined-meta" : "",
         ].filter(Boolean).join(" ");
         return `
           <table class="${tableClass}">

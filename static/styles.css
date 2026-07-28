@@ -1679,65 +1679,69 @@ textarea:focus {
   font-size: 0.98rem;
 }
 
-.offer-options-table.has-qty .col-content {
+/* Eine schmale rechte Meta-Spalte (Preis und/oder Anzahl) */
+.offer-options-table.has-meta .col-content,
+.offer-options-table.has-meta .col-total-label {
   width: auto;
 }
 
-/* Kompakte Zahlen-Spalten rechts — maximal Platz für Positionstext */
-.offer-options-table .col-qty {
-  width: 3.1rem;
-  min-width: 2.85rem;
-  max-width: 3.4rem;
+.offer-options-table .col-meta {
+  width: 5.5rem;
+  min-width: 5.1rem;
+  max-width: 5.8rem;
+  text-align: right;
+  vertical-align: top;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.86rem;
+  line-height: 1.25;
+  padding-left: 0.35rem;
+  padding-right: 0.55rem;
+}
+
+.offer-options-table.has-combined-meta .col-meta {
+  width: 5.75rem;
+  min-width: 5.25rem;
+  max-width: 6rem;
+}
+
+.offer-options-table .col-meta .meta-price,
+.offer-options-table .col-meta .meta-qty {
+  display: block;
+}
+
+.offer-options-table .col-meta .meta-qty {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
+}
+
+.offer-options-table tr.offer-scope-colheads .col-meta {
+  font-size: 0.68rem;
+  letter-spacing: 0.01em;
+  padding-left: 0.35rem;
+  padding-right: 0.55rem;
+  vertical-align: middle;
+}
+
+.offer-options-table tr.offer-scope-subtotal .col-meta {
+  vertical-align: middle;
+  font-size: 0.92rem;
+}
+
+/* Legacy-Klassen (falls noch referenziert) */
+.offer-options-table .col-qty,
+.offer-options-table .col-price {
+  width: 5.5rem;
   text-align: right;
   vertical-align: middle;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  font-size: 0.88rem;
-  padding-left: 0.25rem;
-  padding-right: 0.55rem;
-}
-
-/* Nur Anzahl (Festumfang): rechte Spalte etwas breiter für Totalbetrag */
-.offer-options-table.has-qty:not(.has-price) .col-qty {
-  width: 6.25rem;
-  min-width: 5.75rem;
-  max-width: 6.75rem;
-}
-
-.offer-options-table.has-qty:not(.has-price) .col-content,
-.offer-options-table.has-qty:not(.has-price) .col-total-label {
-  width: auto;
-}
-
-.offer-options-table .col-price {
-  width: 6.25rem;
-  min-width: 5.75rem;
-  max-width: 6.75rem;
-  text-align: right;
-  white-space: nowrap;
-  vertical-align: middle;
-  font-variant-numeric: tabular-nums;
-  font-size: 0.88rem;
-  padding-left: 0.25rem;
-  padding-right: 0.55rem;
-}
-
-.offer-options-table.has-price .col-price {
-  width: 6.25rem;
-}
-
-.offer-options-table.has-qty.has-price .col-qty {
-  width: 2.85rem;
-  min-width: 2.6rem;
-  max-width: 3.1rem;
-}
-
-.offer-options-table tr.offer-scope-colheads .col-qty,
-.offer-options-table tr.offer-scope-colheads .col-price {
-  font-size: 0.7rem;
-  letter-spacing: 0.01em;
-  padding-left: 0.25rem;
+  font-size: 0.86rem;
+  padding-left: 0.35rem;
   padding-right: 0.55rem;
 }
 

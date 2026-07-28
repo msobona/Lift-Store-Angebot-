@@ -477,28 +477,15 @@ def apply_zusammenfassung_table(
                 tr.remove(tc)
             _set_grid_span(keep, cols, width_dxa=total_w)
             _set_tc_paragraphs(keep, lines, first_bold=first_bold)
-        elif price is not None and qty is not None:
-            # 3 Spalten: Position | Preis | Anzahl
-            while len(tr.findall(qn("w:tc"))) < 3:
-                tr.append(deepcopy(tcs[0]))
-            tcs = tr.findall(qn("w:tc"))
-            for tc in tcs[3:]:
-                tr.remove(tc)
-            tcs = tr.findall(qn("w:tc"))
-            keep_label, keep_price, keep_qty = tcs[0], tcs[1], tcs[2]
-            qty_w = max(650, total_w // 14)
-            price_w = max(1100, total_w // 7)
-            label_w = max(3200, total_w - price_w - qty_w)
-            label_span = max(1, cols - 2)
-            _set_grid_span(keep_label, label_span, width_dxa=label_w)
-            _set_grid_span(keep_price, 1, width_dxa=price_w)
-            _set_grid_span(keep_qty, 1, width_dxa=qty_w)
-            _set_tc_paragraphs(keep_label, lines, first_bold=first_bold)
-            _set_tc_paragraphs(keep_price, [str(price)], first_bold=True, align_right=True)
-            _set_tc_paragraphs(keep_qty, [str(qty)], first_bold=True, align_right=True)
         else:
-            # 2 Spalten: Text | Anzahl (rechts) bzw. Text | Preis
-            right = qty if qty is not None else price
+            # Immer 2 Spalten: Position (breit) | Meta rechts (Preis und/oder Anzahl)
+            right_lines: List[str] = []
+            if price is not None and qty is not None:
+                right_lines = [str(price), f"{qty}×"]
+            elif qty is not None:
+                right_lines = [str(qty)]
+            else:
+                right_lines = [str(price)]
             while len(tr.findall(qn("w:tc"))) < 2:
                 tr.append(deepcopy(tcs[0]))
             tcs = tr.findall(qn("w:tc"))
@@ -508,13 +495,14 @@ def apply_zusammenfassung_table(
                 tr.remove(tc)
             tcs = tr.findall(qn("w:tc"))
             keep_label, keep_right = tcs[0], tcs[-1]
-            right_w = max(700, total_w // 12) if qty is not None else max(1200, total_w // 6)
-            label_w = max(3200, total_w - right_w)
+            # Sehr schmale rechte Spalte (~11–12 %), Rest für Positionstext
+            right_w = max(900, total_w // 9)
+            label_w = max(4000, total_w - right_w)
             label_span = max(1, cols - 1)
             _set_grid_span(keep_label, label_span, width_dxa=label_w)
             _set_grid_span(keep_right, 1, width_dxa=right_w)
             _set_tc_paragraphs(keep_label, lines, first_bold=first_bold)
-            _set_tc_paragraphs(keep_right, [str(right)], first_bold=True, align_right=True)
+            _set_tc_paragraphs(keep_right, right_lines, first_bold=True, align_right=True)
 
         _set_row_min_height(tr, min_height)
         table._tbl.append(tr)
