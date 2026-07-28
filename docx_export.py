@@ -538,8 +538,8 @@ def apply_zusammenfassung_table(
 
         cols = _grid_col_count(table)
         total_w = _table_width_dxa(table)
-        price_w = max(1200, total_w // 6)
-        label_w = max(3200, total_w - price_w)
+        price_w = max(900, total_w // 9)
+        label_w = max(4000, total_w - price_w)
         label_span = max(1, cols - 1)
         _set_grid_span(keep_label, label_span, width_dxa=label_w)
         _set_grid_span(keep_price, 1, width_dxa=price_w)
@@ -566,10 +566,12 @@ def apply_zusammenfassung_table(
             return
         if show_qty and show_price:
             add_content_row(
-                table, ["Position"], min_height=420, first_bold=True, price="CHF", qty="Anz."
+                table, ["Position"], min_height=420, first_bold=True, price="CHF · Anz."
             )
         elif show_qty:
             add_content_row(table, ["Position"], min_height=420, first_bold=True, qty="Anz.")
+        elif show_price:
+            add_content_row(table, ["Position"], min_height=420, first_bold=True, price="CHF")
         if note:
             add_content_row(table, [note], min_height=500, first_bold=False)
         for group in groups:
