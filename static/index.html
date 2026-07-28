@@ -381,54 +381,87 @@
             <p>A4-Dokument mit allen Preisen + Leistungsanhang</p>
           </div>
         </div>
-        <div class="hero-body">
+        <div class="offer-setup">
+          <div class="offer-setup-intro">
+            <h2>Leistungsumfang &amp; Gesamttotal</h2>
             <p>
               Erzeugt <strong>ein Gesamtangebot</strong> mit Leistungsumfang und Gesamttotal
-              (ohne Einzelpreise / Stunden je Position). Verkaufspreise werden auf ganze CHF
-              aufgerundet und mit zwei Stellen ausgewiesen (z.&nbsp;B. 2’619.00);
-              optional Projektrabatt setzen, dann erzeugen.
-              <br /><strong>Kundenfertiges Cover:</strong> bitte <em>PDF 1:1 (aus Word)</em> oder Word nutzen —
+              <strong>ohne Einzelpreise / Stunden je Position</strong>.
+              Verkaufspreise werden auf ganze CHF aufgerundet und mit zwei Stellen ausgewiesen
+              (z.&nbsp;B. 2’619.00). Optional können Sie einen Projektrabatt setzen und danach das Angebot erzeugen.
+            </p>
+            <p class="offer-setup-note">
+              <strong>Kundenfertiges Cover:</strong> bitte <em>PDF 1:1 (aus Word)</em> oder Word nutzen —
               die Bildschirmvorschau ist eine Annäherung.
             </p>
-          <div class="offer-adjust grid-2" style="margin:1rem 0;max-width:52rem">
-            <label>Projektrabatt %
-              <input id="offerDiscountPercent" type="number" min="0" max="100" step="0.1" value="0" />
-            </label>
-            <label>Projektrabatt CHF
-              <input id="offerDiscountAmount" type="number" min="0" step="0.01" value="0" />
-            </label>
-            <label class="span-2 check-row">
-              <input id="offerIncludeOracleTerms" type="checkbox" />
-              Oracle-Lizenzklausel in den Vertragsbedingungen aufnehmen
-              <span class="field-hint">Nur aktivieren, wenn Oracle-Lizenzen Bestandteil des Angebots sind.</span>
-            </label>
-            <label class="span-2">SSI-Ansprechpartner (Cover / Kopfzeile)
-              <span class="ssi-contact-pickers">
-                <span class="ssi-contact-picker">
-                  <select id="offerSsiContact1" aria-label="SSI Ansprechpartner 1"></select>
-                  <span class="ssi-contact-meta" data-for="offerSsiContact1"></span>
-                </span>
-                <span class="ssi-contact-picker">
-                  <select id="offerSsiContact2" aria-label="SSI Ansprechpartner 2"></select>
-                  <span class="ssi-contact-meta" data-for="offerSsiContact2"></span>
-                </span>
-              </span>
-              <span class="field-hint">Zwei Personen auf der Titelseite (SSI Schäfer Ansprechpartner).</span>
-            </label>
-            <label class="span-2">Unterschriften (letzte Seite)
-              <span class="ssi-contact-pickers">
-                <span class="ssi-contact-picker">
-                  <select id="offerSignatory1" aria-label="Unterschrift links"></select>
-                  <span class="ssi-contact-meta" data-for="offerSignatory1"></span>
-                </span>
-                <span class="ssi-contact-picker">
-                  <select id="offerSignatory2" aria-label="Unterschrift rechts"></select>
-                  <span class="ssi-contact-meta" data-for="offerSignatory2"></span>
-                </span>
-              </span>
-              <span class="field-hint">Zwei Personen für die Unterschriften — unabhängig von den Cover-Ansprechpartnern.</span>
-            </label>
           </div>
+
+          <div class="offer-adjust">
+            <h3 class="offer-adjust-title">Kommerzielle Anpassung</h3>
+            <div class="offer-adjust-grid">
+              <label>Projektrabatt %
+                <input id="offerDiscountPercent" type="number" min="0" max="100" step="0.1" value="0" />
+              </label>
+              <label>Projektrabatt CHF
+                <input id="offerDiscountAmount" type="number" min="0" step="0.01" value="0" />
+              </label>
+            </div>
+
+            <div class="oracle-clause-box">
+              <label class="oracle-clause-toggle">
+                <input id="offerIncludeOracleTerms" type="checkbox" />
+                <span>
+                  <strong>Oracle-Lizenzklausel</strong> in den Vertragsbedingungen aufnehmen
+                </span>
+              </label>
+              <div class="oracle-clause-body">
+                <p class="oracle-clause-lead">
+                  Nur aktivieren, wenn Oracle-Lizenzen Bestandteil des Angebots sind.
+                  Folgende Klausel wird dann unter den Vertragsbedingungen (Software) ergänzt:
+                </p>
+                <blockquote class="oracle-clause-quote">
+                  <strong>1.6 Oracle Lizenzen</strong>
+                  <p>
+                    Mit Kauf der Oracle Software akzeptiert der Käufer die Oracle Lizenzbestimmungen,
+                    welche in der Third Party Software Liste aufgeführt sind:
+                    <a href="https://www.ssi-schaefer.com/de-de/wamas-eula" target="_blank" rel="noopener noreferrer">
+                      https://www.ssi-schaefer.com/de-de/wamas-eula
+                    </a>
+                  </p>
+                </blockquote>
+              </div>
+            </div>
+
+            <div class="offer-adjust-contacts">
+              <label class="span-2">SSI-Ansprechpartner (Cover / Kopfzeile)
+                <span class="ssi-contact-pickers">
+                  <span class="ssi-contact-picker">
+                    <select id="offerSsiContact1" aria-label="SSI Ansprechpartner 1"></select>
+                    <span class="ssi-contact-meta" data-for="offerSsiContact1"></span>
+                  </span>
+                  <span class="ssi-contact-picker">
+                    <select id="offerSsiContact2" aria-label="SSI Ansprechpartner 2"></select>
+                    <span class="ssi-contact-meta" data-for="offerSsiContact2"></span>
+                  </span>
+                </span>
+                <span class="field-hint">Zwei Personen auf der Titelseite (SSI Schäfer Ansprechpartner).</span>
+              </label>
+              <label class="span-2">Unterschriften (letzte Seite)
+                <span class="ssi-contact-pickers">
+                  <span class="ssi-contact-picker">
+                    <select id="offerSignatory1" aria-label="Unterschrift links"></select>
+                    <span class="ssi-contact-meta" data-for="offerSignatory1"></span>
+                  </span>
+                  <span class="ssi-contact-picker">
+                    <select id="offerSignatory2" aria-label="Unterschrift rechts"></select>
+                    <span class="ssi-contact-meta" data-for="offerSignatory2"></span>
+                  </span>
+                </span>
+                <span class="field-hint">Zwei Personen für die Unterschriften — unabhängig von den Cover-Ansprechpartnern.</span>
+              </label>
+            </div>
+          </div>
+
           <div id="internalContributionBox" class="internal-db-box no-print" aria-live="polite"></div>
           <div class="form-actions" style="margin:0">
             <button type="button" class="btn primary" id="btnComposeOffer">Angebot erzeugen</button>
