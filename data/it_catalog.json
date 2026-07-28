@@ -6,12 +6,13 @@
     "currency": "CHF",
     "disclaimer": "IT-Aufwände sind Richtwerte auf Basis der internen Kalkulationsvorlage. Effektive Stunden können abweichen und werden nach Aufwand verrechnet."
   },
-  "rates": {
+    "rates": {
     "hourlyRate": 210,
     "kmRate": 1.4,
     "mealRate": 30,
     "overnightRate": 150,
-    "marginPercent": 0
+    "marginPercent": 0,
+    "materialMarginPercent": 20
   },
   "travelDefaults": {
     "origin": {

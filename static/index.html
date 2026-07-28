@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260728it-ext" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260728material" />
 </head>
 <body>
   <header class="topbar">
@@ -289,10 +289,24 @@
           <section class="block">
             <h2>Projektspezifische Erweiterungen</h2>
             <p class="block-lead">
-              Titel und Detailtext frei wählbar. Verrechnung wahlweise über <strong>Stunden</strong>
-              (× Stundensatz) oder direkt als <strong>Betrag CHF</strong> (z.&nbsp;B. Hardware).
+              Software-/Projektanpassungen: Titel und Detailtext frei wählbar.
+              Verrechnung über <strong>Stunden</strong> oder <strong>Betrag CHF</strong>.
             </p>
             <div id="itExtensions" class="it-extensions"></div>
+          </section>
+
+          <section class="block">
+            <h2>Materialkosten</h2>
+            <p class="block-lead">
+              Material mit <strong>Einkaufspreis → Verkaufspreis</strong> (DB-Marge),
+              oder Montage-/Technikaufwand als <strong>Stunden</strong> bzw. <strong>Betrag CHF</strong>.
+            </p>
+            <div class="grid-2" style="margin-bottom:0.85rem;max-width:24rem">
+              <label>Material-Marge % <span class="hint">(DB vom VK)</span>
+                <input name="materialMarginPercent" type="number" min="0" max="99.9" step="0.1" value="20" />
+              </label>
+            </div>
+            <div id="itMaterials" class="it-extensions"></div>
           </section>
 
           <section class="block">
@@ -456,6 +470,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260728it-ext"></script>
+  <script src="/static/app.js?v=20260728material"></script>
 </body>
 </html>

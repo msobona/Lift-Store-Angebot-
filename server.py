@@ -934,10 +934,21 @@ class ItCustomExtension(BaseModel):
     title: str = ""
     description: str = ""
     hours: float = Field(0, ge=0, le=1000)
-    # Direkter Verkaufsbetrag in CHF (z. B. Hardware) statt Stunden × Satz
+    # Direkter Verkaufsbetrag in CHF (z. B. Pauschale) statt Stunden × Satz
     amountChf: float = Field(0, ge=0, le=10_000_000)
     # "hours" | "amount"
     billing: str = "hours"
+
+
+class ItMaterialItem(BaseModel):
+    """Materialkosten: Einkauf→Verkauf, oder Montage-Aufwand (Stunden/Betrag)."""
+    title: str = ""
+    description: str = ""
+    # "material" | "hours" | "amount"
+    billing: str = "material"
+    purchaseChf: float = Field(0, ge=0, le=10_000_000)
+    hours: float = Field(0, ge=0, le=1000)
+    amountChf: float = Field(0, ge=0, le=10_000_000)
 
 
 class ItOfferRequest(BaseModel):
@@ -948,6 +959,7 @@ class ItOfferRequest(BaseModel):
     openingCount: int = Field(1, ge=1, le=200)
     options: Dict[str, bool] = Field(default_factory=dict)
     customExtensions: List[ItCustomExtension] = Field(default_factory=list)
+    materialItems: List[ItMaterialItem] = Field(default_factory=list)
     trips: int = Field(0, ge=0, le=200)
     travelHoursPerTrip: float = Field(0, ge=0, le=48)
     kmPerTrip: float = Field(0, ge=0, le=5000)
@@ -961,6 +973,8 @@ class ItOfferRequest(BaseModel):
     signatory2Id: str = ""
     # Optionale Zusatz-Marge; Sätze sind bereits Verkaufspreise (Standard aus Katalog = 0)
     itMarginPercent: Optional[float] = Field(None, ge=0, le=500)
+    # DB-Marge für Material (EP → VK), Standard aus Katalog
+    materialMarginPercent: Optional[float] = Field(None, ge=0, lt=100)
 
 
 def logimat_hours(devices: int, base: float, pct2: float, pct_n: float) -> float:
@@ -1156,6 +1170,74 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
                 }
             )
 
+    # Materialkosten: Einkauf→VK (DB-Marge) oder Montage-Aufwand (Stunden/Betrag)
+    material_margin_percent = float(
+        payload.materialMarginPercent
+        if payload.materialMarginPercent is not None
+        else (rates.get("materialMarginPercent") if rates.get("materialMarginPercent") is not None else 20)
+    )
+    for idx, item in enumerate(payload.materialItems[:8], start=1):
+        title = (item.title or "").strip()
+        desc = (item.description or "").strip()
+        billing = (item.billing or "material").strip().lower()
+        if billing not in {"material", "hours", "amount"}:
+            billing = "material"
+        purchase = float(item.purchaseChf or 0)
+        hours = float(item.hours or 0)
+        amount_chf = float(item.amountChf or 0)
+        if not title and not desc and purchase <= 0 and hours <= 0 and amount_chf <= 0:
+            continue
+        if billing == "material":
+            if purchase <= 0:
+                continue
+            sell = apply_license_margin(purchase, material_margin_percent)
+            lines.append(
+                {
+                    "sku": f"IT-MAT-{idx}",
+                    "name": title or f"Material {idx}",
+                    "description": desc
+                    or f"Material · Einkauf {purchase:.2f} CHF · DB-Marge {material_margin_percent:g}%",
+                    "qty": 1,
+                    "hours": 0,
+                    "amount": sell,
+                    "amountCost": purchase,
+                    "purchaseChf": purchase,
+                    "category": "material",
+                    "billing": "material",
+                    "materialMarginPercent": material_margin_percent,
+                }
+            )
+        elif billing == "amount":
+            if amount_chf <= 0:
+                continue
+            lines.append(
+                {
+                    "sku": f"IT-MAT-{idx}",
+                    "name": title or f"Montage / Materialpauschale {idx}",
+                    "description": desc or "Montage- oder Materialpauschale (Betrag CHF).",
+                    "qty": 1,
+                    "hours": 0,
+                    "amount": round(amount_chf, 2),
+                    "category": "material",
+                    "billing": "amount",
+                }
+            )
+        else:
+            if hours <= 0:
+                continue
+            lines.append(
+                {
+                    "sku": f"IT-MAT-{idx}",
+                    "name": title or f"Montage {idx}",
+                    "description": desc or "Montage- / Technikaufwand (Stunden).",
+                    "qty": 1,
+                    "hours": round(hours, 2),
+                    "amount": round(hours * hourly, 2),
+                    "category": "material",
+                    "billing": "hours",
+                }
+            )
+
     work_hours = round(sum(float(l["hours"] or 0) for l in lines if l["category"] != "travel"), 2)
     work_amount = round(sum(float(l["amount"] or 0) for l in lines if l["category"] != "travel"), 2)
 
@@ -1199,10 +1281,9 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
         },
     ]
     lines.extend(travel_lines)
-    travel_amount_cost = round(sum(l["amount"] for l in travel_lines), 2)
-    work_amount_cost = round(work_amount, 2)
 
     # IT intern in CHF: Sätze sind Verkaufspreise; optionale Zusatz-Marge (Standard 0)
+    # Material (billing=material) hat bereits VK aus EP/(1−m) — keine Zusatz-Marge darauf.
     margin_percent = float(
         payload.itMarginPercent
         if payload.itMarginPercent is not None
@@ -1210,18 +1291,39 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
     )
     margin_factor = 1.0 + (margin_percent / 100.0)
     for line in lines:
+        if line.get("category") == "material" and line.get("billing") == "material":
+            # amount = VK, amountCost = EP (bereits gesetzt)
+            continue
         cost = float(line.get("amount") or 0)
         line["amountCost"] = cost
         line["amount"] = round_sell_chf(cost * margin_factor)
 
+    work_amount_cost = round(
+        sum(float(l.get("amountCost") or 0) for l in lines if l["category"] != "travel"), 2
+    )
+    travel_amount_cost = round(sum(float(l.get("amountCost") or 0) for l in travel_lines), 2)
     work_amount = round_chf2(sum(float(l.get("amount") or 0) for l in lines if l["category"] != "travel"))
     travel_amount = round_chf2(sum(float(l.get("amount") or 0) for l in travel_lines))
-    margin_amount = round_chf2((work_amount_cost + travel_amount_cost) * (margin_percent / 100.0))
+    margin_amount = round_chf2(
+        sum(
+            float(l.get("amount") or 0) - float(l.get("amountCost") or 0)
+            for l in lines
+            if not (l.get("category") == "material" and l.get("billing") == "material")
+        )
+    )
+    material_margin_amount = round_chf2(
+        sum(
+            float(l.get("amount") or 0) - float(l.get("amountCost") or 0)
+            for l in lines
+            if l.get("category") == "material" and l.get("billing") == "material"
+        )
+    )
     total_hours = round(work_hours + travel_hours, 2)
     total_amount_cost = round(work_amount_cost + travel_amount_cost, 2)
     total_amount = round_chf2(work_amount + travel_amount)
+    contribution_margin_chf = round_chf2(total_amount - total_amount_cost)
     contribution_margin_percent = (
-        round((margin_amount / total_amount) * 100, 1) if total_amount else 0.0
+        round((contribution_margin_chf / total_amount) * 100, 1) if total_amount else 0.0
     )
     hourly_sell = round_sell_chf(hourly * margin_factor)
 
@@ -1264,6 +1366,22 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
                 ],
             }
         )
+    materials = [l for l in lines if l["category"] == "material" and l["amount"]]
+    if materials:
+        offer_sections.append(
+            {
+                "title": "Materialkosten",
+                "amount": round_chf2(sum(m["amount"] for m in materials)),
+                "bullets": [
+                    (
+                        f"{m['name']}: {m['description']}"
+                        if m.get("description")
+                        else m["name"]
+                    )
+                    for m in materials
+                ],
+            }
+        )
     offer_sections.append(
         {
             "title": "Reisekosten",
@@ -1294,6 +1412,7 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             "openingCount": payload.openingCount,
             "options": selected,
             "customExtensions": [e.model_dump() for e in payload.customExtensions],
+            "materialItems": [m.model_dump() for m in payload.materialItems],
             "trips": payload.trips,
             "travelHoursPerTrip": payload.travelHoursPerTrip,
             "kmPerTrip": payload.kmPerTrip,
@@ -1302,6 +1421,7 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             "hourlyRate": hourly,
             "hourlyRateSell": hourly_sell,
             "itMarginPercent": margin_percent,
+            "materialMarginPercent": material_margin_percent,
             "notes": payload.notes,
             "preparedBy": (
                 (payload.preparedBy or "").strip()
@@ -1322,11 +1442,17 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             "travelHours": travel_hours,
             "travelAmountCost": travel_amount_cost,
             "travelAmount": travel_amount,
+            "materialAmount": round_chf2(sum(float(m["amount"] or 0) for m in materials)),
+            "materialPurchaseChf": round_chf2(
+                sum(float(m.get("amountCost") or 0) for m in materials if m.get("billing") == "material")
+            ),
+            "materialMarginAmount": material_margin_amount,
+            "materialMarginPercent": material_margin_percent,
             "totalHours": total_hours,
             "totalAmountCost": total_amount_cost,
             "marginPercent": margin_percent,
             "marginAmount": margin_amount,
-            "contributionMarginChf": margin_amount,
+            "contributionMarginChf": contribution_margin_chf,
             "contributionMarginPercent": contribution_margin_percent,
             "totalAmount": total_amount,
             "currency": cat["meta"]["currency"],
@@ -1982,6 +2108,36 @@ def compose_offer(payload: ComposeOfferRequest):
                         if billing == "amount"
                         else "Projektspezifische Erweiterung."
                     ),
+                }
+            )
+        for mat in it_cfg.get("materialItems") or []:
+            title = (mat.get("title") or "").strip()
+            desc = (mat.get("description") or "").strip()
+            billing = (mat.get("billing") or "material").strip().lower()
+            purchase = float(mat.get("purchaseChf") or 0)
+            hours = float(mat.get("hours") or 0)
+            amount_chf = float(mat.get("amountChf") or 0)
+            if billing == "material" and purchase <= 0 and not title and not desc:
+                continue
+            if billing == "hours" and hours <= 0 and not title and not desc:
+                continue
+            if billing == "amount" and amount_chf <= 0 and not title and not desc:
+                continue
+            if billing == "material" and purchase <= 0:
+                continue
+            if billing == "hours" and hours <= 0:
+                continue
+            if billing == "amount" and amount_chf <= 0:
+                continue
+            kind_note = {
+                "material": "Material (Einkauf → Verkauf).",
+                "hours": "Montage- / Technikaufwand (Stunden).",
+                "amount": "Montage- oder Materialpauschale (Betrag CHF).",
+            }.get(billing, "Materialkosten.")
+            it_items.append(
+                {
+                    "name": title or desc or "Materialkosten",
+                    "description": desc if title else kind_note,
                 }
             )
         if float((it_totals or {}).get("travelAmount") or 0) > 0:

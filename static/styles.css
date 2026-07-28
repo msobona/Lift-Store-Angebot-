@@ -313,12 +313,27 @@ main {
   grid-column: 1 / -1;
 }
 
-.it-ext-card.billing-hours .it-ext-amount {
+.it-ext-card.billing-hours .it-ext-amount,
+.it-ext-card.billing-hours .it-mat-purchase {
   display: none;
 }
 
-.it-ext-card.billing-amount .it-ext-hours {
+.it-ext-card.billing-amount .it-ext-hours,
+.it-ext-card.billing-amount .it-mat-purchase {
   display: none;
+}
+
+.it-ext-card.billing-material .it-ext-hours,
+.it-ext-card.billing-material .it-ext-amount {
+  display: none;
+}
+
+.it-mat-purchase .mat-vk-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
 }
 
 @media (max-width: 720px) {

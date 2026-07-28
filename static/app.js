@@ -539,6 +539,7 @@
 
     const rates = state.itCatalog?.rates || {};
     setFormValue(itForm, "itMarginPercent", rates.marginPercent ?? 0);
+    setFormValue(itForm, "materialMarginPercent", rates.materialMarginPercent ?? 20);
     setFormValue(itForm, "deviceCount", 1);
     setFormValue(itForm, "zoneCount", 1);
     setFormValue(itForm, "openingCount", 1);
@@ -553,6 +554,7 @@
     updateClientHints();
     renderItOptions();
     renderItExtensions();
+    renderItMaterials();
     initSsiContactPickers();
     const discPct = document.getElementById("offerDiscountPercent");
     const discAmt = document.getElementById("offerDiscountAmount");
@@ -833,6 +835,11 @@
       "itMarginPercent",
       cfg.itMarginPercent ?? totals.marginPercent ?? defaultMargin
     );
+    setFormValue(
+      itForm,
+      "materialMarginPercent",
+      cfg.materialMarginPercent ?? totals.materialMarginPercent ?? (state.itCatalog?.rates?.materialMarginPercent ?? 20)
+    );
 
     const opts = cfg.options || {};
     itForm.querySelectorAll('input[name="itOption"]').forEach((el) => {
@@ -848,6 +855,21 @@
       setFormValue(itForm, `extAmount${i}`, ext.amountChf ?? 0);
       const billing = ext.billing === "amount" ? "amount" : "hours";
       const radio = itForm.querySelector(`input[name="extBilling${i}"][value="${billing}"]`);
+      if (radio) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+    const mats = cfg.materialItems || [];
+    for (let i = 1; i <= 6; i += 1) {
+      const mat = mats[i - 1] || {};
+      setFormValue(itForm, `matTitle${i}`, mat.title || "");
+      setFormValue(itForm, `matDesc${i}`, mat.description || "");
+      setFormValue(itForm, `matPurchase${i}`, mat.purchaseChf ?? 0);
+      setFormValue(itForm, `matHours${i}`, mat.hours ?? 0);
+      setFormValue(itForm, `matAmount${i}`, mat.amountChf ?? 0);
+      const billing = ["material", "hours", "amount"].includes(mat.billing) ? mat.billing : "material";
+      const radio = itForm.querySelector(`input[name="matBilling${i}"][value="${billing}"]`);
       if (radio) {
         radio.checked = true;
         radio.dispatchEvent(new Event("change", { bubbles: true }));
@@ -915,6 +937,7 @@
             preparedBy: offer.meta?.preparedBy || "",
             options: { orderHandling: Boolean(cfg.hasOrderHandling) },
             customExtensions: [],
+            materialItems: [],
           },
         });
       } else {
@@ -1966,6 +1989,101 @@
     }
   }
 
+  function materialSellHint(purchaseChf) {
+    const rates = state.itCatalog?.rates || {};
+    const formM = Number(itForm.materialMarginPercent?.value);
+    const m = Number.isFinite(formM) ? formM : Number(rates.materialMarginPercent ?? 20);
+    const ep = Number(purchaseChf || 0);
+    if (!(ep > 0) || !(m < 100)) return "";
+    const vk = m > 0 ? Math.floor(ep / (1 - m / 100) / 10 + 0.5 + 1e-12) * 10 : Math.floor(ep / 10 + 0.5) * 10;
+    return `→ VK ca. ${money(vk, "CHF")}`;
+  }
+
+  function renderItMaterials() {
+    const root = document.getElementById("itMaterials");
+    if (!root) return;
+    const prev = {};
+    for (let i = 1; i <= 6; i += 1) {
+      prev[i] = {
+        title: itForm[`matTitle${i}`]?.value || "",
+        desc: itForm[`matDesc${i}`]?.value || "",
+        hours: itForm[`matHours${i}`]?.value || "0",
+        amount: itForm[`matAmount${i}`]?.value || "0",
+        purchase: itForm[`matPurchase${i}`]?.value || "0",
+        billing: itForm.querySelector(`input[name="matBilling${i}"]:checked`)?.value || "material",
+      };
+    }
+    root.innerHTML = "";
+    for (let i = 1; i <= 6; i += 1) {
+      const p = prev[i];
+      const card = document.createElement("div");
+      card.className = "it-ext-card it-mat-card";
+      card.innerHTML = `
+        <div class="it-ext-head">
+          <strong>Material ${i}</strong>
+          <div class="it-ext-billing" role="group" aria-label="Art Material ${i}">
+            <label class="chip-radio">
+              <input type="radio" name="matBilling${i}" value="material" ${p.billing === "material" || !p.billing ? "checked" : ""} />
+              Material EP
+            </label>
+            <label class="chip-radio">
+              <input type="radio" name="matBilling${i}" value="hours" ${p.billing === "hours" ? "checked" : ""} />
+              Stunden
+            </label>
+            <label class="chip-radio">
+              <input type="radio" name="matBilling${i}" value="amount" ${p.billing === "amount" ? "checked" : ""} />
+              Betrag CHF
+            </label>
+          </div>
+        </div>
+        <label>Titel
+          <input name="matTitle${i}" placeholder="z. B. TouchPanel 18.5&quot; / Montage vor Ort" value="${escapeHtml(p.title)}" />
+        </label>
+        <label class="it-ext-value it-mat-purchase">Einkauf CHF
+          <input name="matPurchase${i}" type="number" min="0" max="10000000" step="0.01" value="${escapeHtml(p.purchase)}" />
+          <span class="field-hint mat-vk-hint">${materialSellHint(p.purchase)}</span>
+        </label>
+        <label class="it-ext-value it-ext-hours">Stunden (Montage)
+          <input name="matHours${i}" type="number" min="0" max="1000" step="0.5" value="${escapeHtml(p.hours)}" />
+        </label>
+        <label class="it-ext-value it-ext-amount">Betrag CHF (Montage/Pauschale)
+          <input name="matAmount${i}" type="number" min="0" max="10000000" step="0.01" value="${escapeHtml(p.amount)}" />
+        </label>
+        <label class="span-2">Detailtext
+          <textarea name="matDesc${i}" rows="2" placeholder="Beschreibung für das Angebot …">${escapeHtml(p.desc)}</textarea>
+        </label>`;
+      root.appendChild(card);
+      const syncBilling = () => {
+        const mode = card.querySelector(`input[name="matBilling${i}"]:checked`)?.value || "material";
+        card.classList.toggle("billing-material", mode === "material");
+        card.classList.toggle("billing-hours", mode === "hours");
+        card.classList.toggle("billing-amount", mode === "amount");
+      };
+      const updateHint = () => {
+        const hint = card.querySelector(".mat-vk-hint");
+        const purchase = card.querySelector(`input[name="matPurchase${i}"]`)?.value;
+        if (hint) hint.textContent = materialSellHint(purchase);
+      };
+      card.querySelectorAll(`input[name="matBilling${i}"]`).forEach((el) => {
+        el.addEventListener("change", () => {
+          syncBilling();
+          recalcIt();
+        });
+      });
+      card.querySelectorAll("input, textarea").forEach((el) => {
+        if (el.name?.startsWith("matBilling")) return;
+        el.addEventListener("change", () => recalcIt());
+        el.addEventListener("input", () => {
+          if (el.name?.startsWith("matPurchase")) updateHint();
+          if (el.name?.startsWith("matTitle") || el.name?.startsWith("matDesc")) return;
+          recalcIt();
+        });
+      });
+      syncBilling();
+      updateHint();
+    }
+  }
+
   function collectItPayload() {
     const data = new FormData(itForm);
     const options = {};
@@ -1984,6 +2102,18 @@
         billing,
       });
     }
+    const materialItems = [];
+    for (let i = 1; i <= 6; i += 1) {
+      const billing = itForm.querySelector(`input[name="matBilling${i}"]:checked`)?.value || "material";
+      materialItems.push({
+        title: String(data.get(`matTitle${i}`) || "").trim(),
+        description: String(data.get(`matDesc${i}`) || "").trim(),
+        billing,
+        purchaseChf: Number(data.get(`matPurchase${i}`) || 0),
+        hours: Number(data.get(`matHours${i}`) || 0),
+        amountChf: Number(data.get(`matAmount${i}`) || 0),
+      });
+    }
     return {
       customer: {
         company: String(data.get("company") || "").trim(),
@@ -1999,6 +2129,7 @@
       openingCount: Number(data.get("openingCount") || 1),
       options,
       customExtensions,
+      materialItems,
       trips: Number(data.get("trips") || 0),
       travelHoursPerTrip: Number(data.get("travelHoursPerTrip") || 0),
       kmPerTrip: Number(data.get("kmPerTrip") || 0),
@@ -2018,6 +2149,10 @@
       itMarginPercent: (() => {
         const v = Number(data.get("itMarginPercent"));
         return Number.isFinite(v) ? v : (state.itCatalog?.rates?.marginPercent ?? 0);
+      })(),
+      materialMarginPercent: (() => {
+        const v = Number(data.get("materialMarginPercent"));
+        return Number.isFinite(v) ? v : (state.itCatalog?.rates?.materialMarginPercent ?? 20);
       })(),
     };
   }
@@ -2040,17 +2175,26 @@
     const visibleLines = offer.lines.filter((l) => {
       if (l.category === "option") return Boolean(l.selected) && (Number(l.hours) > 0 || Number(l.amount) > 0 || l.note);
       if (l.category === "travel") return Number(l.amount) > 0 || Number(l.hours) > 0;
-      if (l.category === "custom") return Number(l.hours) > 0 || Number(l.amount) > 0;
+      if (l.category === "custom" || l.category === "material") {
+        return Number(l.hours) > 0 || Number(l.amount) > 0;
+      }
       return Number(l.hours) > 0 || Number(l.amount) > 0 || ["IT-DEVICES", "IT-ZONES", "IT-OPENINGS"].includes(l.sku);
     });
 
     document.getElementById("itLines").innerHTML = visibleLines.map((line) => {
-      const hoursCell = line.billing === "amount" || (Number(line.hours) === 0 && line.category === "custom")
+      const hoursCell = (
+        line.billing === "amount"
+        || line.billing === "material"
+        || (Number(line.hours) === 0 && (line.category === "custom" || line.category === "material"))
+      )
         ? "—"
         : (line.hours || 0);
+      const extra = line.billing === "material" && line.purchaseChf != null
+        ? ` · EP ${money(line.purchaseChf, c)}`
+        : (line.billing === "amount" ? " · Betrag CHF" : "");
       return `
         <tr>
-          <td>${line.name}<div class="muted">${line.description || ""}${line.note ? ` · ${line.note}` : ""}${line.billing === "amount" ? " · Betrag CHF" : ""}${line.amountCost != null && marginPercent ? ` · Basis ${money(line.amountCost, c)}` : ""}</div></td>
+          <td>${line.name}<div class="muted">${line.description || ""}${line.note ? ` · ${line.note}` : ""}${extra}${line.amountCost != null && marginPercent && line.billing !== "material" ? ` · Basis ${money(line.amountCost, c)}` : ""}</div></td>
           <td>${hoursCell}</td>
           <td>${money(line.amount, c)}</td>
         </tr>`;
@@ -2066,8 +2210,12 @@
     const marginRow = marginPercent
       ? `<div class="row"><span>Zusatz-Marge ${marginPercent}%</span><span>+ ${money(t.marginAmount || 0, c)}</span></div>`
       : `<div class="row"><span>Zusatz-Marge</span><span>0% (Sätze = Verkaufspreis)</span></div>`;
+    const matRow = Number(t.materialAmount || 0) > 0
+      ? `<div class="row"><span>Materialkosten (VK)</span><span>${money(t.materialAmount, c)}${t.materialPurchaseChf ? ` · EP ${money(t.materialPurchaseChf, c)}` : ""}</span></div>`
+      : "";
     document.getElementById("itTotals").innerHTML = `
       <div class="row"><span>IT-Aufwand</span><span>${t.workHours} h · ${money(t.workAmountCost ?? t.workAmount, c)}</span></div>
+      ${matRow}
       <div class="row"><span>Reisekosten</span><span>${money(t.travelAmountCost ?? t.travelAmount, c)}</span></div>
       <div class="row"><span>Basis Total</span><span>${money(itCost, c)}</span></div>
       ${marginRow}
@@ -2388,10 +2536,21 @@
     document.getElementById("licenseDisclaimer").textContent = state.licenseCatalog.product.disclaimer;
     renderItOptions();
     renderItExtensions();
+    renderItMaterials();
     const r = state.itCatalog.rates;
     setFormValue(itForm, "itMarginPercent", r.marginPercent ?? 0);
+    setFormValue(itForm, "materialMarginPercent", r.materialMarginPercent ?? 20);
     document.getElementById("itRatesHint").textContent =
-      `Stammdaten: Stundensatz ${money(r.hourlyRate, "CHF")} · km ${money(r.kmRate, "CHF")} · Verpflegung ${money(r.mealRate, "CHF")} · Übernachtung ${money(r.overnightRate, "CHF")} · Zusatz-Marge Standard ${r.marginPercent ?? 0}% (Sätze = Verkaufspreis)`;
+      `Stammdaten: Stundensatz ${money(r.hourlyRate, "CHF")} · km ${money(r.kmRate, "CHF")} · Verpflegung ${money(r.mealRate, "CHF")} · Übernachtung ${money(r.overnightRate, "CHF")} · Material-Marge ${r.materialMarginPercent ?? 20}% · Zusatz-Marge Standard ${r.marginPercent ?? 0}%`;
+    itForm.materialMarginPercent?.addEventListener("input", () => {
+      document.querySelectorAll("#itMaterials .mat-vk-hint").forEach((el) => {
+        const card = el.closest(".it-mat-card");
+        const purchase = card?.querySelector('input[name^="matPurchase"]')?.value;
+        el.textContent = materialSellHint(purchase);
+      });
+      recalcIt();
+    });
+    itForm.materialMarginPercent?.addEventListener("change", () => recalcIt());
     document.getElementById("itDisclaimer").textContent = state.itCatalog.meta.disclaimer;
     initAddressAutocomplete(document.getElementById("customerAddress"));
     initSsiContactPickers();
