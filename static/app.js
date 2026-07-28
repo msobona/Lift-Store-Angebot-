@@ -670,7 +670,8 @@
     }
     if (itDb != null && itSell != null) {
       const p = itSell > 0 ? Math.round((itDb / itSell) * 1000) / 10 : 0;
-      parts.push(`IT ${money(itDb, "CHF")} (${p}%)`);
+      const factor = Number(it.internalCostFactor || state.itCatalog?.rates?.internalCostFactor || 1.25);
+      parts.push(`IT ${money(itDb, "CHF")} (${p}%, EK fiktiv VK÷${factor})`);
     }
     const totalDb = (licDb || 0) + (itDb || 0);
     const totalSell = (licSell || 0) + (itSell || 0);
@@ -2311,11 +2312,23 @@
     const itDbPercent = t.contributionMarginPercent != null
       ? Number(t.contributionMarginPercent)
       : (itSell > 0 ? Math.round((itDb / itSell) * 1000) / 10 : 0);
+    const factor = Number(
+      t.internalCostFactor
+      || offer.configuration?.internalCostFactor
+      || state.itCatalog?.rates?.internalCostFactor
+      || 1.25
+    );
+    const impliedCost = t.impliedTotalCostChf != null
+      ? Number(t.impliedTotalCostChf)
+      : null;
     const marginRow = marginPercent
       ? `<div class="row"><span>Zusatz-Marge ${marginPercent}%</span><span>+ ${money(t.marginAmount || 0, c)}</span></div>`
       : `<div class="row"><span>Zusatz-Marge</span><span>0% (Sätze = Verkaufspreis)</span></div>`;
     const matRow = Number(t.materialAmount || 0) > 0
       ? `<div class="row"><span>Materialkosten (VK)</span><span>${money(t.materialAmount, c)}${t.materialPurchaseChf ? ` · EP ${money(t.materialPurchaseChf, c)}` : ""}</span></div>`
+      : "";
+    const impliedRow = impliedCost != null
+      ? `<div class="row"><span>Fiktiver EK intern (VK÷${factor})</span><span>${money(impliedCost, c)}</span></div>`
       : "";
     document.getElementById("itTotals").innerHTML = `
       <div class="row"><span>IT-Aufwand</span><span>${t.workHours} h · ${money(t.workAmountCost ?? t.workAmount, c)}</span></div>
@@ -2324,6 +2337,7 @@
       <div class="row"><span>Basis Total</span><span>${money(itCost, c)}</span></div>
       ${marginRow}
       <div class="row strong"><span>Verkauf Total exkl. MwSt</span><span>${money(itSell, c)}</span></div>
+      ${impliedRow}
       <div class="row db"><span>DB (intern)</span><span>${money(itDb, c)} · ${itDbPercent}%</span></div>`;
     document.getElementById("itScope").innerHTML = (offer.offerSections || [])
       .filter((s) => Number(s.amount) > 0 || (s.bullets || []).length)

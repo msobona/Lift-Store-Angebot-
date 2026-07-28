@@ -1321,7 +1321,34 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
     total_hours = round(work_hours + travel_hours, 2)
     total_amount_cost = round(work_amount_cost + travel_amount_cost, 2)
     total_amount = round_chf2(work_amount + travel_amount)
-    contribution_margin_chf = round_chf2(total_amount - total_amount_cost)
+
+    # Interner DB: IT-Stunden/Reise/Pauschalen 1:1 am Kunden → fiktiver EK = VK / Faktor
+    # (Standard 1.25 → effektiver DB 20% vom VK). Material behält echten EP.
+    # Der fiktive EK wird nirgends vom Kundenpreis abgezogen.
+    internal_cost_factor = float(rates.get("internalCostFactor") or 1.25)
+    if internal_cost_factor <= 0:
+        internal_cost_factor = 1.25
+    implied_service_cost = 0.0
+    service_sell = 0.0
+    for line in lines:
+        sell = float(line.get("amount") or 0)
+        if not sell:
+            continue
+        if line.get("category") == "material" and line.get("billing") == "material":
+            continue
+        service_sell += sell
+        implied_service_cost += sell / internal_cost_factor
+    implied_service_cost = round_chf2(implied_service_cost)
+    service_sell = round_chf2(service_sell)
+    material_cost = round_chf2(
+        sum(
+            float(l.get("amountCost") or 0)
+            for l in lines
+            if l.get("category") == "material" and l.get("billing") == "material"
+        )
+    )
+    implied_total_cost = round_chf2(implied_service_cost + material_cost)
+    contribution_margin_chf = round_chf2(total_amount - implied_total_cost)
     contribution_margin_percent = (
         round((contribution_margin_chf / total_amount) * 100, 1) if total_amount else 0.0
     )
@@ -1422,6 +1449,7 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             "hourlyRateSell": hourly_sell,
             "itMarginPercent": margin_percent,
             "materialMarginPercent": material_margin_percent,
+            "internalCostFactor": internal_cost_factor,
             "notes": payload.notes,
             "preparedBy": (
                 (payload.preparedBy or "").strip()
@@ -1452,6 +1480,11 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             "totalAmountCost": total_amount_cost,
             "marginPercent": margin_percent,
             "marginAmount": margin_amount,
+            # Interner DB: Stunden/Reise fiktiv VK/1.25; Material = echter EP
+            "internalCostFactor": internal_cost_factor,
+            "impliedServiceCostChf": implied_service_cost,
+            "impliedTotalCostChf": implied_total_cost,
+            "serviceSellChf": service_sell,
             "contributionMarginChf": contribution_margin_chf,
             "contributionMarginPercent": contribution_margin_percent,
             "totalAmount": total_amount,
@@ -2670,6 +2703,8 @@ def api_export_excel(offer_id: str):
                 ["Reisekosten Einkauf CHF", totals.get("travelAmountCost")],
                 ["Marge %", totals.get("marginPercent")],
                 ["Marge CHF", totals.get("marginAmount")],
+                ["Fiktiver EK-Faktor (VK÷x)", totals.get("internalCostFactor")],
+                ["Fiktiver EK intern CHF", totals.get("impliedTotalCostChf")],
                 ["Deckungsbeitrag CHF / DB", totals.get("contributionMarginChf")],
                 ["DB % vom Verkauf", totals.get("contributionMarginPercent")],
                 ["Verkauf Total CHF", totals.get("totalAmount")],

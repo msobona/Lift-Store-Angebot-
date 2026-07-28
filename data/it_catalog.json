@@ -12,7 +12,8 @@
     "mealRate": 30,
     "overnightRate": 150,
     "marginPercent": 0,
-    "materialMarginPercent": 20
+    "materialMarginPercent": 20,
+    "internalCostFactor": 1.25
   },
   "travelDefaults": {
     "origin": {
