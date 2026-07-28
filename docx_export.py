@@ -442,18 +442,47 @@ def apply_zusammenfassung_table(
         _set_grid_span(keep, _grid_col_count(table), width_dxa=_table_width_dxa(table))
         _set_tc_text_simple(keep, title, bold=True, fill="FFED00")
 
-    def add_content_row(table, lines: List[str], *, min_height: int = 1500, first_bold: bool = True) -> None:
-        """Eine volle Textzeile (1 Spalte über die ganze Tabellenbreite)."""
+    def add_content_row(
+        table,
+        lines: List[str],
+        *,
+        min_height: int = 1500,
+        first_bold: bool = True,
+        qty: Optional[str] = None,
+    ) -> None:
+        """Inhaltszeile: volle Breite, oder Text | Anzahl wenn qty gesetzt."""
         tr = deepcopy(template_tr)
         tcs = tr.findall(qn("w:tc"))
         if not tcs:
             return
-        keep = tcs[0]
-        for tc in tcs[1:]:
-            tr.remove(tc)
         cols = _grid_col_count(table)
-        _set_grid_span(keep, cols, width_dxa=_table_width_dxa(table))
-        _set_tc_paragraphs(keep, lines, first_bold=first_bold)
+        total_w = _table_width_dxa(table)
+
+        if qty is None:
+            keep = tcs[0]
+            for tc in tcs[1:]:
+                tr.remove(tc)
+            _set_grid_span(keep, cols, width_dxa=total_w)
+            _set_tc_paragraphs(keep, lines, first_bold=first_bold)
+        else:
+            # Mindestens 2 Zellen
+            while len(tr.findall(qn("w:tc"))) < 2:
+                tr.append(deepcopy(tcs[0]))
+            tcs = tr.findall(qn("w:tc"))
+            keep_label = tcs[0]
+            keep_qty = tcs[-1]
+            for tc in tcs[1:-1]:
+                tr.remove(tc)
+            tcs = tr.findall(qn("w:tc"))
+            keep_label, keep_qty = tcs[0], tcs[-1]
+            qty_w = max(900, total_w // 8)
+            label_w = max(2000, total_w - qty_w)
+            label_span = max(1, cols - 1)
+            _set_grid_span(keep_label, label_span, width_dxa=label_w)
+            _set_grid_span(keep_qty, 1, width_dxa=qty_w)
+            _set_tc_paragraphs(keep_label, lines, first_bold=first_bold)
+            _set_tc_paragraphs(keep_qty, [str(qty)], first_bold=True, align_right=True)
+
         _set_row_min_height(tr, min_height)
         table._tbl.append(tr)
 
@@ -498,13 +527,23 @@ def apply_zusammenfassung_table(
         _set_row_min_height(tr, min_height)
         table._tbl.append(tr)
 
-    def fill_group_table(table, groups: List[Dict[str, Any]], *, total_prefix: str, header_title: str) -> None:
+    def fill_group_table(
+        table,
+        groups: List[Dict[str, Any]],
+        *,
+        total_prefix: str,
+        header_title: str,
+        show_qty: bool = False,
+    ) -> None:
         set_header(table, header_title)
         clear_data_rows(table)
         pos = 0
         if not groups:
             add_content_row(table, ["Keine Positionen in diesem Bereich."], min_height=800, first_bold=False)
             return
+        if show_qty:
+            # Spaltenköpfe: Position | Anzahl
+            add_content_row(table, ["Position"], min_height=420, first_bold=True, qty="Anzahl")
         for group in groups:
             for item in group.get("items") or []:
                 pos += 1
@@ -514,7 +553,24 @@ def apply_zusammenfassung_table(
                 if desc:
                     lines.append(desc)
                 lines.append("")
-                add_content_row(table, lines, min_height=1500, first_bold=True)
+                qty_val = item.get("qty")
+                qty_text = None
+                if show_qty:
+                    if qty_val is None or qty_val == "":
+                        qty_text = "—"
+                    else:
+                        try:
+                            qn_val = float(qty_val)
+                            qty_text = str(int(qn_val)) if qn_val == int(qn_val) else str(qn_val)
+                        except (TypeError, ValueError):
+                            qty_text = str(qty_val)
+                add_content_row(
+                    table,
+                    lines,
+                    min_height=1500,
+                    first_bold=True,
+                    qty=qty_text,
+                )
             total = group.get("total")
             if total_prefix == "A":
                 label = "Total A · Softwarelizenzen"
@@ -537,6 +593,7 @@ def apply_zusammenfassung_table(
         buckets["license"],
         total_prefix="A",
         header_title="Zusammenfassung – Softwarelizenzen",
+        show_qty=True,
     )
 
     # Tabelle 2: Kopie mit gleichem gelben Kopf → IT-Aufwand
@@ -876,7 +933,7 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
                         "sku": "",
                         "name": item.get("name") or "",
                         "description": item.get("description") or "",
-                        "qty": "",
+                        "qty": item.get("qty") if item.get("qty") is not None else "",
                         "unit_price": "",
                         "hours": "",
                         "amount": "",

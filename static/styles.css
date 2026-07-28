@@ -1617,6 +1617,30 @@ textarea:focus {
   font-size: 0.98rem;
 }
 
+.offer-options-table.has-qty .col-content {
+  width: auto;
+}
+
+.offer-options-table .col-qty {
+  width: 5.5rem;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.offer-options-table tr.offer-scope-colheads th {
+  background: #f7f7f7;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ssi-muted);
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
 .offer-options-table .col-content strong {
   display: block;
   font-size: 1.02rem;

@@ -424,6 +424,8 @@ class OfferRequest(BaseModel):
     # Optional: überschreibt Katalog-Defaults (interne Kalkulation)
     licenseMarginPercent: Optional[float] = Field(None, ge=0, le=500)
     eurToChfRate: Optional[float] = Field(None, gt=0, le=10)
+    # SLL-Mengenrabatt ist intern; nur bei True im Verkaufspreis / Kundenangebot
+    applySllDiscount: bool = False
 
 
 def resolve_discount(catalog: Dict[str, Any], sll: int) -> Dict[str, Any]:
@@ -567,6 +569,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     subtotal = round(sum(l["total"] for l in lines), 2)
     discount = resolve_discount(catalog, sll)
     discount_amount = round(subtotal * (discount["percent"] / 100), 2)
+    # Einkauf (IC): Mengenrabatt immer intern berücksichtigt
     net = round(subtotal - discount_amount, 2)
     product = catalog["product"]
     margin_percent = float(
@@ -579,12 +582,11 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         if payload.eurToChfRate is not None
         else (product.get("eurToChfRate") or 1)
     )
+    apply_sll_discount = bool(payload.applySllDiscount)
     margin_factor = 1.0 + (margin_percent / 100.0)
     # Reihenfolge: IC EUR → Kurs → Einkauf CHF → Marge → Verkauf CHF (ganze CHF, aufgerundet)
     cost_chf = round(net * eur_to_chf, 2)
     margin_amount_eur = round(net * (margin_percent / 100.0), 2)
-    sell_net_eur = round(net * margin_factor, 2)
-    contribution_margin_eur = margin_amount_eur
     vat_rate = float(product.get("vatRate") or 0)
 
     # Verkaufspreise je Position: auf ganze CHF aufrunden; Total = Stück × Menge (ebenfalls)
@@ -604,13 +606,16 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             line["total"] = round_sell_chf(total_cost_chf * margin_factor)
         line["currency"] = product.get("offerCurrency", "CHF")
 
-    # Verkaufs-Nettototal aus gerundeten Positionen abzgl. Mengenrabatt
+    # Verkaufs-Nettototal; SLL-Mengenrabatt nur wenn explizit freigegeben
     lines_sell_sum = round_chf2(sum(float(l.get("total") or 0) for l in lines))
     discount_sell_chf = 0.0
-    if discount["percent"] and lines_sell_sum:
-        # Gleicher %-Satz wie IC-Rabatt; kaufmännisch 2 Stellen, damit Summe − Rabatt aufgeht
+    if apply_sll_discount and discount["percent"] and lines_sell_sum:
         discount_sell_chf = round_chf2(lines_sell_sum * (float(discount["percent"]) / 100.0))
     sell_net_chf = round_chf2(lines_sell_sum - discount_sell_chf)
+    # Referenz EUR: gleicher Schalter für Verkauf
+    sell_base_eur = net if apply_sll_discount else subtotal
+    sell_net_eur = round(sell_base_eur * margin_factor, 2)
+    contribution_margin_eur = round(sell_net_eur - net, 2)
     contribution_margin_chf = round_chf2(sell_net_chf - cost_chf)
     contribution_margin_percent = (
         round((contribution_margin_chf / sell_net_chf) * 100, 1) if sell_net_chf else 0.0
@@ -633,7 +638,10 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         addon = addons.get(addon_id)
         if addon:
             scope.append(f"{addon['name']}: {addon.get('functionalDescription') or addon.get('description', '')}")
-    scope.append(f"SLL-Einheiten: {sll} → Rabatt {discount['percent']}% ({discount['label']})")
+    scope.append(
+        f"SLL-Einheiten: {sll} → Rabatt {discount['percent']}% ({discount['label']})"
+        + (" · im Verkaufspreis" if apply_sll_discount else " · nur intern, nicht im Verkaufspreis")
+    )
     scope.append(f"Kurs EUR→CHF {eur_to_chf} · Marge {margin_percent:.0f}% auf Einkauf CHF")
 
     ssi_contacts = resolve_ssi_contacts(payload.ssiContact1Id, payload.ssiContact2Id)
@@ -667,6 +675,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "sllCount": sll,
             "discountPercent": discount["percent"],
             "discountLabel": discount["label"],
+            "applySllDiscount": apply_sll_discount,
             "licenseMarginPercent": margin_percent,
             "eurToChfRate": eur_to_chf,
         },
@@ -677,6 +686,7 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
             "subtotal": subtotal,
             "discountPercent": discount["percent"],
             "discountAmount": discount_amount,
+            "applySllDiscount": apply_sll_discount,
             "net": net,
             "icCurrency": product.get("currency", "EUR"),
             "marginPercent": margin_percent,
@@ -1516,9 +1526,6 @@ def compose_offer(payload: ComposeOfferRequest):
     if license_offer:
         lic_totals = license_offer.get("totals") or {}
         lic_currency = lic_totals.get("currency", "CHF")
-        margin_pct = float(lic_totals.get("marginPercent") or 0)
-        fx = float(lic_totals.get("eurToChfRate") or 1)
-        margin_factor = 1.0 + (margin_pct / 100.0)
         for line in license_offer.get("lines", []):
             # Kundenangebot: nur Verkaufspreise, keine IC-/Einkaufspreise in der Beschreibung
             add_commercial(
@@ -1530,8 +1537,9 @@ def compose_offer(payload: ComposeOfferRequest):
                 },
                 amount_key="total",
             )
-        if lic_totals.get("discountAmount"):
-            disc_chf = round(float(lic_totals["discountAmount"]) * margin_factor * fx, 2)
+        # SLL-Mengenrabatt nur im Kundenangebot, wenn explizit freigegeben
+        if lic_totals.get("applySllDiscount") and float(lic_totals.get("discountSellChf") or 0) > 0:
+            disc_chf = round_chf2(float(lic_totals["discountSellChf"]))
             pos += 1
             commercial.append(
                 {
@@ -1600,17 +1608,31 @@ def compose_offer(payload: ComposeOfferRequest):
     if license_offer:
         lic_items = []
         for line in license_offer.get("lines") or []:
+            qty_raw = line.get("qty")
+            try:
+                qty_val = float(qty_raw) if qty_raw is not None else None
+            except (TypeError, ValueError):
+                qty_val = None
+            if qty_val is not None and qty_val == int(qty_val):
+                qty_val = int(qty_val)
             lic_items.append(
                 {
                     "name": line.get("name") or "",
                     "description": line.get("description") or "",
+                    "qty": qty_val,
+                    "unit": line.get("unit") or "",
                 }
             )
-        if (license_totals or {}).get("discountPercent"):
+        # Mengenrabatt-Zeile nur, wenn der Rabatt im Verkaufspreis freigegeben ist
+        if (license_totals or {}).get("applySllDiscount") and float(
+            (license_totals or {}).get("discountSellChf") or 0
+        ) > 0:
             lic_items.append(
                 {
                     "name": f"Mengenrabatt SLL ({license_totals.get('discountPercent')}%)",
                     "description": (license_offer.get("configuration") or {}).get("discountLabel") or "",
+                    "qty": 1,
+                    "unit": "Pauschale",
                 }
             )
         scope_groups.append(
@@ -1620,6 +1642,7 @@ def compose_offer(payload: ComposeOfferRequest):
                 "items": lic_items,
                 "total": lic_sell_chf,
                 "currency": (license_totals or {}).get("currency", "CHF"),
+                "showQty": True,
             }
         )
 
@@ -1708,6 +1731,8 @@ def compose_offer(payload: ComposeOfferRequest):
             "subtotal": (license_totals or {}).get("subtotal"),
             "discountPercent": (license_totals or {}).get("discountPercent"),
             "discountAmount": (license_totals or {}).get("discountAmount"),
+            "discountSellChf": (license_totals or {}).get("discountSellChf"),
+            "applySllDiscount": (license_totals or {}).get("applySllDiscount"),
             "icNet": (license_totals or {}).get("net"),
             "marginPercent": (license_totals or {}).get("marginPercent"),
             "marginAmountEur": (license_totals or {}).get("marginAmountEur"),

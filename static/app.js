@@ -579,6 +579,17 @@
       .replaceAll('"', "&quot;");
   }
 
+  function formatScopeQty(item) {
+    if (!item || item.qty == null || item.qty === "") return "—";
+    const n = Number(item.qty);
+    if (!Number.isFinite(n)) return String(item.qty);
+    const qtyText = Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+    const unit = String(item.unit || "").trim();
+    // Pauschale/Rabatt: Anzahl ohne Einheit anzeigen
+    if (!unit || /pauschale/i.test(unit)) return qtyText;
+    return qtyText;
+  }
+
   function formatDateDe(value) {
     if (!value) return "—";
     const raw = String(value).slice(0, 10);
@@ -733,6 +744,11 @@
       "eurToChfRate",
       cfg.eurToChfRate ?? totals.eurToChfRate ?? productDefaults.eurToChfRate ?? 0.93
     );
+    if (licenseForm.applySllDiscount) {
+      licenseForm.applySllDiscount.checked = Boolean(
+        cfg.applySllDiscount ?? totals.applySllDiscount
+      );
+    }
 
     const instanceId = cfg.instanceId || "basic";
     const radio = licenseForm.querySelector(`input[name="instanceId"][value="${instanceId}"]`);
@@ -1010,35 +1026,65 @@
       const lic = licenseGroups.length || itGroups.length ? licenseGroups : scopeGroups;
       const it = licenseGroups.length || itGroups.length ? itGroups : [];
 
-      const renderBlock = (groups, headerTitle, totalLabel) => {
+      const renderBlock = (groups, headerTitle, totalLabel, { showQty = false } = {}) => {
         if (!groups.length) return "";
         let pos = 0;
         const bodyRows = [];
+        const colCount = showQty ? 3 : 2;
+        if (showQty) {
+          bodyRows.push(`
+            <tr class="offer-scope-colheads">
+              <th scope="col" class="col-content">Position</th>
+              <th scope="col" class="col-qty">Anzahl</th>
+              <th scope="col" class="col-price"></th>
+            </tr>`);
+        }
         groups.forEach((group) => {
           (group.items || []).forEach((item) => {
             pos += 1;
             const desc = String(item.description || "").trim();
-            bodyRows.push(`
+            const qtyText = formatScopeQty(item);
+            if (showQty) {
+              bodyRows.push(`
+              <tr class="offer-scope-content">
+                <td class="col-content">
+                  <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
+                  ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
+                </td>
+                <td class="col-qty">${escapeHtml(qtyText)}</td>
+                <td class="col-price"></td>
+              </tr>`);
+            } else {
+              bodyRows.push(`
               <tr class="offer-scope-content">
                 <td colspan="2" class="col-content">
                   <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
                   ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
                 </td>
               </tr>`);
+            }
           });
           if (group.total != null) {
-            bodyRows.push(`
+            if (showQty) {
+              bodyRows.push(`
+              <tr class="offer-scope-subtotal">
+                <td colspan="2" class="col-total-label">${escapeHtml(totalLabel)}</td>
+                <td class="col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
+              </tr>`);
+            } else {
+              bodyRows.push(`
               <tr class="offer-scope-subtotal">
                 <td class="col-total-label">${escapeHtml(totalLabel)}</td>
                 <td class="col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
               </tr>`);
+            }
           }
         });
         return `
-          <table class="offer-options-table offer-scope-price-table">
+          <table class="offer-options-table offer-scope-price-table${showQty ? " has-qty" : ""}">
             <thead>
               <tr>
-                <th colspan="2" class="offer-summary-banner">${escapeHtml(headerTitle)}</th>
+                <th colspan="${colCount}" class="offer-summary-banner">${escapeHtml(headerTitle)}</th>
               </tr>
             </thead>
             <tbody>${bodyRows.join("")}</tbody>
@@ -1046,7 +1092,9 @@
       };
 
       const parts = [
-        renderBlock(lic, "Zusammenfassung – Softwarelizenzen", "Total A · Softwarelizenzen"),
+        renderBlock(lic, "Zusammenfassung – Softwarelizenzen", "Total A · Softwarelizenzen", {
+          showQty: lic.some((g) => g.showQty !== false),
+        }),
         renderBlock(it, "Zusammenfassung – IT-Aufwand", "Total B · IT-Aufwand"),
       ].filter(Boolean);
 
@@ -1473,6 +1521,7 @@
       })(),
       licenseMarginPercent: pricing.marginPercent,
       eurToChfRate: pricing.eurToChfRate,
+      applySllDiscount: Boolean(licenseForm.applySllDiscount?.checked),
     };
   }
 
@@ -1586,10 +1635,13 @@
       : Math.round((sellEur - Number(t.net || 0)) * 100) / 100;
     const marginChf = Math.round((sellChf - costChf) * 100) / 100;
 
+    const applySll = Boolean(t.applySllDiscount ?? offer.configuration?.applySllDiscount);
+    const discSell = Number(t.discountSellChf || 0);
+    const discPct = Number(t.discountPercent || 0);
     document.getElementById("licenseOfferNo").textContent = offer.meta.offerNumber;
     document.getElementById("licenseGross").textContent = money(sellChf, sell);
     document.getElementById("sllBadge").textContent =
-      `SLL: ${t.sllCount} · Rabatt ${t.discountPercent}% · Kurs ${fx} · Marge ${marginPercent}%`;
+      `SLL: ${t.sllCount} · Rabatt ${discPct}% (${applySll ? "im VK" : "nur intern"}) · Kurs ${fx} · Marge ${marginPercent}%`;
     document.getElementById("licenseMeta").innerHTML = `
       <div><strong>${offer.customer.company}</strong>${offer.customer.projectName ? ` · ${offer.customer.projectName}` : ""}</div>
       <div>${offer.configuration.instanceCount}× ${offer.configuration.instanceName}</div>
@@ -1612,10 +1664,13 @@
     const dbPercent = t.contributionMarginPercent != null
       ? Number(t.contributionMarginPercent)
       : (sellChf > 0 ? Math.round((dbChf / sellChf) * 1000) / 10 : 0);
+    const linesSum = t.sellLinesSumChf != null ? Number(t.sellLinesSumChf) : null;
     document.getElementById("licenseTotals").innerHTML = `
-      <div class="row"><span>Einkauf Total</span><span>${money(t.net, ic)}</span></div>
+      <div class="row"><span>Einkauf Total (nach internem SLL-Rabatt)</span><span>${money(t.net, ic)}</span></div>
       <div class="row"><span>Einkauf CHF (× ${fx})</span><span>${money(costChf, sell)}</span></div>
       <div class="row"><span>Marge ${marginPercent}% auf CHF</span><span>+ ${money(marginChf, sell)}</span></div>
+      ${linesSum != null ? `<div class="row"><span>Verkauf Positionen</span><span>${money(linesSum, sell)}</span></div>` : ""}
+      <div class="row"><span>SLL-Mengenrabatt Verkauf${applySll ? "" : " (nicht freigegeben)"}</span><span>${applySll && discSell ? `− ${money(discSell, sell)}` : "—"}</span></div>
       <div class="row"><span>Verkauf EUR (Referenz)</span><span>${money(sellEur, ic)}</span></div>
       <div class="row strong"><span>Verkauf CHF</span><span>${money(sellChf, sell)}</span></div>
       <div class="row db"><span>DB (intern)</span><span>${money(dbChf, sell)} · ${dbPercent}%</span></div>`;
