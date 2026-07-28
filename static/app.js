@@ -860,7 +860,12 @@
       hours: String(ext.hours ?? 0),
       amount: String(ext.amountChf ?? 0),
       billing: ext.billing === "amount" ? "amount" : "hours",
-    }));
+    })).filter((ext) => (
+      String(ext.title).trim()
+      || String(ext.desc).trim()
+      || Number(ext.hours) > 0
+      || Number(ext.amount) > 0
+    ));
     renderItExtensions(exts.length ? exts : undefined);
 
     const mats = (cfg.materialItems || []).map((mat) => ({
@@ -870,7 +875,13 @@
       hours: String(mat.hours ?? 0),
       amount: String(mat.amountChf ?? 0),
       billing: ["material", "hours", "amount"].includes(mat.billing) ? mat.billing : "material",
-    }));
+    })).filter((mat) => (
+      String(mat.title).trim()
+      || String(mat.desc).trim()
+      || Number(mat.purchase) > 0
+      || Number(mat.hours) > 0
+      || Number(mat.amount) > 0
+    ));
     renderItMaterials(mats.length ? mats : undefined);
   }
 
