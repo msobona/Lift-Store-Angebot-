@@ -337,9 +337,10 @@ def apply_zusammenfassung_table(
     grand_total_chf: Any = None,
 ) -> bytes:
     """
-    Zwei Zusammenfassungstabellen mit gelbem Kopf:
+    Zusammenfassungstabellen mit gelbem Kopf:
       1) Softwarelizenzen → Total A
       2) IT-Aufwand → Total B
+      3) Material → Total C (falls vorhanden)
     Danach fett: Total netto exkl. MwSt.
     """
     from copy import deepcopy
@@ -378,11 +379,14 @@ def apply_zusammenfassung_table(
         lic: List[Dict[str, Any]] = []
         lic_opt: List[Dict[str, Any]] = []
         it: List[Dict[str, Any]] = []
+        material: List[Dict[str, Any]] = []
         for group in scope_groups or []:
             gid = str(group.get("id") or "").lower()
             title = str(group.get("title") or "").lower()
             if gid == "licenseoptions" or "optionen" in title or title.startswith("optional"):
                 lic_opt.append(group)
+            elif gid == "material" or "material" in title:
+                material.append(group)
             elif gid == "license" or "lizenz" in title or "software" in title:
                 lic.append(group)
             elif gid == "it" or "it-" in title or "it " in title or "reise" in title:
@@ -390,7 +394,12 @@ def apply_zusammenfassung_table(
             else:
                 # Fallback: unklare Gruppen zu Lizenzen
                 lic.append(group)
-        return {"license": lic, "licenseOptions": lic_opt, "it": it}
+        return {
+            "license": lic,
+            "licenseOptions": lic_opt,
+            "it": it,
+            "material": material,
+        }
 
     def _grid_col_count(table) -> int:
         grid = table._tbl.tblGrid
@@ -615,6 +624,8 @@ def apply_zusammenfassung_table(
                 label = "Optionen (nicht im Total)"
             elif total_prefix == "B":
                 label = "Total B · IT-Aufwand"
+            elif total_prefix == "C":
+                label = "Total C · Material"
             else:
                 label = f"Total {(group.get('title') or '').strip()}".strip() or "Total"
             if total is not None:
@@ -649,7 +660,7 @@ def apply_zusammenfassung_table(
         show_qty=True,
     )
 
-    # 2) IT-Aufwand
+    # 2) IT-Aufwand (ohne Material)
     it_table = _append_table_copy()
     fill_group_table(
         it_table,
@@ -658,7 +669,17 @@ def apply_zusammenfassung_table(
         header_title="Zusammenfassung – IT-Aufwand",
     )
 
-    # 3) Gesamttotal
+    # 3) Material (eigene Zusammenfassungstabelle)
+    if buckets["material"]:
+        mat_table = _append_table_copy()
+        fill_group_table(
+            mat_table,
+            buckets["material"],
+            total_prefix="C",
+            header_title="Zusammenfassung – Material",
+        )
+
+    # 4) Gesamttotal
     grand_table = _append_table_copy()
     set_header(grand_table, "Gesamttotal")
     clear_data_rows(grand_table)
@@ -677,7 +698,7 @@ def apply_zusammenfassung_table(
     else:
         add_total_row(grand_table, "Total netto exkl. MwSt.", "—", min_height=900)
 
-    # 4) Optionaler Zusatz — eigener Abschnitt nach dem Gesamttotal
+    # 5) Optionaler Zusatz — eigener Abschnitt nach dem Gesamttotal
     if buckets["licenseOptions"]:
         parent = z_table._tbl.getparent()
         heading_p = OxmlElement("w:p")
@@ -1197,6 +1218,11 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         "marge_percent": "",
         "kurs_eur_chf": "",
         "it_total_chf": _money(it.get("total"), it.get("currency") or "CHF") if it else "—",
+        "material_total_chf": (
+            _money(mat.get("total"), mat.get("currency") or "CHF")
+            if mat and mat.get("total") is not None
+            else "—"
+        ),
         "it_work_chf": "",
         "it_travel_chf": "",
         "gesamt_chf": _money(summary.get("grandTotalChf"), "CHF")

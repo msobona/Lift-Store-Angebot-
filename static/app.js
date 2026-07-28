@@ -1099,16 +1099,21 @@
       const itGroups = scopeGroups.filter((g) => {
         const id = String(g.id || "").toLowerCase();
         const title = String(g.title || "").toLowerCase();
+        if (id === "material" || title.includes("material")) return false;
         return id === "it" || title.includes("it-") || title.includes("it ") || title.includes("reise");
       });
+      const materialGroups = scopeGroups.filter((g) => {
+        const id = String(g.id || "").toLowerCase();
+        const title = String(g.title || "").toLowerCase();
+        return id === "material" || title.includes("material");
+      });
       // Falls Filter nichts trifft: alles in Lizenzen belassen
-      const lic = licenseGroups.length || itGroups.length || licenseOptionGroups.length
-        ? licenseGroups
-        : scopeGroups;
-      const licOpt = licenseGroups.length || itGroups.length || licenseOptionGroups.length
-        ? licenseOptionGroups
-        : [];
-      const it = licenseGroups.length || itGroups.length || licenseOptionGroups.length ? itGroups : [];
+      const hasBuckets = licenseGroups.length || itGroups.length
+        || licenseOptionGroups.length || materialGroups.length;
+      const lic = hasBuckets ? licenseGroups : scopeGroups;
+      const licOpt = hasBuckets ? licenseOptionGroups : [];
+      const it = hasBuckets ? itGroups : [];
+      const mat = hasBuckets ? materialGroups : [];
 
       const renderBlock = (groups, headerTitle, totalLabel, {
         showQty = false,
@@ -1212,6 +1217,7 @@
           showQty: lic.some((g) => g.showQty !== false),
         }),
         renderBlock(it, "Zusammenfassung – IT-Aufwand", "Total B · IT-Aufwand"),
+        renderBlock(mat, "Zusammenfassung – Material", "Total C · Material"),
       ].filter(Boolean);
 
       let footer = "";

@@ -1943,11 +1943,12 @@ def compose_offer(payload: ComposeOfferRequest):
                 continue
             if line.get("category") == "travel" and not line.get("amount") and not line.get("qty"):
                 continue
-            section = (
-                "C · Reisekosten"
-                if line.get("category") == "travel"
-                else "B · IT-Aufwand / Services"
-            )
+            if line.get("category") == "travel":
+                section = "B · Reisekosten"
+            elif line.get("category") == "material":
+                section = "C · Materialkosten"
+            else:
+                section = "B · IT-Aufwand / Services"
             unit = None
             if line.get("category") != "travel" and hourly and line.get("hours"):
                 unit = hourly
@@ -2110,6 +2111,30 @@ def compose_offer(payload: ComposeOfferRequest):
                     ),
                 }
             )
+        if float((it_totals or {}).get("travelAmount") or 0) > 0:
+            it_items.append(
+                {
+                    "name": "Reisekosten",
+                    "description": "Fahrten, Kilometer, Übernachtung und Verpflegung gemäss Projektplanung.",
+                }
+            )
+        material_chf = round_chf2(float((it_totals or {}).get("materialAmount") or 0))
+        it_effort_chf = (
+            round_chf2(float(it_total_chf or 0) - float(material_chf or 0))
+            if it_total_chf is not None
+            else None
+        )
+        scope_groups.append(
+            {
+                "id": "it",
+                "title": "B · IT-Aufwand / Installation",
+                "items": it_items,
+                "total": it_effort_chf,
+                "currency": (it_totals or {}).get("currency", "CHF"),
+            }
+        )
+
+        mat_items = []
         for mat in it_cfg.get("materialItems") or []:
             title = (mat.get("title") or "").strip()
             desc = (mat.get("description") or "").strip()
@@ -2134,28 +2159,22 @@ def compose_offer(payload: ComposeOfferRequest):
                 "hours": "Montage- / Technikaufwand (Stunden).",
                 "amount": "Montage- oder Materialpauschale (Betrag CHF).",
             }.get(billing, "Materialkosten.")
-            it_items.append(
+            mat_items.append(
                 {
                     "name": title or desc or "Materialkosten",
                     "description": desc if title else kind_note,
                 }
             )
-        if float((it_totals or {}).get("travelAmount") or 0) > 0:
-            it_items.append(
+        if mat_items and material_chf > 0:
+            scope_groups.append(
                 {
-                    "name": "Reisekosten",
-                    "description": "Fahrten, Kilometer, Übernachtung und Verpflegung gemäss Projektplanung.",
+                    "id": "material",
+                    "title": "C · Materialkosten",
+                    "items": mat_items,
+                    "total": material_chf,
+                    "currency": (it_totals or {}).get("currency", "CHF"),
                 }
             )
-        scope_groups.append(
-            {
-                "id": "it",
-                "title": "B · IT-Aufwand / Installation",
-                "items": it_items,
-                "total": it_total_chf,
-                "currency": (it_totals or {}).get("currency", "CHF"),
-            }
-        )
 
     # Projektrabatt auf Gesamttotal (Positionspreise bereits auf ganze CHF aufgerundet)
     adj_notes: List[str] = []
@@ -2205,10 +2224,29 @@ def compose_offer(payload: ComposeOfferRequest):
             "workHours": (it_totals or {}).get("workHours"),
             "workAmount": (it_totals or {}).get("workAmount"),
             "travelAmount": (it_totals or {}).get("travelAmount"),
+            "materialAmount": (it_totals or {}).get("materialAmount"),
             "marginPercent": (it_totals or {}).get("marginPercent"),
-            "total": it_total_chf,
+            # Total B ohne Material — Material separat als Total C
+            "total": (
+                round_chf2(
+                    float(it_total_chf or 0)
+                    - float((it_totals or {}).get("materialAmount") or 0)
+                )
+                if it_total_chf is not None
+                else None
+            ),
+            "totalWithMaterial": it_total_chf,
         }
         if it_totals
+        else None,
+        "material": {
+            "label": "Materialkosten",
+            "currency": (it_totals or {}).get("currency", "CHF"),
+            "purchaseChf": (it_totals or {}).get("materialPurchaseChf"),
+            "marginPercent": (it_totals or {}).get("materialMarginPercent"),
+            "total": round_chf2(float((it_totals or {}).get("materialAmount") or 0)),
+        }
+        if it_totals and float((it_totals or {}).get("materialAmount") or 0) > 0
         else None,
         "subtotalChf": subtotal_chf,
         "optionsTotalChf": (
@@ -2562,12 +2600,14 @@ def api_export_excel(offer_id: str):
             )
         lic = summary.get("license") or {}
         it = summary.get("it") or {}
+        mat = summary.get("material") or {}
         rows.extend(
             [
                 [],
                 ["Zusammenfassung"],
                 ["Softwarelizenzen Verkauf CHF", lic.get("total"), lic.get("currency")],
                 ["IT-Aufwand Total", it.get("total"), it.get("currency")],
+                ["Material Total", mat.get("total"), mat.get("currency")],
                 ["Gesamttotal CHF", summary.get("grandTotalChf"), "CHF"],
                 ["Hinweis", summary.get("note")],
             ]
