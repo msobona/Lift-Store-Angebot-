@@ -979,6 +979,14 @@ textarea:focus {
   background: #fff;
 }
 
+.offer-export-layout {
+  max-width: 36rem;
+}
+.offer-export-layout select {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
 @media (max-width: 960px) {
   .offer-adjust-grid {
     grid-template-columns: 1fr;

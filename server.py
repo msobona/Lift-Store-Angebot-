@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from openpyxl import Workbook
 from pydantic import BaseModel, Field
 
-from docx_export import build_offer_docx
+from docx_export import build_offer_docx, resolve_docx_layout
 from pdf_export import PdfConversionError, convert_docx_bytes_to_pdf
 
 GEOADMIN_SEARCH_URL = "https://api3.geo.admin.ch/rest/services/api/SearchServer"
@@ -2762,9 +2762,26 @@ def api_export_excel(offer_id: str):
     )
 
 
+@app.get("/api/export-settings")
+def api_export_settings():
+    path = DATA_DIR / "export_settings.json"
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {
+        "docxLayout": "html",
+        "docxLayouts": {
+            "html": "Vorschau-Layout (HTML-Parität)",
+            "template": "Klassische Logimat-Vorlage",
+        },
+    }
+
+
 @app.get("/api/offers/{offer_id}/docx")
-def api_export_docx(offer_id: str):
-    """Word-Export: Angebotsseiten + originaler Software-Anhang (DOCX-Vorlage)."""
+def api_export_docx(offer_id: str, layout: Optional[str] = None):
+    """Word-Export: Standard = Vorschau-Layout; layout=template = klassische Vorlage."""
     path = offer_path(offer_id)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Angebot nicht gefunden")
@@ -2775,7 +2792,8 @@ def api_export_docx(offer_id: str):
             detail="Word-Export nur für Gesamtangebote. Bitte zuerst „Angebot erzeugen“.",
         )
     try:
-        data = build_offer_docx(offer)
+        mode = resolve_docx_layout(layout)
+        data = build_offer_docx(offer, layout=mode)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
@@ -2785,13 +2803,16 @@ def api_export_docx(offer_id: str):
     return StreamingResponse(
         io.BytesIO(data),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Docx-Layout": resolve_docx_layout(layout),
+        },
     )
 
 
 @app.get("/api/offers/{offer_id}/pdf")
-def api_export_pdf(offer_id: str):
-    """PDF 1:1 aus derselben Word-Vorlage (Word/LibreOffice-Konvertierung)."""
+def api_export_pdf(offer_id: str, layout: Optional[str] = None):
+    """PDF 1:1 aus dem gewählten Word-Layout (html oder template)."""
     path = offer_path(offer_id)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Angebot nicht gefunden")
@@ -2802,7 +2823,8 @@ def api_export_pdf(offer_id: str):
             detail="PDF-Export nur für Gesamtangebote. Bitte zuerst „Angebot erzeugen“ und speichern.",
         )
     try:
-        docx_data = build_offer_docx(offer)
+        mode = resolve_docx_layout(layout)
+        docx_data = build_offer_docx(offer, layout=mode)
         pdf_data = convert_docx_bytes_to_pdf(
             docx_data,
             basename=str(offer.get("meta", {}).get("offerNumber", offer_id)),
@@ -2818,7 +2840,10 @@ def api_export_pdf(offer_id: str):
     return StreamingResponse(
         io.BytesIO(pdf_data),
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Docx-Layout": resolve_docx_layout(layout),
+        },
     )
 
 

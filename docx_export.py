@@ -1365,15 +1365,14 @@ def apply_sdt_contact_fields(docx_bytes: bytes, context: Dict[str, Any]) -> byte
     return out.getvalue()
 
 
-def build_offer_docx(offer: Dict[str, Any]) -> bytes:
-    """Befüllt die Anhang-Vorlage (ein Dokument, SSI-Anhang inkl. Platzhalter)."""
+def build_offer_docx_template(offer: Dict[str, Any]) -> bytes:
+    """Klassischer Export über Logimat-/Anhang-Word-Vorlage (Fallback)."""
     if offer.get("kind") != "offer_document":
         raise ValueError("Word-Export ist nur für Gesamtangebote (offer_document) verfügbar.")
 
     template_path = ensure_annex_template()
     context = build_template_context(offer)
     selected_options = list((offer.get("content") or {}).get("selectedOptions") or [])
-    # optionen_text bleibt die aus dem Context gerenderte Optionsbeschreibung
 
     tpl = DocxTemplate(str(template_path))
     tpl.render(context, autoescape=True)
@@ -1392,3 +1391,33 @@ def build_offer_docx(offer: Dict[str, Any]) -> bytes:
         grand_total_chf=summary.get("grandTotalChf"),
     )
     return polish_offer_docx(docx_bytes, context)
+
+
+def resolve_docx_layout(layout: Optional[str] = None) -> str:
+    """html (Standard, Vorschau-Layout) oder template (klassische Vorlage)."""
+    raw = (layout or "").strip().lower()
+    if raw in {"html", "preview", "vorschau"}:
+        return "html"
+    if raw in {"template", "legacy", "classic", "logimat", "vorlage"}:
+        return "template"
+    # Default aus Einstellungsdatei
+    settings_path = BASE_DIR / "data" / "export_settings.json"
+    if settings_path.exists():
+        try:
+            data = json.loads(settings_path.read_text(encoding="utf-8"))
+            configured = str(data.get("docxLayout") or "html").strip().lower()
+            if configured in {"template", "legacy", "classic", "logimat", "vorlage"}:
+                return "template"
+        except (OSError, json.JSONDecodeError):
+            pass
+    return "html"
+
+
+def build_offer_docx(offer: Dict[str, Any], *, layout: Optional[str] = None) -> bytes:
+    """Word-Export: Standard = HTML-Vorschau-Layout; Fallback = klassische Vorlage."""
+    mode = resolve_docx_layout(layout)
+    if mode == "template":
+        return build_offer_docx_template(offer)
+    from docx_html_export import build_offer_docx_html
+
+    return build_offer_docx_html(offer)

@@ -1,0 +1,8 @@
+{
+  "docxLayout": "html",
+  "docxLayouts": {
+    "html": "Vorschau-Layout (HTML-Parität)",
+    "template": "Klassische Logimat-Vorlage"
+  },
+  "note": "docxLayout steuert Word/PDF-Export. 'template' stellt den vorherigen Zustand wieder her."
+}

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260728offerui" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260728htmldocx" />
 </head>
 <body>
   <header class="topbar">
@@ -463,6 +463,18 @@
           </div>
 
           <div id="internalContributionBox" class="internal-db-box no-print" aria-live="polite"></div>
+          <div class="offer-export-layout no-print">
+            <label>Word-/PDF-Layout
+              <select id="offerDocxLayout" aria-label="Word- und PDF-Layout">
+                <option value="html">Vorschau-Layout (neu)</option>
+                <option value="template">Klassische Logimat-Vorlage (bisher)</option>
+              </select>
+              <span class="field-hint">
+                Standard ist das Layout der Bildschirmvorschau. Über «Klassische Logimat-Vorlage»
+                können Sie jederzeit zum bisherigen Word-Export zurück.
+              </span>
+            </label>
+          </div>
           <div class="form-actions" style="margin:0">
             <button type="button" class="btn primary" id="btnComposeOffer">Angebot erzeugen</button>
             <button type="button" class="btn" id="btnSaveOfferDoc" disabled>Speichern</button>
@@ -522,6 +534,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260728itdb"></script>
+  <script src="/static/app.js?v=20260728htmldocx"></script>
 </body>
 </html>

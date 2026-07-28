@@ -15,8 +15,10 @@
     archiveExpanded: {},
     itExtCount: 1,
     itMatCount: 1,
+    docxLayout: "html",
   };
 
+  const DOCX_LAYOUT_STORAGE_KEY = "wamasDocxLayout";
   const IT_EXT_MAX = 5;
   const IT_MAT_MAX = 8;
 
@@ -1005,13 +1007,36 @@
     await openArchiveForEdit(id);
   }
 
+  function currentDocxLayout() {
+    const select = document.getElementById("offerDocxLayout");
+    const fromUi = select?.value;
+    if (fromUi === "html" || fromUi === "template") return fromUi;
+    if (state.docxLayout === "html" || state.docxLayout === "template") return state.docxLayout;
+    return "html";
+  }
+
+  function setDocxLayout(layout) {
+    const mode = layout === "template" ? "template" : "html";
+    state.docxLayout = mode;
+    try {
+      localStorage.setItem(DOCX_LAYOUT_STORAGE_KEY, mode);
+    } catch (_) {}
+    const select = document.getElementById("offerDocxLayout");
+    if (select) select.value = mode;
+  }
+
+  function offerExportUrl(id, kind) {
+    const layout = currentDocxLayout();
+    return `/api/offers/${encodeURIComponent(id)}/${kind}?layout=${encodeURIComponent(layout)}`;
+  }
+
   function downloadOfferDocx() {
     const id = state.savedOfferId || state.offerDocument?.id || state.offerDocument?.meta?.offerNumber;
     if (!id) {
       alert("Bitte das Angebot zuerst erzeugen/speichern.");
       return;
     }
-    window.location.href = `/api/offers/${encodeURIComponent(id)}/docx`;
+    window.location.href = offerExportUrl(id, "docx");
   }
 
   async function downloadOfferPdf() {
@@ -1021,7 +1046,7 @@
       return;
     }
     try {
-      const res = await fetch(`/api/offers/${encodeURIComponent(id)}/pdf`);
+      const res = await fetch(offerExportUrl(id, "pdf"));
       if (!res.ok) {
         let detail = "PDF-Export fehlgeschlagen";
         try {
@@ -2812,7 +2837,7 @@
           await openArchivePreview(id);
         }
         if (btn.dataset.action === "docx") {
-          window.location.href = `/api/offers/${encodeURIComponent(id)}/docx`;
+          window.location.href = offerExportUrl(id, "docx");
         }
         if (btn.dataset.action === "excel") {
           window.location.href = `/api/offers/${encodeURIComponent(id)}/excel`;
@@ -2888,6 +2913,9 @@
     document.getElementById("btnSaveOfferDoc").addEventListener("click", () => composeOfferDocument({ save: true, notify: true }));
     document.getElementById("btnWordOfferDoc").addEventListener("click", downloadOfferDocx);
     document.getElementById("btnPdfOfferDoc").addEventListener("click", () => downloadOfferPdf());
+    document.getElementById("offerDocxLayout")?.addEventListener("change", (event) => {
+      setDocxLayout(event.target.value);
+    });
     document.getElementById("btnExcelOfferDoc").addEventListener("click", () => {
       const id = state.savedOfferId || state.offerDocument?.id || state.offerDocument?.meta?.offerNumber;
       if (!id) {
@@ -2909,6 +2937,17 @@
     state.licenseCatalog = await api("/api/catalog");
     state.itCatalog = await api("/api/it/catalog");
     state.ssiContacts = await api("/api/ssi-contacts");
+    try {
+      const exportSettings = await api("/api/export-settings");
+      if (exportSettings?.docxLayout === "template" || exportSettings?.docxLayout === "html") {
+        state.docxLayout = exportSettings.docxLayout;
+      }
+    } catch (_) {}
+    try {
+      const stored = localStorage.getItem(DOCX_LAYOUT_STORAGE_KEY);
+      if (stored === "html" || stored === "template") state.docxLayout = stored;
+    } catch (_) {}
+    setDocxLayout(state.docxLayout || "html");
     renderInstances();
     renderAddons();
     updateClientHints();
