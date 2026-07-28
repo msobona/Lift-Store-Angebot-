@@ -1061,7 +1061,12 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
     meta_zeile = "  ·  ".join(p for p in meta_parts if p)
 
     note = summary.get("note")
-    if note and "IC-Preise" in str(note):
+    # Kundenangebot: nur kundentaugliche Hinweise, keine internen Kalkulationsdetails
+    raw_note = str(note or "")
+    if any(
+        marker in raw_note
+        for marker in ("IC-Preise", "DB-Marge", "EP/(1", "Rundung auf 10")
+    ):
         note = "Alle Preise in CHF, exkl. MwSt."
     if not note:
         note = "Alle Preise in CHF, exkl. MwSt."

@@ -2010,10 +2010,9 @@ def compose_offer(payload: ComposeOfferRequest):
         "roundingAmountChf": None,
         "adjustmentNotes": adj_notes,
         "grandTotalChf": grand_chf,
+        # Kundenhinweis — keine internen Kalkulationsformeln (DB-Marge, Rundung usw.)
         "note": (
-            "Verkaufspreise Lizenzen: DB-Marge vom VK (EP/(1−m)), Rundung auf 10 CHF, exkl. MwSt. "
-            "Festumfang ohne Einzelpreise; Gesamttotal = Summe der Festpositionen."
-            " Optionale Lizenzen sind preislich ausgewiesen, aber nicht im Total enthalten."
+            "Alle Preise in CHF, exkl. MwSt."
             + ((" · " + " · ".join(adj_notes)) if adj_notes else "")
         ),
     }
