@@ -1040,16 +1040,22 @@
       if (!scopeGroups.length) {
         return `<p class="offer-empty-note">Kein Leistungsumfang kalkuliert.</p>`;
       }
-      const licenseGroups = scopeGroups.filter((g) => {
-        const id = String(g.id || "").toLowerCase();
-        const title = String(g.title || "").toLowerCase();
-        if (id === "licenseoptions" || title.includes("optionen")) return false;
-        return id === "license" || title.includes("lizenz") || title.includes("software");
-      });
       const licenseOptionGroups = scopeGroups.filter((g) => {
         const id = String(g.id || "").toLowerCase();
         const title = String(g.title || "").toLowerCase();
-        return id === "licenseoptions" || (title.includes("optionen") && title.includes("software"));
+        return (
+          id === "licenseoptions"
+          || title.includes("optionen")
+          || title.startsWith("optional")
+        );
+      });
+      const licenseGroups = scopeGroups.filter((g) => {
+        const id = String(g.id || "").toLowerCase();
+        const title = String(g.title || "").toLowerCase();
+        if (id === "licenseoptions" || title.includes("optionen") || title.startsWith("optional")) {
+          return false;
+        }
+        return id === "license" || title.includes("lizenz") || title.includes("software");
       });
       const itGroups = scopeGroups.filter((g) => {
         const id = String(g.id || "").toLowerCase();
@@ -1073,14 +1079,29 @@
         if (!groups.length) return "";
         let pos = 0;
         const bodyRows = [];
-        const colCount = showQty || showPrice ? 3 : 2;
+        // Anzahl ganz rechts; bei Preisen: Position | Preis | Anzahl
+        const colCount = showQty && showPrice ? 3 : showQty || showPrice ? 2 : 2;
         if (showQty || showPrice) {
-          bodyRows.push(`
+          if (showQty && showPrice) {
+            bodyRows.push(`
             <tr class="offer-scope-colheads">
               <th scope="col" class="col-content">Position</th>
-              <th scope="col" class="col-qty">${showQty ? "Anzahl" : ""}</th>
-              <th scope="col" class="col-price">${showPrice ? "Preis" : ""}</th>
+              <th scope="col" class="col-price">Preis</th>
+              <th scope="col" class="col-qty">Anzahl</th>
             </tr>`);
+          } else if (showQty) {
+            bodyRows.push(`
+            <tr class="offer-scope-colheads">
+              <th scope="col" class="col-content">Position</th>
+              <th scope="col" class="col-qty">Anzahl</th>
+            </tr>`);
+          } else {
+            bodyRows.push(`
+            <tr class="offer-scope-colheads">
+              <th scope="col" class="col-content">Position</th>
+              <th scope="col" class="col-price">Preis</th>
+            </tr>`);
+          }
         }
         if (note) {
           bodyRows.push(`
@@ -1103,14 +1124,32 @@
             const priceText = showPrice && amount != null
               ? money(amount, item.currency || group.currency || "CHF")
               : "";
-            if (showQty || showPrice) {
+            if (showQty && showPrice) {
               bodyRows.push(`
               <tr class="offer-scope-content">
                 <td class="col-content">
                   <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
                   ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
                 </td>
-                <td class="col-qty">${showQty ? escapeHtml(qtyText) : ""}</td>
+                <td class="col-price">${priceText ? escapeHtml(priceText) : ""}</td>
+                <td class="col-qty">${escapeHtml(qtyText)}</td>
+              </tr>`);
+            } else if (showQty) {
+              bodyRows.push(`
+              <tr class="offer-scope-content">
+                <td class="col-content">
+                  <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
+                  ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
+                </td>
+                <td class="col-qty">${escapeHtml(qtyText)}</td>
+              </tr>`);
+            } else if (showPrice) {
+              bodyRows.push(`
+              <tr class="offer-scope-content">
+                <td class="col-content">
+                  <strong>${pos}. ${escapeHtml(item.name || "")}</strong>
+                  ${desc ? `<p class="offer-scope-desc">${escapeHtml(desc)}</p>` : ""}
+                </td>
                 <td class="col-price">${priceText ? escapeHtml(priceText) : ""}</td>
               </tr>`);
             } else {
@@ -1124,11 +1163,19 @@
             }
           });
           if (group.total != null) {
-            if (showQty || showPrice) {
+            if (showQty && showPrice) {
               bodyRows.push(`
               <tr class="offer-scope-subtotal">
-                <td colspan="2" class="col-total-label">${escapeHtml(totalLabel)}</td>
+                <td class="col-total-label">${escapeHtml(totalLabel)}</td>
                 <td class="col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
+                <td class="col-qty"></td>
+              </tr>`);
+            } else if (showQty) {
+              // Anzahl-Spalte rechts: in der Totalzeile steht dort der Preis
+              bodyRows.push(`
+              <tr class="offer-scope-subtotal">
+                <td class="col-total-label">${escapeHtml(totalLabel)}</td>
+                <td class="col-qty col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
               </tr>`);
             } else {
               bodyRows.push(`
@@ -1139,8 +1186,14 @@
             }
           }
         });
+        const tableClass = [
+          "offer-options-table",
+          "offer-scope-price-table",
+          showQty ? "has-qty" : "",
+          showPrice ? "has-price" : "",
+        ].filter(Boolean).join(" ");
         return `
-          <table class="offer-options-table offer-scope-price-table${showQty || showPrice ? " has-qty" : ""}">
+          <table class="${tableClass}">
             <thead>
               <tr>
                 <th colspan="${colCount}" class="offer-summary-banner">${escapeHtml(headerTitle)}</th>
@@ -1153,11 +1206,6 @@
       const parts = [
         renderBlock(lic, "Zusammenfassung – Softwarelizenzen", "Total A · Softwarelizenzen", {
           showQty: lic.some((g) => g.showQty !== false),
-        }),
-        renderBlock(licOpt, "Optionen – Softwarelizenzen", "Optionen (nicht im Total)", {
-          showQty: true,
-          showPrice: true,
-          note: "Preislich ausgewiesen, nicht im Gesamttotal enthalten.",
         }),
         renderBlock(it, "Zusammenfassung – IT-Aufwand", "Total B · IT-Aufwand"),
       ].filter(Boolean);
@@ -1189,6 +1237,25 @@
           </thead>
           <tbody>${footer}</tbody>
         </table>`);
+
+      // Optionale Lizenzen: eigener Abschnitt nach dem Gesamttotal (nicht in denselben Tabellen)
+      const optBlock = renderBlock(
+        licOpt,
+        "Optional – Softwarelizenzen",
+        "Optionen (nicht im Total)",
+        {
+          showQty: true,
+          showPrice: true,
+          note: "Zusätzliche Option — preislich ausgewiesen, nicht im Gesamttotal enthalten.",
+        },
+      );
+      if (optBlock) {
+        parts.push(`
+          <div class="offer-optional-section">
+            <h3 class="offer-optional-heading">Zusätzliche Option</h3>
+            ${optBlock}
+          </div>`);
+      }
 
       return parts.join("");
     })();

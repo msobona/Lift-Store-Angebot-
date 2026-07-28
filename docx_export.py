@@ -372,7 +372,7 @@ def apply_zusammenfassung_table(
         for group in scope_groups or []:
             gid = str(group.get("id") or "").lower()
             title = str(group.get("title") or "").lower()
-            if gid == "licenseoptions" or ("optionen" in title and "software" in title):
+            if gid == "licenseoptions" or "optionen" in title or title.startswith("optional"):
                 lic_opt.append(group)
             elif gid == "license" or "lizenz" in title or "software" in title:
                 lic.append(group)
@@ -452,8 +452,9 @@ def apply_zusammenfassung_table(
         min_height: int = 1500,
         first_bold: bool = True,
         qty: Optional[str] = None,
+        price: Optional[str] = None,
     ) -> None:
-        """Inhaltszeile: volle Breite, oder Text | Anzahl wenn qty gesetzt."""
+        """Inhaltszeile: Text | [Preis] | Anzahl (Anzahl ganz rechts)."""
         tr = deepcopy(template_tr)
         tcs = tr.findall(qn("w:tc"))
         if not tcs:
@@ -461,30 +462,50 @@ def apply_zusammenfassung_table(
         cols = _grid_col_count(table)
         total_w = _table_width_dxa(table)
 
-        if qty is None:
+        if qty is None and price is None:
             keep = tcs[0]
             for tc in tcs[1:]:
                 tr.remove(tc)
             _set_grid_span(keep, cols, width_dxa=total_w)
             _set_tc_paragraphs(keep, lines, first_bold=first_bold)
+        elif price is not None and qty is not None:
+            # 3 Spalten: Position | Preis | Anzahl
+            while len(tr.findall(qn("w:tc"))) < 3:
+                tr.append(deepcopy(tcs[0]))
+            tcs = tr.findall(qn("w:tc"))
+            for tc in tcs[3:]:
+                tr.remove(tc)
+            tcs = tr.findall(qn("w:tc"))
+            keep_label, keep_price, keep_qty = tcs[0], tcs[1], tcs[2]
+            qty_w = max(800, total_w // 10)
+            price_w = max(1400, total_w // 5)
+            label_w = max(2000, total_w - price_w - qty_w)
+            label_span = max(1, cols - 2)
+            _set_grid_span(keep_label, label_span, width_dxa=label_w)
+            _set_grid_span(keep_price, 1, width_dxa=price_w)
+            _set_grid_span(keep_qty, 1, width_dxa=qty_w)
+            _set_tc_paragraphs(keep_label, lines, first_bold=first_bold)
+            _set_tc_paragraphs(keep_price, [str(price)], first_bold=True, align_right=True)
+            _set_tc_paragraphs(keep_qty, [str(qty)], first_bold=True, align_right=True)
         else:
-            # Mindestens 2 Zellen
+            # 2 Spalten: Text | Anzahl (rechts) bzw. Text | Preis
+            right = qty if qty is not None else price
             while len(tr.findall(qn("w:tc"))) < 2:
                 tr.append(deepcopy(tcs[0]))
             tcs = tr.findall(qn("w:tc"))
             keep_label = tcs[0]
-            keep_qty = tcs[-1]
+            keep_right = tcs[-1]
             for tc in tcs[1:-1]:
                 tr.remove(tc)
             tcs = tr.findall(qn("w:tc"))
-            keep_label, keep_qty = tcs[0], tcs[-1]
-            qty_w = max(900, total_w // 8)
-            label_w = max(2000, total_w - qty_w)
+            keep_label, keep_right = tcs[0], tcs[-1]
+            right_w = max(900, total_w // 8) if qty is not None else max(1800, total_w // 4)
+            label_w = max(2000, total_w - right_w)
             label_span = max(1, cols - 1)
             _set_grid_span(keep_label, label_span, width_dxa=label_w)
-            _set_grid_span(keep_qty, 1, width_dxa=qty_w)
+            _set_grid_span(keep_right, 1, width_dxa=right_w)
             _set_tc_paragraphs(keep_label, lines, first_bold=first_bold)
-            _set_tc_paragraphs(keep_qty, [str(qty)], first_bold=True, align_right=True)
+            _set_tc_paragraphs(keep_right, [str(right)], first_bold=True, align_right=True)
 
         _set_row_min_height(tr, min_height)
         table._tbl.append(tr)
@@ -546,13 +567,12 @@ def apply_zusammenfassung_table(
         if not groups:
             add_content_row(table, ["Keine Positionen in diesem Bereich."], min_height=800, first_bold=False)
             return
-        if show_qty or show_price:
-            # Spaltenköpfe: Position | Anzahl [| Preis]
-            head_right = "Anzahl" if show_qty and not show_price else ("Preis" if show_price and not show_qty else "Anzahl")
-            add_content_row(table, ["Position"], min_height=420, first_bold=True, qty=head_right)
-            if show_qty and show_price:
-                # Preis kommt in der Datenzeile rechts neben der Anzahl — Word: Anzahl | Betrag im qty-Feld als "n · CHF …"
-                pass
+        if show_qty and show_price:
+            add_content_row(
+                table, ["Position"], min_height=420, first_bold=True, price="Preis", qty="Anzahl"
+            )
+        elif show_qty:
+            add_content_row(table, ["Position"], min_height=420, first_bold=True, qty="Anzahl")
         if note:
             add_content_row(table, [note], min_height=500, first_bold=False)
         for group in groups:
@@ -569,26 +589,27 @@ def apply_zusammenfassung_table(
                 lines.append("")
                 qty_val = item.get("qty")
                 qty_text = None
-                if show_qty or show_price:
+                price_text = None
+                if show_qty:
                     if qty_val is None or qty_val == "":
-                        qty_part = "—"
+                        qty_text = "—"
                     else:
                         try:
                             qn_val = float(qty_val)
-                            qty_part = str(int(qn_val)) if qn_val == int(qn_val) else str(qn_val)
+                            qty_text = str(int(qn_val)) if qn_val == int(qn_val) else str(qn_val)
                         except (TypeError, ValueError):
-                            qty_part = str(qty_val)
-                    if show_price and item.get("amount") is not None:
-                        price_part = _money(item.get("amount"), item.get("currency") or group.get("currency") or "CHF")
-                        qty_text = f"{qty_part}\n{price_part}" if show_qty else price_part
-                    else:
-                        qty_text = qty_part if show_qty else None
+                            qty_text = str(qty_val)
+                if show_price and item.get("amount") is not None:
+                    price_text = _money(
+                        item.get("amount"), item.get("currency") or group.get("currency") or "CHF"
+                    )
                 add_content_row(
                     table,
                     lines,
                     min_height=1500,
                     first_bold=True,
                     qty=qty_text,
+                    price=price_text if show_price else None,
                 )
             total = group.get("total")
             if total_prefix == "A":
@@ -621,7 +642,7 @@ def apply_zusammenfassung_table(
             table = Table(tbl, z_table._parent)
         return table
 
-    # Tabelle 1: Softwarelizenzen (Festumfang)
+    # 1) Softwarelizenzen Festumfang — Anzahl ganz rechts
     fill_group_table(
         z_table,
         buckets["license"],
@@ -630,20 +651,7 @@ def apply_zusammenfassung_table(
         show_qty=True,
     )
 
-    # Optionen (falls vorhanden)
-    if buckets["licenseOptions"]:
-        opt_table = _append_table_copy()
-        fill_group_table(
-            opt_table,
-            buckets["licenseOptions"],
-            total_prefix="OPT",
-            header_title="Optionen – Softwarelizenzen",
-            show_qty=True,
-            show_price=True,
-            note="Preislich ausgewiesen, nicht im Gesamttotal enthalten.",
-        )
-
-    # IT-Aufwand
+    # 2) IT-Aufwand
     it_table = _append_table_copy()
     fill_group_table(
         it_table,
@@ -652,7 +660,7 @@ def apply_zusammenfassung_table(
         header_title="Zusammenfassung – IT-Aufwand",
     )
 
-    # Gesamttotal
+    # 3) Gesamttotal
     grand_table = _append_table_copy()
     set_header(grand_table, "Gesamttotal")
     clear_data_rows(grand_table)
@@ -670,6 +678,27 @@ def apply_zusammenfassung_table(
         )
     else:
         add_total_row(grand_table, "Total netto exkl. MwSt.", "—", min_height=900)
+
+    # 4) Optionaler Zusatz — eigener Abschnitt nach dem Gesamttotal
+    if buckets["licenseOptions"]:
+        parent = z_table._tbl.getparent()
+        heading_p = OxmlElement("w:p")
+        parent.append(heading_p)
+        from docx.text.paragraph import Paragraph
+
+        heading = Paragraph(heading_p, z_table._parent)
+        run = heading.add_run("Zusätzliche Option")
+        run.bold = True
+        opt_table = _append_table_copy()
+        fill_group_table(
+            opt_table,
+            buckets["licenseOptions"],
+            total_prefix="OPT",
+            header_title="Optional – Softwarelizenzen",
+            show_qty=True,
+            show_price=True,
+            note="Zusätzliche Option — preislich ausgewiesen, nicht im Gesamttotal enthalten.",
+        )
 
     out = io.BytesIO()
     doc.save(out)

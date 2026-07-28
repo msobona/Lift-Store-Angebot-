@@ -1877,8 +1877,8 @@ def compose_offer(payload: ComposeOfferRequest):
             scope_groups.append(
                 {
                     "id": "licenseOptions",
-                    "title": "Optionen · Softwarelizenzen",
-                    "note": "Preislich ausgewiesen, nicht im Gesamttotal enthalten.",
+                    "title": "Optional – Softwarelizenzen",
+                    "note": "Zusätzliche Option — preislich ausgewiesen, nicht im Gesamttotal enthalten.",
                     "items": opt_items,
                     "total": optional_sell,
                     "currency": (license_totals or {}).get("currency", "CHF"),

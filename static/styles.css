@@ -1681,12 +1681,35 @@ textarea:focus {
 }
 
 .offer-options-table .col-qty {
-  width: 5.5rem;
-  text-align: center;
+  width: 4.75rem;
+  min-width: 4.25rem;
+  text-align: right;
   vertical-align: middle;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+  padding-left: 0.5rem;
+}
+
+.offer-options-table.has-qty:not(.has-price) .col-content,
+.offer-options-table.has-qty:not(.has-price) .col-total-label {
+  width: 100%;
+}
+
+.offer-options-table.has-price .col-price {
+  width: 8.5rem;
+}
+
+.offer-optional-section {
+  margin-top: 1.75rem;
+  padding-top: 0.35rem;
+}
+
+.offer-optional-heading {
+  margin: 0 0 0.65rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ssi-ink);
 }
 
 .offer-options-table tr.offer-scope-colheads th {
