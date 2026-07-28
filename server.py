@@ -2472,6 +2472,21 @@ def api_list_offers():
                     if project_name or revision_code
                     else meta.get("offerNumber", path.stem)
                 )
+                project_slug = (meta.get("projectSlug") or "").strip()
+                if not project_slug:
+                    parsed_slug = parse_revision_code(meta.get("offerNumber") or path.stem)
+                    if parsed_slug:
+                        project_slug = parsed_slug["slug"]
+                if not project_slug:
+                    project_slug = slugify_project(
+                        project_name or meta.get("projectLabel") or cust.get("company") or path.stem
+                    )
+                series_label = (
+                    (project_name or "").strip()
+                    or (meta.get("projectLabel") or "").strip()
+                    or (cust.get("company") or "").strip()
+                    or project_slug
+                )
                 items.append(
                     {
                         "id": data.get("id") or path.stem,
@@ -2480,7 +2495,14 @@ def api_list_offers():
                         "archiveTitle": archive_title,
                         "revisionCode": revision_code or None,
                         "revisionIndex": meta.get("revisionIndex"),
-                        "revisionNumber": meta.get("revisionNumber"),
+                        "revisionNumber": meta.get("revisionNumber")
+                        or (
+                            _revision_ordinal_from_meta(meta, meta.get("offerNumber") or path.stem)
+                            or None
+                        ),
+                        "projectSlug": project_slug,
+                        "seriesKey": f"offer:{project_slug}",
+                        "seriesLabel": series_label,
                         "company": cust.get("company", ""),
                         "projectName": project_name,
                         "summary": summary or "Gesamtangebot",
@@ -2492,6 +2514,8 @@ def api_list_offers():
                 )
             else:
                 cust = data.get("customer") or {}
+                project_name = cust.get("projectName", "")
+                company = cust.get("company", "")
                 items.append(
                     {
                         "id": data.get("id") or path.stem,
@@ -2499,8 +2523,11 @@ def api_list_offers():
                         "offerNumber": data.get("meta", {}).get("offerNumber", path.stem),
                         "archiveTitle": None,
                         "revisionCode": None,
-                        "company": cust.get("company", ""),
-                        "projectName": cust.get("projectName", ""),
+                        "projectSlug": None,
+                        "seriesKey": f"{kind}:{data.get('id') or path.stem}",
+                        "seriesLabel": project_name or company or path.stem,
+                        "company": company,
+                        "projectName": project_name,
                         "summary": summary,
                         "amount": (
                             totals.get("sellNetChf")

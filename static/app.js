@@ -10,6 +10,9 @@
     savedLicenseId: null,
     savedItId: null,
     editingFromOfferId: null,
+    archiveOffers: [],
+    archiveQuery: "",
+    archiveExpanded: {},
   };
 
   const licenseForm = document.getElementById("licenseForm");
@@ -2271,6 +2274,246 @@
     deleteBtn.disabled = selected.length === 0;
     selectAll.checked = boxes.length > 0 && selected.length === boxes.length;
     selectAll.indeterminate = selected.length > 0 && selected.length < boxes.length;
+
+    archiveList.querySelectorAll(".archive-folder").forEach((folder) => {
+      const folderBox = folder.querySelector(".archive-folder-select");
+      if (!folderBox) return;
+      const childBoxes = [...folder.querySelectorAll(".archive-select")];
+      const childSelected = childBoxes.filter((b) => b.checked);
+      folderBox.checked = childBoxes.length > 0 && childSelected.length === childBoxes.length;
+      folderBox.indeterminate = childSelected.length > 0 && childSelected.length < childBoxes.length;
+    });
+  }
+
+  function archiveOfferSearchText(o) {
+    return [
+      o.projectName,
+      o.company,
+      o.offerNumber,
+      o.archiveTitle,
+      o.seriesLabel,
+      o.revisionCode,
+      o.summary,
+      o.kind,
+      o.amount,
+      o.createdAt,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+  }
+
+  function archiveMatchesQuery(o, query) {
+    if (!query) return true;
+    return archiveOfferSearchText(o).includes(query);
+  }
+
+  function archiveProjectTitle(o) {
+    return (o.projectName || "").trim()
+      || (o.kind === "offer_document"
+        ? (o.archiveTitle || "")
+            .replace(/\s+Index\s+[A-Za-z]+\s*$/i, "")
+            .replace(/\s+[A-Za-z]\d+\s*$/, "")
+            .trim()
+        : "")
+      || (o.seriesLabel || "").trim()
+      || o.offerNumber
+      || o.id;
+  }
+
+  function archiveRevisionSortKey(o) {
+    const n = Number(o.revisionNumber);
+    if (Number.isFinite(n) && n > 0) return n;
+    const code = String(o.revisionCode || "").trim();
+    const m = code.match(/^(?:Index\s+)?([A-Za-z]+)$/i);
+    if (m) {
+      const letters = m[1].toUpperCase();
+      let ordinal = 0;
+      for (let i = 0; i < letters.length; i += 1) {
+        ordinal = ordinal * 26 + (letters.charCodeAt(i) - 64);
+      }
+      return ordinal;
+    }
+    return 0;
+  }
+
+  function groupArchiveOffers(offers, query) {
+    const folders = new Map();
+    const singles = [];
+
+    offers.forEach((o) => {
+      if (!archiveMatchesQuery(o, query)) return;
+      if (o.kind === "offer_document" && o.seriesKey) {
+        if (!folders.has(o.seriesKey)) {
+          folders.set(o.seriesKey, {
+            key: o.seriesKey,
+            label: archiveProjectTitle(o),
+            company: o.company || "",
+            slug: o.projectSlug || "",
+            offers: [],
+          });
+        }
+        const folder = folders.get(o.seriesKey);
+        folder.offers.push(o);
+        if (!folder.company && o.company) folder.company = o.company;
+        const title = archiveProjectTitle(o);
+        if (title && title.length >= String(folder.label || "").length) {
+          folder.label = title;
+        }
+      } else {
+        singles.push(o);
+      }
+    });
+
+    const folderList = [...folders.values()].map((folder) => {
+      folder.offers.sort((a, b) => {
+        const revDiff = archiveRevisionSortKey(b) - archiveRevisionSortKey(a);
+        if (revDiff) return revDiff;
+        return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+      });
+      folder.latest = folder.offers[0] || null;
+      folder.latestAt = folder.latest?.createdAt || "";
+      return folder;
+    });
+
+    folderList.sort((a, b) => String(b.latestAt || "").localeCompare(String(a.latestAt || "")));
+    singles.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+    return { folders: folderList, singles };
+  }
+
+  function renderArchiveOfferItem(o, { nested = false } = {}) {
+    const kindLabel = o.kind === "it" ? "IT" : o.kind === "offer_document" ? "Gesamtangebot" : "Lizenz";
+    const amountText = o.kind === "offer_document"
+      ? (o.amount || "—")
+      : money(o.amount, o.currency || "CHF");
+    const projectTitle = archiveProjectTitle(o);
+    const revBadge = o.revisionCode
+      ? `<span class="archive-rev" title="Version">${escapeHtml(o.revisionCode)}</span>`
+      : "";
+    const subtitleParts = [];
+    if (o.company) subtitleParts.push(o.company);
+    if (o.offerNumber && o.offerNumber !== projectTitle) subtitleParts.push(o.offerNumber);
+    if (o.summary) subtitleParts.push(o.summary);
+    if (o.revisionOf) subtitleParts.push(`aus ${o.revisionOf}`);
+    const titleHtml = nested
+      ? `${revBadge || `<span class="archive-rev">${escapeHtml(o.offerNumber || o.id)}</span>`}<span class="muted">(${kindLabel})</span>`
+      : `${escapeHtml(projectTitle)} ${revBadge}<span class="muted">(${kindLabel})</span>`;
+    return `
+      <article class="archive-item${nested ? " archive-item-nested" : ""}" data-id="${escapeHtml(o.id)}" data-kind="${escapeHtml(o.kind || "")}">
+        <label class="archive-check">
+          <input type="checkbox" class="archive-select" value="${escapeHtml(o.id)}" aria-label="Auswählen: ${escapeHtml(projectTitle)}" />
+        </label>
+        <div>
+          <h3>${titleHtml}</h3>
+          <p>${escapeHtml(subtitleParts.join(" · ") || "—")}</p>
+          <p>${escapeHtml(String(amountText))} · ${escapeHtml(o.createdAt || "")}</p>
+        </div>
+        <div class="archive-actions">
+          <button type="button" class="btn primary" data-action="edit">Bearbeiten</button>
+          ${o.kind === "offer_document" ? '<button type="button" class="btn" data-action="view">Anzeigen</button>' : ""}
+          ${o.kind === "offer_document" ? '<button type="button" class="btn" data-action="docx">Word</button>' : ""}
+          <button type="button" class="btn" data-action="excel">Excel</button>
+          <button type="button" class="btn danger" data-action="delete">Löschen</button>
+        </div>
+      </article>`;
+  }
+
+  function renderArchiveFolder(folder) {
+    const count = folder.offers.length;
+    const isFolder = count > 1;
+    if (!isFolder) {
+      return renderArchiveOfferItem(folder.offers[0]);
+    }
+    const queryActive = Boolean(state.archiveQuery);
+    const expanded = queryActive || Boolean(state.archiveExpanded[folder.key]);
+    const latest = folder.latest || folder.offers[0];
+    const latestRev = latest?.revisionCode || "—";
+    const amountText = latest?.amount || "—";
+    const metaParts = [
+      `${count} Versionen`,
+      `aktuell ${latestRev}`,
+      folder.company || null,
+      amountText,
+      latest?.createdAt || null,
+    ].filter(Boolean);
+    const children = folder.offers.map((o) => renderArchiveOfferItem(o, { nested: true })).join("");
+    return `
+      <section class="archive-folder${expanded ? " is-open" : ""}" data-series="${escapeHtml(folder.key)}">
+        <div class="archive-folder-head">
+          <label class="archive-check">
+            <input type="checkbox" class="archive-folder-select" aria-label="Ordner auswählen: ${escapeHtml(folder.label)}" />
+          </label>
+          <button type="button" class="archive-folder-toggle" data-action="toggle-folder" aria-expanded="${expanded ? "true" : "false"}">
+            <span class="archive-folder-icon" aria-hidden="true">${expanded ? "▼" : "▶"}</span>
+            <span class="archive-folder-title">${escapeHtml(folder.label)}</span>
+            <span class="archive-folder-count">${count}</span>
+          </button>
+          <p class="archive-folder-meta">${escapeHtml(metaParts.join(" · "))}</p>
+        </div>
+        <div class="archive-folder-body" ${expanded ? "" : "hidden"}>
+          ${children}
+        </div>
+      </section>`;
+  }
+
+  function restoreArchiveSelection(selectedIds) {
+    const selected = new Set(selectedIds || []);
+    if (!selected.size) {
+      updateArchiveSelectionUi();
+      return;
+    }
+    archiveList.querySelectorAll(".archive-select").forEach((box) => {
+      box.checked = selected.has(box.value);
+    });
+    updateArchiveSelectionUi();
+  }
+
+  function setArchiveFolderExpanded(folder, expanded) {
+    if (!folder) return;
+    const key = folder.dataset.series;
+    if (key) state.archiveExpanded[key] = Boolean(expanded);
+    folder.classList.toggle("is-open", Boolean(expanded));
+    const body = folder.querySelector(".archive-folder-body");
+    if (body) body.hidden = !expanded;
+    const toggle = folder.querySelector(".archive-folder-toggle");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+      const icon = toggle.querySelector(".archive-folder-icon");
+      if (icon) icon.textContent = expanded ? "▼" : "▶";
+    }
+  }
+
+  function renderArchive() {
+    const offers = state.archiveOffers || [];
+    const toolbar = document.getElementById("archiveToolbar");
+    const query = String(state.archiveQuery || "").trim().toLowerCase();
+    const selectedBefore = selectedArchiveIds();
+    if (toolbar) toolbar.hidden = !offers.length;
+
+    if (!offers.length) {
+      archiveList.innerHTML = '<p class="empty-state">Noch keine Kalkulationen gespeichert.</p>';
+      updateArchiveSelectionUi();
+      return;
+    }
+
+    const { folders, singles } = groupArchiveOffers(offers, query);
+    if (!folders.length && !singles.length) {
+      archiveList.innerHTML = `<p class="empty-state">Keine Treffer für „${escapeHtml(state.archiveQuery.trim())}“.</p>`;
+      updateArchiveSelectionUi();
+      return;
+    }
+
+    const parts = [];
+    if (folders.length) {
+      parts.push(`<div class="archive-section-label">Projekte / Angebote</div>`);
+      parts.push(folders.map(renderArchiveFolder).join(""));
+    }
+    if (singles.length) {
+      parts.push(`<div class="archive-section-label">Einzelkalkulationen</div>`);
+      parts.push(singles.map((o) => renderArchiveOfferItem(o)).join(""));
+    }
+    archiveList.innerHTML = parts.join("");
+    restoreArchiveSelection(selectedBefore);
   }
 
   async function deleteArchiveOffers(ids) {
@@ -2309,55 +2552,8 @@
 
   async function loadArchive() {
     const data = await api("/api/offers");
-    const offers = data.offers || [];
-    const toolbar = document.getElementById("archiveToolbar");
-    if (toolbar) toolbar.hidden = !offers.length;
-    if (!offers.length) {
-      archiveList.innerHTML = '<p class="empty-state">Noch keine Kalkulationen gespeichert.</p>';
-      updateArchiveSelectionUi();
-      return;
-    }
-    archiveList.innerHTML = offers.map((o) => {
-      const kindLabel = o.kind === "it" ? "IT" : o.kind === "offer_document" ? "Gesamtangebot" : "Lizenz";
-      const amountText = o.kind === "offer_document"
-        ? (o.amount || "—")
-        : money(o.amount, o.currency || "CHF");
-      const projectTitle = (o.projectName || "").trim()
-        || (o.kind === "offer_document"
-          ? (o.archiveTitle || "")
-              .replace(/\s+Index\s+[A-Za-z]+\s*$/i, "")
-              .replace(/\s+[A-Za-z]\d+\s*$/, "")
-              .trim()
-          : "")
-        || o.offerNumber;
-      const revBadge = o.revisionCode
-        ? `<span class="archive-rev" title="Version">${escapeHtml(o.revisionCode)}</span>`
-        : "";
-      const subtitleParts = [];
-      if (o.company) subtitleParts.push(o.company);
-      if (o.offerNumber && o.offerNumber !== projectTitle) subtitleParts.push(o.offerNumber);
-      if (o.summary) subtitleParts.push(o.summary);
-      if (o.revisionOf) subtitleParts.push(`aus ${o.revisionOf}`);
-      return `
-      <article class="archive-item" data-id="${escapeHtml(o.id)}" data-kind="${escapeHtml(o.kind || "")}">
-        <label class="archive-check">
-          <input type="checkbox" class="archive-select" value="${escapeHtml(o.id)}" aria-label="Auswählen: ${escapeHtml(projectTitle)}" />
-        </label>
-        <div>
-          <h3>${escapeHtml(projectTitle)} ${revBadge}<span class="muted">(${kindLabel})</span></h3>
-          <p>${escapeHtml(subtitleParts.join(" · ") || "—")}</p>
-          <p>${escapeHtml(String(amountText))} · ${escapeHtml(o.createdAt || "")}</p>
-        </div>
-        <div class="archive-actions">
-          <button type="button" class="btn primary" data-action="edit">Bearbeiten</button>
-          ${o.kind === "offer_document" ? '<button type="button" class="btn" data-action="view">Anzeigen</button>' : ""}
-          ${o.kind === "offer_document" ? '<button type="button" class="btn" data-action="docx">Word</button>' : ""}
-          <button type="button" class="btn" data-action="excel">Excel</button>
-          <button type="button" class="btn danger" data-action="delete">Löschen</button>
-        </div>
-      </article>`;
-    }).join("");
-    updateArchiveSelectionUi();
+    state.archiveOffers = data.offers || [];
+    renderArchive();
   }
 
   function bindEvents() {
@@ -2464,6 +2660,14 @@
     });
 
     archiveList.addEventListener("click", async (event) => {
+      const toggleBtn = event.target.closest("[data-action='toggle-folder']");
+      if (toggleBtn) {
+        const folder = toggleBtn.closest(".archive-folder");
+        if (!folder) return;
+        const willOpen = !folder.classList.contains("is-open");
+        setArchiveFolderExpanded(folder, willOpen);
+        return;
+      }
       const btn = event.target.closest("button[data-action]");
       if (!btn) return;
       const id = btn.closest(".archive-item")?.dataset.id;
@@ -2490,7 +2694,17 @@
     });
 
     archiveList.addEventListener("change", (event) => {
-      if (event.target?.classList?.contains("archive-select")) {
+      const target = event.target;
+      if (target?.classList?.contains("archive-folder-select")) {
+        const folder = target.closest(".archive-folder");
+        const checked = Boolean(target.checked);
+        folder?.querySelectorAll(".archive-select").forEach((box) => {
+          box.checked = checked;
+        });
+        updateArchiveSelectionUi();
+        return;
+      }
+      if (target?.classList?.contains("archive-select")) {
         updateArchiveSelectionUi();
       }
     });
@@ -2500,11 +2714,25 @@
       archiveList.querySelectorAll(".archive-select").forEach((box) => {
         box.checked = checked;
       });
+      archiveList.querySelectorAll(".archive-folder-select").forEach((box) => {
+        box.checked = checked;
+        box.indeterminate = false;
+      });
       updateArchiveSelectionUi();
     });
 
     document.getElementById("btnArchiveDeleteSelected")?.addEventListener("click", async () => {
       await deleteArchiveOffers(selectedArchiveIds());
+    });
+
+    const archiveSearch = document.getElementById("archiveSearch");
+    archiveSearch?.addEventListener("input", () => {
+      state.archiveQuery = archiveSearch.value || "";
+      renderArchive();
+    });
+    archiveSearch?.addEventListener("search", () => {
+      state.archiveQuery = archiveSearch.value || "";
+      renderArchive();
     });
 
     document.getElementById("btnComposeOffer").addEventListener("click", () => composeOfferDocument({ save: true }));

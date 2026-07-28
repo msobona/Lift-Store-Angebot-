@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WAMAS Lift & Store – SSI SCHÄFER Kalkulator</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260728matsum" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260728archive" />
 </head>
 <body>
   <header class="topbar">
@@ -445,10 +445,21 @@
       <div class="archive-head">
         <h2>Archiv</h2>
         <p>
-          Gespeicherte Kalkulationen und Gesamtangebote — mit <strong>Projektname</strong> und Version
-          <strong>A1</strong>, <strong>A2</strong>, … bei Bearbeitung.
+          Gespeicherte Kalkulationen und Gesamtangebote — Versionen desselben Projekts
+          (<strong>Index A</strong>, <strong>B</strong>, …) sind in Projektordnern gruppiert.
           Mit <strong>Bearbeiten</strong> laden, anpassen und unter „Angebot“ die nächste Version erzeugen.
         </p>
+        <div class="archive-search-row">
+          <label class="archive-search">
+            <span class="visually-hidden">Archiv durchsuchen</span>
+            <input
+              type="search"
+              id="archiveSearch"
+              placeholder="Suchen: Projekt, Firma, Nummer, Index…"
+              autocomplete="off"
+            />
+          </label>
+        </div>
         <div class="archive-toolbar" id="archiveToolbar" hidden>
           <label class="archive-select-all">
             <input type="checkbox" id="archiveSelectAll" />
@@ -470,6 +481,6 @@
     <span>Lizenz- &amp; IT-Kalkulation · SSI SCHÄFER</span>
   </footer>
 
-  <script src="/static/app.js?v=20260728matsum"></script>
+  <script src="/static/app.js?v=20260728archive"></script>
 </body>
 </html>
