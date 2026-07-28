@@ -970,8 +970,20 @@ textarea:focus {
   word-break: break-all;
 }
 
-#view-offer .offer-setup .form-actions {
-  flex-wrap: wrap;
+.oracle-clause-box:has(#offerIncludeOracleTerms:checked) {
+  border-color: var(--ssi-navy, #003366);
+  background: #f3f6fa;
+}
+
+.oracle-clause-box:has(#offerIncludeOracleTerms:checked) .oracle-clause-quote {
+  background: #fff;
+}
+
+@media (max-width: 960px) {
+  .offer-adjust-grid {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
 }
 
 .preview-scope {
