@@ -256,6 +256,77 @@ main {
   gap: 0.8rem 1rem;
 }
 
+.it-extensions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.it-ext-card {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0.65rem 0.85rem;
+  padding: 0.85rem 0.95rem;
+  background: #fafafa;
+  border: 1px solid #ececec;
+}
+
+.it-ext-head {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.it-ext-billing {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.chip-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ssi-muted);
+  background: #fff;
+  border: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.chip-radio:has(input:checked) {
+  color: var(--ssi-ink);
+  border-color: var(--ssi-yellow);
+  background: #fffdf0;
+}
+
+.chip-radio input {
+  margin: 0;
+}
+
+.it-ext-card .span-2 {
+  grid-column: 1 / -1;
+}
+
+.it-ext-card.billing-hours .it-ext-amount {
+  display: none;
+}
+
+.it-ext-card.billing-amount .it-ext-hours {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .it-ext-card {
+    grid-template-columns: 1fr;
+  }
+}
+
 .qty-pair-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

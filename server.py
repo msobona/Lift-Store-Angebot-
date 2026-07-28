@@ -931,8 +931,13 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
 
 
 class ItCustomExtension(BaseModel):
+    title: str = ""
     description: str = ""
     hours: float = Field(0, ge=0, le=1000)
+    # Direkter Verkaufsbetrag in CHF (z. B. Hardware) statt Stunden × Satz
+    amountChf: float = Field(0, ge=0, le=10_000_000)
+    # "hours" | "amount"
+    billing: str = "hours"
 
 
 class ItOfferRequest(BaseModel):
@@ -1111,19 +1116,45 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
     )
 
     for idx, ext in enumerate(payload.customExtensions[:5], start=1):
-        if not ext.description and not ext.hours:
+        title = (ext.title or "").strip()
+        desc = (ext.description or "").strip()
+        billing = (ext.billing or "hours").strip().lower()
+        if billing not in {"hours", "amount"}:
+            billing = "hours"
+        hours = float(ext.hours or 0)
+        amount_chf = float(ext.amountChf or 0)
+        if not title and not desc and hours <= 0 and amount_chf <= 0:
             continue
-        lines.append(
-            {
-                "sku": f"IT-EXT-{idx}",
-                "name": f"Erweiterung {idx}",
-                "description": ext.description or f"Projektspezifische Erweiterung {idx}",
-                "qty": 1,
-                "hours": round(float(ext.hours), 2),
-                "amount": round(float(ext.hours) * hourly, 2),
-                "category": "custom",
-            }
-        )
+        if billing == "amount":
+            if amount_chf <= 0:
+                continue
+            lines.append(
+                {
+                    "sku": f"IT-EXT-{idx}",
+                    "name": title or f"Erweiterung {idx}",
+                    "description": desc or "Projektspezifische Position (Betrag CHF).",
+                    "qty": 1,
+                    "hours": 0,
+                    "amount": round(amount_chf, 2),
+                    "category": "custom",
+                    "billing": "amount",
+                }
+            )
+        else:
+            if hours <= 0:
+                continue
+            lines.append(
+                {
+                    "sku": f"IT-EXT-{idx}",
+                    "name": title or f"Erweiterung {idx}",
+                    "description": desc or f"Projektspezifische Erweiterung {idx}",
+                    "qty": 1,
+                    "hours": round(hours, 2),
+                    "amount": round(hours * hourly, 2),
+                    "category": "custom",
+                    "billing": "hours",
+                }
+            )
 
     work_hours = round(sum(float(l["hours"] or 0) for l in lines if l["category"] != "travel"), 2)
     work_amount = round(sum(float(l["amount"] or 0) for l in lines if l["category"] != "travel"), 2)
@@ -1223,7 +1254,14 @@ def calculate_it_offer(payload: ItOfferRequest) -> Dict[str, Any]:
             {
                 "title": "Projektspezifische Erweiterungen",
                 "amount": round_chf2(sum(c["amount"] for c in customs)),
-                "bullets": [c["description"] for c in customs],
+                "bullets": [
+                    (
+                        f"{c['name']}: {c['description']}"
+                        if c.get("description")
+                        else c["name"]
+                    )
+                    for c in customs
+                ],
             }
         )
     offer_sections.append(
@@ -1923,10 +1961,29 @@ def compose_offer(payload: ComposeOfferRequest):
                 }
             )
         for ext in it_cfg.get("customExtensions") or []:
-            if float(ext.get("hours") or 0) <= 0 and not (ext.get("description") or "").strip():
-                continue
-            desc = (ext.get("description") or "").strip() or "Projektspezifische Erweiterung"
-            it_items.append({"name": desc, "description": "Projektspezifische Erweiterung."})
+            title = (ext.get("title") or "").strip()
+            desc = (ext.get("description") or "").strip()
+            billing = (ext.get("billing") or "hours").strip().lower()
+            hours = float(ext.get("hours") or 0)
+            amount_chf = float(ext.get("amountChf") or 0)
+            if billing == "amount":
+                if amount_chf <= 0 and not title and not desc:
+                    continue
+            else:
+                if hours <= 0 and not title and not desc:
+                    continue
+            it_items.append(
+                {
+                    "name": title or desc or "Projektspezifische Erweiterung",
+                    "description": desc
+                    if title
+                    else (
+                        "Position mit Betrag CHF."
+                        if billing == "amount"
+                        else "Projektspezifische Erweiterung."
+                    ),
+                }
+            )
         if float((it_totals or {}).get("travelAmount") or 0) > 0:
             it_items.append(
                 {

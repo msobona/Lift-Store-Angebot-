@@ -842,8 +842,16 @@
     const exts = cfg.customExtensions || [];
     for (let i = 1; i <= 5; i += 1) {
       const ext = exts[i - 1] || {};
+      setFormValue(itForm, `extTitle${i}`, ext.title || "");
       setFormValue(itForm, `extDesc${i}`, ext.description || "");
       setFormValue(itForm, `extHours${i}`, ext.hours ?? 0);
+      setFormValue(itForm, `extAmount${i}`, ext.amountChf ?? 0);
+      const billing = ext.billing === "amount" ? "amount" : "hours";
+      const radio = itForm.querySelector(`input[name="extBilling${i}"][value="${billing}"]`);
+      if (radio) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event("change", { bubbles: true }));
+      }
     }
   }
 
@@ -1892,17 +1900,70 @@
 
   function renderItExtensions() {
     const root = document.getElementById("itExtensions");
+    const prev = {};
+    for (let i = 1; i <= 5; i += 1) {
+      prev[i] = {
+        title: itForm[`extTitle${i}`]?.value || "",
+        desc: itForm[`extDesc${i}`]?.value || "",
+        hours: itForm[`extHours${i}`]?.value || "0",
+        amount: itForm[`extAmount${i}`]?.value || "0",
+        billing: itForm.querySelector(`input[name="extBilling${i}"]:checked`)?.value || "hours",
+      };
+    }
     root.innerHTML = "";
     for (let i = 1; i <= 5; i += 1) {
-      root.innerHTML += `
-        <label>Erweiterung ${i} Beschreibung
-          <input name="extDesc${i}" placeholder="Beschreibung …" />
+      const p = prev[i];
+      const card = document.createElement("div");
+      card.className = "it-ext-card";
+      card.dataset.extIndex = String(i);
+      card.innerHTML = `
+        <div class="it-ext-head">
+          <strong>Position ${i}</strong>
+          <div class="it-ext-billing" role="group" aria-label="Verrechnung Position ${i}">
+            <label class="chip-radio">
+              <input type="radio" name="extBilling${i}" value="hours" ${p.billing !== "amount" ? "checked" : ""} />
+              Stunden
+            </label>
+            <label class="chip-radio">
+              <input type="radio" name="extBilling${i}" value="amount" ${p.billing === "amount" ? "checked" : ""} />
+              Betrag CHF
+            </label>
+          </div>
+        </div>
+        <label>Titel
+          <input name="extTitle${i}" placeholder="z. B. TouchPanel 18.5&quot; / RFID-Reader" value="${escapeHtml(p.title)}" />
         </label>
-        <label>Erweiterung ${i} Stunden
-          <input name="extHours${i}" type="number" min="0" max="1000" step="0.5" value="0" />
+        <label class="it-ext-value it-ext-hours">Stunden
+          <input name="extHours${i}" type="number" min="0" max="1000" step="0.5" value="${escapeHtml(p.hours)}" />
+        </label>
+        <label class="it-ext-value it-ext-amount">Betrag CHF
+          <input name="extAmount${i}" type="number" min="0" max="10000000" step="0.01" value="${escapeHtml(p.amount)}" />
+        </label>
+        <label class="span-2">Detailtext
+          <textarea name="extDesc${i}" rows="2" placeholder="Ausführliche Beschreibung für das Angebot …">${escapeHtml(p.desc)}</textarea>
         </label>`;
+      root.appendChild(card);
+      const syncBilling = () => {
+        const mode = card.querySelector(`input[name="extBilling${i}"]:checked`)?.value || "hours";
+        card.classList.toggle("billing-amount", mode === "amount");
+        card.classList.toggle("billing-hours", mode !== "amount");
+      };
+      card.querySelectorAll(`input[name="extBilling${i}"]`).forEach((el) => {
+        el.addEventListener("change", () => {
+          syncBilling();
+          recalcIt();
+        });
+      });
+      card.querySelectorAll("input, textarea").forEach((el) => {
+        if (el.name?.startsWith("extBilling")) return;
+        el.addEventListener("change", () => recalcIt());
+        el.addEventListener("input", () => {
+          if (el.name?.startsWith("extTitle") || el.name?.startsWith("extDesc")) return;
+          recalcIt();
+        });
+      });
+      syncBilling();
     }
-    root.querySelectorAll("input").forEach((el) => el.addEventListener("change", () => recalcIt()));
   }
 
   function collectItPayload() {
@@ -1914,9 +1975,13 @@
     });
     const customExtensions = [];
     for (let i = 1; i <= 5; i += 1) {
+      const billing = itForm.querySelector(`input[name="extBilling${i}"]:checked`)?.value || "hours";
       customExtensions.push({
+        title: String(data.get(`extTitle${i}`) || "").trim(),
         description: String(data.get(`extDesc${i}`) || "").trim(),
         hours: Number(data.get(`extHours${i}`) || 0),
+        amountChf: Number(data.get(`extAmount${i}`) || 0),
+        billing,
       });
     }
     return {
@@ -1979,12 +2044,17 @@
       return Number(l.hours) > 0 || Number(l.amount) > 0 || ["IT-DEVICES", "IT-ZONES", "IT-OPENINGS"].includes(l.sku);
     });
 
-    document.getElementById("itLines").innerHTML = visibleLines.map((line) => `
+    document.getElementById("itLines").innerHTML = visibleLines.map((line) => {
+      const hoursCell = line.billing === "amount" || (Number(line.hours) === 0 && line.category === "custom")
+        ? "—"
+        : (line.hours || 0);
+      return `
         <tr>
-          <td>${line.name}<div class="muted">${line.description || ""}${line.note ? ` · ${line.note}` : ""}${line.amountCost != null && marginPercent ? ` · Basis ${money(line.amountCost, c)}` : ""}</div></td>
-          <td>${line.hours || 0}</td>
+          <td>${line.name}<div class="muted">${line.description || ""}${line.note ? ` · ${line.note}` : ""}${line.billing === "amount" ? " · Betrag CHF" : ""}${line.amountCost != null && marginPercent ? ` · Basis ${money(line.amountCost, c)}` : ""}</div></td>
+          <td>${hoursCell}</td>
           <td>${money(line.amount, c)}</td>
-        </tr>`).join("");
+        </tr>`;
+    }).join("");
     const itCost = Number(t.totalAmountCost ?? 0);
     const itSell = Number(t.totalAmount || 0);
     const itDb = t.contributionMarginChf != null
