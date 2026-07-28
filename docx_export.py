@@ -100,6 +100,15 @@ def _money(value: Any, currency: str = "CHF") -> str:
     return f"{currency} {formatted}"
 
 
+def _money_compact(value: Any) -> str:
+    """Betrag ohne Währungskürzel (Spaltenkopf «CHF»)."""
+    try:
+        amount = float(value or 0)
+    except (TypeError, ValueError):
+        amount = 0.0
+    return f"{amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", "'")
+
+
 def _fmt_num(value: Any) -> str:
     if value is None or value == "":
         return ""
@@ -600,9 +609,7 @@ def apply_zusammenfassung_table(
                         except (TypeError, ValueError):
                             qty_text = str(qty_val)
                 if show_price and item.get("amount") is not None:
-                    price_text = _money(
-                        item.get("amount"), item.get("currency") or group.get("currency") or "CHF"
-                    )
+                    price_text = _money_compact(item.get("amount"))
                 add_content_row(
                     table,
                     lines,
@@ -621,10 +628,11 @@ def apply_zusammenfassung_table(
             else:
                 label = f"Total {(group.get('title') or '').strip()}".strip() or "Total"
             if total is not None:
+                # Zusammenfassungstabellen: kompakt ohne «CHF» (steht im Kopf / Kontext)
                 add_total_row(
                     table,
                     label,
-                    _money(total, group.get("currency") or "CHF"),
+                    _money_compact(total),
                     min_height=750,
                 )
 
