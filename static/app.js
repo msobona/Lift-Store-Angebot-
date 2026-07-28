@@ -606,6 +606,14 @@
     return qtyText;
   }
 
+  function moneyCompact(value) {
+    const n = Number(value || 0);
+    return new Intl.NumberFormat("de-CH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number.isFinite(n) ? n : 0);
+  }
+
   function formatDateDe(value) {
     if (!value) return "—";
     const raw = String(value).slice(0, 10);
@@ -1086,20 +1094,20 @@
             bodyRows.push(`
             <tr class="offer-scope-colheads">
               <th scope="col" class="col-content">Position</th>
-              <th scope="col" class="col-price">Preis</th>
-              <th scope="col" class="col-qty">Anzahl</th>
+              <th scope="col" class="col-price">CHF</th>
+              <th scope="col" class="col-qty">Anz.</th>
             </tr>`);
           } else if (showQty) {
             bodyRows.push(`
             <tr class="offer-scope-colheads">
               <th scope="col" class="col-content">Position</th>
-              <th scope="col" class="col-qty">Anzahl</th>
+              <th scope="col" class="col-qty">Anz.</th>
             </tr>`);
           } else {
             bodyRows.push(`
             <tr class="offer-scope-colheads">
               <th scope="col" class="col-content">Position</th>
-              <th scope="col" class="col-price">Preis</th>
+              <th scope="col" class="col-price">CHF</th>
             </tr>`);
           }
         }
@@ -1122,7 +1130,7 @@
             const qtyText = formatScopeQty(item);
             const amount = item.amount != null ? Number(item.amount) : null;
             const priceText = showPrice && amount != null
-              ? money(amount, item.currency || group.currency || "CHF")
+              ? moneyCompact(amount)
               : "";
             if (showQty && showPrice) {
               bodyRows.push(`
@@ -1163,25 +1171,26 @@
             }
           });
           if (group.total != null) {
+            const totalCompact = moneyCompact(group.total);
             if (showQty && showPrice) {
               bodyRows.push(`
               <tr class="offer-scope-subtotal">
                 <td class="col-total-label">${escapeHtml(totalLabel)}</td>
-                <td class="col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
+                <td class="col-price"><strong>${escapeHtml(totalCompact)}</strong></td>
                 <td class="col-qty"></td>
               </tr>`);
             } else if (showQty) {
-              // Anzahl-Spalte rechts: in der Totalzeile steht dort der Preis
+              // Anzahl-Spalte rechts: in der Totalzeile steht dort der Preis (kompakt)
               bodyRows.push(`
               <tr class="offer-scope-subtotal">
                 <td class="col-total-label">${escapeHtml(totalLabel)}</td>
-                <td class="col-qty col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
+                <td class="col-qty col-price"><strong>${escapeHtml(totalCompact)}</strong></td>
               </tr>`);
             } else {
               bodyRows.push(`
               <tr class="offer-scope-subtotal">
                 <td class="col-total-label">${escapeHtml(totalLabel)}</td>
-                <td class="col-price"><strong>${money(group.total, group.currency || "CHF")}</strong></td>
+                <td class="col-price"><strong>${escapeHtml(totalCompact)}</strong></td>
               </tr>`);
             }
           }

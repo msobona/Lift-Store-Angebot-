@@ -1604,6 +1604,9 @@ textarea:focus {
 
 .offer-options-wrap {
   margin: 0 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
 }
 
 .offer-options-table {
@@ -1671,7 +1674,7 @@ textarea:focus {
 }
 
 .offer-options-table .col-content {
-  width: 100%;
+  width: auto;
   line-height: 1.5;
   font-size: 0.98rem;
 }
@@ -1680,29 +1683,67 @@ textarea:focus {
   width: auto;
 }
 
+/* Kompakte Zahlen-Spalten rechts — maximal Platz für Positionstext */
 .offer-options-table .col-qty {
-  width: 4.75rem;
-  min-width: 4.25rem;
+  width: 3.1rem;
+  min-width: 2.85rem;
+  max-width: 3.4rem;
   text-align: right;
   vertical-align: middle;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  padding-left: 0.5rem;
+  font-size: 0.88rem;
+  padding-left: 0.25rem;
+  padding-right: 0.55rem;
+}
+
+/* Nur Anzahl (Festumfang): rechte Spalte etwas breiter für Totalbetrag */
+.offer-options-table.has-qty:not(.has-price) .col-qty {
+  width: 6.25rem;
+  min-width: 5.75rem;
+  max-width: 6.75rem;
 }
 
 .offer-options-table.has-qty:not(.has-price) .col-content,
 .offer-options-table.has-qty:not(.has-price) .col-total-label {
-  width: 100%;
+  width: auto;
+}
+
+.offer-options-table .col-price {
+  width: 6.25rem;
+  min-width: 5.75rem;
+  max-width: 6.75rem;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.88rem;
+  padding-left: 0.25rem;
+  padding-right: 0.55rem;
 }
 
 .offer-options-table.has-price .col-price {
-  width: 8.5rem;
+  width: 6.25rem;
+}
+
+.offer-options-table.has-qty.has-price .col-qty {
+  width: 2.85rem;
+  min-width: 2.6rem;
+  max-width: 3.1rem;
+}
+
+.offer-options-table tr.offer-scope-colheads .col-qty,
+.offer-options-table tr.offer-scope-colheads .col-price {
+  font-size: 0.7rem;
+  letter-spacing: 0.01em;
+  padding-left: 0.25rem;
+  padding-right: 0.55rem;
 }
 
 .offer-optional-section {
-  margin-top: 1.75rem;
-  padding-top: 0.35rem;
+  margin-top: 0.25rem;
+  padding-top: 0.15rem;
 }
 
 .offer-optional-heading {
@@ -1745,13 +1786,6 @@ textarea:focus {
 
 .offer-options-table .col-total-label {
   width: auto;
-}
-
-.offer-options-table .col-price {
-  width: 9.5rem;
-  text-align: right;
-  white-space: nowrap;
-  vertical-align: middle;
 }
 
 .offer-options-table tr.offer-scope-content td {

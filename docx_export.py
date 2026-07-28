@@ -477,9 +477,9 @@ def apply_zusammenfassung_table(
                 tr.remove(tc)
             tcs = tr.findall(qn("w:tc"))
             keep_label, keep_price, keep_qty = tcs[0], tcs[1], tcs[2]
-            qty_w = max(800, total_w // 10)
-            price_w = max(1400, total_w // 5)
-            label_w = max(2000, total_w - price_w - qty_w)
+            qty_w = max(650, total_w // 14)
+            price_w = max(1100, total_w // 7)
+            label_w = max(3200, total_w - price_w - qty_w)
             label_span = max(1, cols - 2)
             _set_grid_span(keep_label, label_span, width_dxa=label_w)
             _set_grid_span(keep_price, 1, width_dxa=price_w)
@@ -499,8 +499,8 @@ def apply_zusammenfassung_table(
                 tr.remove(tc)
             tcs = tr.findall(qn("w:tc"))
             keep_label, keep_right = tcs[0], tcs[-1]
-            right_w = max(900, total_w // 8) if qty is not None else max(1800, total_w // 4)
-            label_w = max(2000, total_w - right_w)
+            right_w = max(700, total_w // 12) if qty is not None else max(1200, total_w // 6)
+            label_w = max(3200, total_w - right_w)
             label_span = max(1, cols - 1)
             _set_grid_span(keep_label, label_span, width_dxa=label_w)
             _set_grid_span(keep_right, 1, width_dxa=right_w)
@@ -541,8 +541,8 @@ def apply_zusammenfassung_table(
 
         cols = _grid_col_count(table)
         total_w = _table_width_dxa(table)
-        price_w = max(1800, total_w // 4)
-        label_w = max(2000, total_w - price_w)
+        price_w = max(1200, total_w // 6)
+        label_w = max(3200, total_w - price_w)
         label_span = max(1, cols - 1)
         _set_grid_span(keep_label, label_span, width_dxa=label_w)
         _set_grid_span(keep_price, 1, width_dxa=price_w)
@@ -569,10 +569,10 @@ def apply_zusammenfassung_table(
             return
         if show_qty and show_price:
             add_content_row(
-                table, ["Position"], min_height=420, first_bold=True, price="Preis", qty="Anzahl"
+                table, ["Position"], min_height=420, first_bold=True, price="CHF", qty="Anz."
             )
         elif show_qty:
-            add_content_row(table, ["Position"], min_height=420, first_bold=True, qty="Anzahl")
+            add_content_row(table, ["Position"], min_height=420, first_bold=True, qty="Anz.")
         if note:
             add_content_row(table, [note], min_height=500, first_bold=False)
         for group in groups:
