@@ -291,6 +291,57 @@ def _classify_scope_groups(scope_groups: List[Dict[str, Any]]) -> Dict[str, List
     return {"license": lic, "licenseOptions": lic_opt, "it": it, "material": material}
 
 
+def _append_ssi_signature_controls(doc: Document) -> bool:
+    """Hängt die SSI-Unterschriften-Inhaltssteuerelemente (Name/Funktion) aus der Logimat-Vorlage an."""
+    from copy import deepcopy
+
+    from docx_export import find_placeholder_template
+
+    try:
+        src = Document(str(find_placeholder_template()))
+    except Exception:
+        return False
+
+    children = list(src.element.body)
+    start = None
+    end = None
+    for i, child in enumerate(children):
+        text = _element_text(child).lower()
+        if start is None and "freundliche" in text and "gr" in text:
+            start = i
+        aliases = [(a.get(qn("w:val")) or "") for a in child.iter(qn("w:alias"))]
+        if any("Unterschrift" in a or "Funktion" in a for a in aliases):
+            end = i
+    if end is None:
+        return False
+    # Nur Gruss + Firma + Unterschriften-Tabelle (nicht den ganzen Vertragsschluss)
+    if start is None:
+        start = end
+        # ein paar Leerabsätze davor mitnehmen
+        start = max(0, end - 8)
+
+    # Bevorzugt ab «Freundliche Grüsse»
+    greet_idx = None
+    for i in range(start, end + 1):
+        if "freundliche" in _element_text(children[i]).lower():
+            greet_idx = i
+            break
+    if greet_idx is not None:
+        start = greet_idx
+
+    target = doc.element.body
+    sect = target.find(qn("w:sectPr"))
+    for child in children[start : end + 1]:
+        if child.tag == qn("w:sectPr"):
+            continue
+        cloned = deepcopy(child)
+        if sect is not None:
+            sect.addprevious(cloned)
+        else:
+            target.append(cloned)
+    return True
+
+
 def _add_terms(doc: Document, terms: Dict[str, Any], offer_date: str) -> None:
     if not terms or not (terms.get("sections") or []):
         return
@@ -339,28 +390,33 @@ def _add_terms(doc: Document, terms: Dict[str, Any], offer_date: str) -> None:
             _add_para(doc, "", space_after=6)
 
     closing = terms.get("closing") or {}
-    _add_para(doc, str(closing.get("text") or ""), size_pt=10, space_before=10, space_after=8)
-    greet = closing.get("greeting") or "Freundliche Grüsse"
-    company = closing.get("company") or "SSI SCHÄFER AG"
-    _add_para(doc, f"{greet}\n{company}", size_pt=10, bold=True, space_after=12)
+    if closing.get("text"):
+        _add_para(doc, str(closing.get("text") or ""), size_pt=10, space_before=10, space_after=8)
 
-    sigs = closing.get("signatories") or []
-    if sigs:
-        t = doc.add_table(rows=1, cols=min(2, len(sigs)) or 1)
-        t.autofit = True
-        for idx, sig in enumerate(sigs[:2]):
-            cell = t.rows[0].cells[idx]
-            lines = [
-                "______________________________",
-                str(sig.get("name") or ""),
-                str(sig.get("title") or ""),
-            ]
-            if sig.get("role"):
-                lines.append(str(sig.get("role")))
-            if sig.get("email"):
-                lines.append(str(sig.get("email")))
-            _set_cell_paragraphs(cell, [ln for ln in lines if ln], first_bold=False, size_pt=9)
-        _add_para(doc, "", space_after=10)
+    # SSI-Unterschriften als echte Word-Inhaltssteuerelemente (Name + Funktion),
+    # damit sie in Word erkannt und später nachgepflegt werden können.
+    used_sdt = _append_ssi_signature_controls(doc)
+    if not used_sdt:
+        greet = closing.get("greeting") or "Freundliche Grüsse"
+        company = closing.get("company") or "SSI SCHÄFER AG"
+        _add_para(doc, f"{greet}\n{company}", size_pt=10, bold=True, space_after=12)
+        sigs = closing.get("signatories") or []
+        if sigs:
+            t = doc.add_table(rows=1, cols=min(2, len(sigs)) or 1)
+            t.autofit = True
+            for idx, sig in enumerate(sigs[:2]):
+                cell = t.rows[0].cells[idx]
+                lines = [
+                    "______________________________",
+                    str(sig.get("name") or ""),
+                    str(sig.get("title") or ""),
+                ]
+                if sig.get("role"):
+                    lines.append(str(sig.get("role")))
+                if sig.get("email"):
+                    lines.append(str(sig.get("email")))
+                _set_cell_paragraphs(cell, [ln for ln in lines if ln], first_bold=False, size_pt=9)
+            _add_para(doc, "", space_after=10)
 
     place = f"Schaffhauserstrasse 10, 8213 Neunkirch{(' · ' + offer_date) if offer_date else ''}"
     acc = doc.add_table(rows=1, cols=2)
@@ -767,6 +823,17 @@ def build_offer_docx_html(offer: Dict[str, Any]) -> bytes:
     ).strip(" ·")
     _add_para(doc, footer, size_pt=8, color=SSI_MUTED, space_before=16, space_after=0)
 
+    # Falls keine Vertragsbedingungen: Unterschriften-Steuerelemente trotzdem anhängen
+    aliases = [
+        (a.get(qn("w:val")) or "")
+        for a in doc.element.body.iter(qn("w:alias"))
+    ]
+    if not any("Unterschrift" in a or "Funktion" in a for a in aliases):
+        _append_ssi_signature_controls(doc)
+
+    from docx_export import apply_sdt_contact_fields, build_template_context
+
     out = io.BytesIO()
     doc.save(out)
-    return out.getvalue()
+    # Name-/Funktion-Inhaltssteuerelemente mit Signatur-Kontext befüllen
+    return apply_sdt_contact_fields(out.getvalue(), build_template_context(offer))

@@ -1161,8 +1161,8 @@ def build_template_context(offer: Dict[str, Any]) -> Dict[str, Any]:
         return "\n".join(parts)
 
     def _sig_details(title: str, role: str, email: str = "") -> str:
-        parts = [p for p in [title, role, email] if p]
-        return "\n".join(parts)
+        # Word-Feld «Funktion»: Titel/Rolle (E-Mail gehört nicht in die Funktion)
+        return _position(title, role)
 
     return {
         "dokument_label": content.get("documentLabel") or "Angebot / Preisliste",
