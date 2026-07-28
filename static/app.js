@@ -25,9 +25,10 @@
   };
 
   const roundSellChf = (value) => {
+    // Lizenz-VK wie Excel: RUNDEN(x*0.1;0)*10
     const n = Number(value || 0);
     if (!Number.isFinite(n) || n <= 0) return 0;
-    return Math.ceil(n - 1e-9);
+    return Math.floor(n / 10 + 0.5 + 1e-12) * 10;
   };
 
   const money = (value, currency = "CHF") => {
@@ -60,11 +61,18 @@
     };
   }
 
+  function applyLicenseMargin(costChf, marginPercent) {
+    const m = Number(marginPercent || 0) / 100;
+    if (m >= 1) return roundSellChf(costChf);
+    if (m <= 0) return roundSellChf(costChf);
+    return roundSellChf(Number(costChf || 0) / (1 - m));
+  }
+
   function icEurToSellChf(eurAmount) {
     const { marginPercent, eurToChfRate } = licensePricing();
-    // Erst Kurs EUR→CHF (Einkauf CHF), dann Marge → auf ganze CHF aufrunden
+    // Erst Kurs EUR→CHF (Einkauf CHF), dann DB-Marge EP/(1−m) → auf 10 CHF
     const costChf = Number(eurAmount || 0) * eurToChfRate;
-    return roundSellChf(costChf * (1 + marginPercent / 100));
+    return applyLicenseMargin(costChf, marginPercent);
   }
 
   function icEurToCostChf(eurAmount) {
@@ -1726,7 +1734,9 @@
     const costChf = t.costChf != null ? Number(t.costChf) : icEurToCostChf(t.net);
     const sellEur = t.sellNetEur != null
       ? Number(t.sellNetEur)
-      : Math.round(Number(t.net || 0) * (1 + marginPercent / 100) * 100) / 100;
+      : (marginPercent > 0
+        ? Math.round(Number(t.net || 0) / (1 - marginPercent / 100) * 100) / 100
+        : Number(t.net || 0));
     const marginEur = t.marginAmountEur != null
       ? Number(t.marginAmountEur)
       : Math.round((sellEur - Number(t.net || 0)) * 100) / 100;
@@ -1738,11 +1748,11 @@
     document.getElementById("licenseOfferNo").textContent = offer.meta.offerNumber;
     document.getElementById("licenseGross").textContent = money(sellChf, sell);
     document.getElementById("sllBadge").textContent =
-      `SLL: ${t.sllCount} · Rabatt ${discPct}% (${applySll ? "im VK" : "nur intern"}) · Kurs ${fx} · Marge ${marginPercent}%`;
+      `SLL: ${t.sllCount} · Rabatt ${discPct}% (${applySll ? "im VK" : "nur intern"}) · Kurs ${fx} · DB-Marge ${marginPercent}%`;
     document.getElementById("licenseMeta").innerHTML = `
       <div><strong>${offer.customer.company}</strong>${offer.customer.projectName ? ` · ${offer.customer.projectName}` : ""}</div>
       <div>${offer.configuration.instanceCount}× ${offer.configuration.instanceName}</div>
-      <div>Einkauf EUR → Kurs ${fx} → Einkauf CHF → +${marginPercent}% Marge → Verkauf CHF</div>`;
+      <div>Einkauf EUR → Kurs ${fx} → EP CHF → DB-Marge ${marginPercent}% (EP/(1−m)) → VK auf 10 CHF</div>`;
     document.getElementById("licenseLines").innerHTML = [
       ...offer.lines.map((line) => {
         const icTotal = line.totalIcEur != null ? Number(line.totalIcEur) : null;
@@ -1777,7 +1787,7 @@
     document.getElementById("licenseTotals").innerHTML = `
       <div class="row"><span>Einkauf Total (nach internem SLL-Rabatt)</span><span>${money(t.net, ic)}</span></div>
       <div class="row"><span>Einkauf CHF (× ${fx})</span><span>${money(costChf, sell)}</span></div>
-      <div class="row"><span>Marge ${marginPercent}% auf CHF</span><span>+ ${money(marginChf, sell)}</span></div>
+      <div class="row"><span>DB-Marge ${marginPercent}% vom VK</span><span>+ ${money(marginChf, sell)}</span></div>
       ${linesSum != null ? `<div class="row"><span>Verkauf Positionen</span><span>${money(linesSum, sell)}</span></div>` : ""}
       <div class="row"><span>SLL-Mengenrabatt Verkauf${applySll ? "" : " (nicht freigegeben)"}</span><span>${applySll && discSell ? `− ${money(discSell, sell)}` : "—"}</span></div>
       <div class="row"><span>Verkauf EUR (Referenz)</span><span>${money(sellEur, ic)}</span></div>

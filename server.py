@@ -154,11 +154,7 @@ def offer_path(offer_id: str) -> Path:
 
 
 def round_sell_chf(value: Any) -> float:
-    """Verkaufspreise: immer auf ganze CHF aufrunden (z. B. 2618.89 → 2619.00).
-
-    Aufrunden in der Kalkulation, damit Positionspreise und Totale im Angebot
-    als glatte Frankenbeträge (mit zwei Stellen .00) ausgewiesen werden.
-    """
+    """Allgemeine Verkaufspreise: auf ganze CHF aufrunden (IT / sonstige)."""
     try:
         x = float(value or 0)
     except (TypeError, ValueError):
@@ -167,6 +163,36 @@ def round_sell_chf(value: Any) -> float:
         return 0.0
     # -1e-9 vermeidet Floating-Point-Artefakte (z. B. 10.0 als 9.999999999)
     return float(math.ceil(x - 1e-9))
+
+
+def round_license_sell_chf(value: Any) -> float:
+    """Lizenz-Verkaufspreise wie Excel: RUNDEN(Betrag*0.1; 0)*10 → auf 10 CHF.
+
+    Entspricht «Kalkulation LOGIMAT»: kaufmännisch auf die nächsten 10 CHF.
+    """
+    try:
+        x = float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    if x <= 0:
+        return 0.0
+    tenths = x / 10.0
+    # Halb aufrunden (wie Excel RUNDEN)
+    rounded = math.floor(tenths + 0.5 + 1e-12)
+    return float(rounded * 10)
+
+
+def apply_license_margin(cost_chf: float, margin_percent: float) -> float:
+    """VK aus Einkauf CHF mit DB-Marge: EP / (1 − m), gerundet auf 10 CHF.
+
+    Die %-Zahl bleibt die Marge vom Verkaufspreis (wie Excel), nicht ein Aufschlag.
+    """
+    m = float(margin_percent or 0) / 100.0
+    if m >= 1.0:
+        raise HTTPException(status_code=400, detail="Lizenz-Marge muss unter 100% liegen")
+    if m <= 0:
+        return round_license_sell_chf(cost_chf)
+    return round_license_sell_chf(float(cost_chf) / (1.0 - m))
 
 
 def round_chf2(value: Any) -> float:
@@ -431,7 +457,8 @@ class OfferRequest(BaseModel):
     signatory1Id: str = ""
     signatory2Id: str = ""
     # Optional: überschreibt Katalog-Defaults (interne Kalkulation)
-    licenseMarginPercent: Optional[float] = Field(None, ge=0, le=500)
+    # DB-Marge vom Verkaufspreis (wie Excel): VK = EP / (1 − m/100), m < 100
+    licenseMarginPercent: Optional[float] = Field(None, ge=0, lt=100)
     eurToChfRate: Optional[float] = Field(None, gt=0, le=10)
     # SLL-Mengenrabatt ist intern; nur bei True im Verkaufspreis / Kundenangebot
     applySllDiscount: bool = False
@@ -451,10 +478,10 @@ def _apply_license_sell_prices(
     lines: List[Dict[str, Any]],
     *,
     eur_to_chf: float,
-    margin_factor: float,
+    margin_percent: float,
     currency: str,
 ) -> None:
-    """Setzt Verkaufspreise (CHF, aufgerundet) auf Lizenzzeilen."""
+    """Setzt Verkaufspreise (CHF, DB-Marge, auf 10 CHF) auf Lizenzzeilen."""
     for line in lines:
         ic_unit = float(line.get("unitPrice") or 0)
         ic_total = float(line.get("total") or 0)
@@ -463,12 +490,13 @@ def _apply_license_sell_prices(
         line["totalIcEur"] = ic_total
         unit_cost_chf = round(ic_unit * eur_to_chf, 2)
         total_cost_chf = round(ic_total * eur_to_chf, 2)
-        unit_sell = round_sell_chf(unit_cost_chf * margin_factor)
+        unit_sell = apply_license_margin(unit_cost_chf, margin_percent)
         line["unitPrice"] = unit_sell
         if qty:
-            line["total"] = round_sell_chf(unit_sell * qty)
+            # Stückpreis bereits auf 10 CHF; Total = Stück × Menge
+            line["total"] = round_chf2(unit_sell * qty)
         else:
-            line["total"] = round_sell_chf(total_cost_chf * margin_factor)
+            line["total"] = apply_license_margin(total_cost_chf, margin_percent)
         line["currency"] = currency
 
 
@@ -744,18 +772,18 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         else (product.get("eurToChfRate") or 1)
     )
     apply_sll_discount = bool(payload.applySllDiscount)
-    margin_factor = 1.0 + (margin_percent / 100.0)
-    # Reihenfolge: IC EUR → Kurs → Einkauf CHF → Marge → Verkauf CHF (ganze CHF, aufgerundet)
+    if margin_percent >= 100:
+        raise HTTPException(status_code=400, detail="Lizenz-Marge muss unter 100% liegen")
+    # Reihenfolge: IC EUR → Kurs → Einkauf CHF → DB-Marge EP/(1−m) → VK auf 10 CHF
     cost_chf = round(net * eur_to_chf, 2)
-    margin_amount_eur = round(net * (margin_percent / 100.0), 2)
     vat_rate = float(product.get("vatRate") or 0)
     offer_currency = product.get("offerCurrency", "CHF")
 
     _apply_license_sell_prices(
-        lines, eur_to_chf=eur_to_chf, margin_factor=margin_factor, currency=offer_currency
+        lines, eur_to_chf=eur_to_chf, margin_percent=margin_percent, currency=offer_currency
     )
     _apply_license_sell_prices(
-        optional_lines, eur_to_chf=eur_to_chf, margin_factor=margin_factor, currency=offer_currency
+        optional_lines, eur_to_chf=eur_to_chf, margin_percent=margin_percent, currency=offer_currency
     )
 
     # Verkaufs-Nettototal; SLL-Mengenrabatt nur wenn explizit freigegeben
@@ -765,10 +793,14 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
     if apply_sll_discount and discount["percent"] and lines_sell_sum:
         discount_sell_chf = round_chf2(lines_sell_sum * (float(discount["percent"]) / 100.0))
     sell_net_chf = round_chf2(lines_sell_sum - discount_sell_chf)
-    # Referenz EUR: gleicher Schalter für Verkauf
+    # Referenz EUR: gleiche DB-Marge (ohne 10-CHF-Rundung)
     sell_base_eur = net if apply_sll_discount else subtotal
-    sell_net_eur = round(sell_base_eur * margin_factor, 2)
-    contribution_margin_eur = round(sell_net_eur - net, 2)
+    if margin_percent > 0:
+        sell_net_eur = round(sell_base_eur / (1.0 - margin_percent / 100.0), 2)
+    else:
+        sell_net_eur = round(sell_base_eur, 2)
+    margin_amount_eur = round(sell_net_eur - net, 2)
+    contribution_margin_eur = margin_amount_eur
     contribution_margin_chf = round_chf2(sell_net_chf - cost_chf)
     contribution_margin_percent = (
         round((contribution_margin_chf / sell_net_chf) * 100, 1) if sell_net_chf else 0.0
@@ -800,7 +832,10 @@ def calculate_offer(payload: OfferRequest) -> Dict[str, Any]:
         f"SLL-Einheiten: {sll} → Rabatt {discount['percent']}% ({discount['label']})"
         + (" · im Verkaufspreis" if apply_sll_discount else " · nur intern, nicht im Verkaufspreis")
     )
-    scope.append(f"Kurs EUR→CHF {eur_to_chf} · Marge {margin_percent:.0f}% auf Einkauf CHF")
+    scope.append(
+        f"Kurs EUR→CHF {eur_to_chf} · DB-Marge {margin_percent:.0f}% vom VK "
+        f"(EP/(1−m), Rundung auf 10 CHF)"
+    )
 
     ssi_contacts = resolve_ssi_contacts(payload.ssiContact1Id, payload.ssiContact2Id)
     prepared_by = (payload.preparedBy or "").strip() or (ssi_contacts[0].get("name") or "")
@@ -1976,8 +2011,8 @@ def compose_offer(payload: ComposeOfferRequest):
         "adjustmentNotes": adj_notes,
         "grandTotalChf": grand_chf,
         "note": (
-            "Alle Preise in ganzen CHF, exkl. MwSt. "
-            "Leistungsumfang ohne Einzelpreise; Gesamttotal = Summe der Positionen."
+            "Verkaufspreise Lizenzen: DB-Marge vom VK (EP/(1−m)), Rundung auf 10 CHF, exkl. MwSt. "
+            "Festumfang ohne Einzelpreise; Gesamttotal = Summe der Festpositionen."
             " Optionale Lizenzen sind preislich ausgewiesen, aber nicht im Total enthalten."
             + ((" · " + " · ".join(adj_notes)) if adj_notes else "")
         ),
