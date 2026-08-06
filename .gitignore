@@ -1,0 +1,23 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Local runtime / OS
+.env
+.DS_Store
+Thumbs.db
+*.log
+
+# Saved offers stay local; keep folder
+data/offers/*
+!data/offers/.gitkeep
+
+# Editor
+.idea/
+.vscode/
+*.swp
