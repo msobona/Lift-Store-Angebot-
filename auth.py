@@ -51,7 +51,16 @@ class UserUpdate(BaseModel):
 
 
 def _users_path(base_dir: Path) -> Path:
-    return base_dir / "users.json"
+    """Bevorzugt data/users.json (UI), Fallback Projektroot users.json."""
+    data_path = base_dir / "data" / "users.json"
+    root_path = base_dir / "users.json"
+    if data_path.exists():
+        return data_path
+    if root_path.exists():
+        return root_path
+    # Neu anlegen im data/-Ordner (wie in der Benutzerverwaltung beschrieben)
+    data_path.parent.mkdir(parents=True, exist_ok=True)
+    return data_path
 
 
 def _empty_store() -> Dict[str, Any]:
@@ -155,6 +164,10 @@ def _norm_role(role: Any) -> str:
         return "admin"
     if r in {"benutzer", "user"}:
         return "user"
+    if r in {"verkauf", "sale", "vertrieb"}:
+        return "sales"
+    if r in {"lesen", "read", "readonly"}:
+        return "viewer"
     return r
 
 
@@ -360,8 +373,7 @@ def create_auth_router(base_dir: Path) -> APIRouter:
         _write_store(base_dir, store)
         return {"ok": True, "message": f"Benutzer '{body.username}' erstellt.", "user": _public_user(store["users"][-1])}
 
-    @router.put("/users/{username}")
-    def update_user(username: str, body: UserUpdate, request: Request):
+    def _update_user_impl(username: str, body: UserUpdate, request: Request):
         _require_admin(request)
         store = _read_store(base_dir)
         user = _find_user(store, username)
@@ -387,6 +399,41 @@ def create_auth_router(base_dir: Path) -> APIRouter:
             user.pop("password", None)
         _write_store(base_dir, store)
         return {"ok": True, "user": _public_user(user)}
+
+    @router.put("/users/{username}")
+    def update_user(username: str, body: UserUpdate, request: Request):
+        return _update_user_impl(username, body, request)
+
+    # Viele Frontends senden PATCH statt PUT → sonst HTTP 405 Method Not Allowed
+    @router.patch("/users/{username}")
+    def patch_user(username: str, body: UserUpdate, request: Request):
+        return _update_user_impl(username, body, request)
+
+    class PasswordChange(BaseModel):
+        password: str = Field(..., min_length=6)
+        passwordConfirm: Optional[str] = None
+
+    def _set_password_impl(username: str, body: PasswordChange, request: Request):
+        _require_admin(request)
+        if body.passwordConfirm is not None and body.passwordConfirm != body.password:
+            raise HTTPException(status_code=400, detail="Passwörter stimmen nicht überein.")
+        return _update_user_impl(
+            username,
+            UserUpdate(password=body.password),
+            request,
+        )
+
+    @router.put("/users/{username}/password")
+    def put_password(username: str, body: PasswordChange, request: Request):
+        return _set_password_impl(username, body, request)
+
+    @router.patch("/users/{username}/password")
+    def patch_password(username: str, body: PasswordChange, request: Request):
+        return _set_password_impl(username, body, request)
+
+    @router.post("/users/{username}/password")
+    def post_password(username: str, body: PasswordChange, request: Request):
+        return _set_password_impl(username, body, request)
 
     @router.delete("/users/{username}")
     def delete_user(username: str, request: Request):
