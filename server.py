@@ -2617,146 +2617,18 @@ def api_bulk_delete_offers(payload: BulkDeleteRequest):
 
 @app.get("/api/offers/{offer_id}/excel")
 def api_export_excel(offer_id: str):
+    """Excel mit nachvollziehbaren Formeln (Kurs, Marge, EK/VK, DB) und Formatierung."""
     path = offer_path(offer_id)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Angebot nicht gefunden")
     offer = json.loads(path.read_text(encoding="utf-8"))
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Preise"
-    kind = offer.get("kind", "license")
-    meta = offer["meta"]
-    customer = offer["customer"]
-    totals = offer.get("totals") or {}
-    cfg = offer.get("configuration") or offer.get("content", {}).get("configurationSummary") or {}
+    from excel_export import build_offer_excel
 
-    if kind == "offer_document":
-        summary = offer.get("priceSummary") or {}
-        rows = [
-            ["WAMAS Lift & Store – Gesamtangebot / Preisliste"],
-            ["Nummer", meta.get("offerNumber")],
-            ["Datum", meta.get("documentDate")],
-            ["Kunde", customer.get("company")],
-            ["Projekt", customer.get("projectName")],
-            ["Konfiguration", cfg.get("instanceName")],
-            ["Geräte / Zonen / Öffnungen", f'{cfg.get("deviceCount")} / {cfg.get("zoneCount")} / {cfg.get("openingCount")}'],
-            [],
-            ["Pos", "Bereich", "SKU", "Bezeichnung", "Beschreibung", "Menge", "Einzelpreis", "Stunden", "Betrag", "Währung"],
-        ]
-        for line in offer.get("commercialLines") or []:
-            rows.append(
-                [
-                    line.get("pos"),
-                    line.get("section"),
-                    line.get("sku"),
-                    line.get("name"),
-                    line.get("description"),
-                    line.get("qty"),
-                    line.get("unitPrice"),
-                    line.get("hours"),
-                    line.get("amount"),
-                    line.get("currency"),
-                ]
-            )
-        lic = summary.get("license") or {}
-        it = summary.get("it") or {}
-        mat = summary.get("material") or {}
-        rows.extend(
-            [
-                [],
-                ["Zusammenfassung"],
-                ["Softwarelizenzen Verkauf CHF", lic.get("total"), lic.get("currency")],
-                ["IT-Aufwand Total", it.get("total"), it.get("currency")],
-                ["Material Total", mat.get("total"), mat.get("currency")],
-                ["Gesamttotal CHF", summary.get("grandTotalChf"), "CHF"],
-                ["Hinweis", summary.get("note")],
-            ]
-        )
-    elif kind == "it":
-        rows = [
-            ["IT-Kalkulation WAMAS Lift & Store"],
-            ["Nummer", meta.get("offerNumber")],
-            ["Kunde", customer.get("company")],
-            ["Projekt", customer.get("projectName")],
-            ["Realisierungszeitraum", cfg.get("realizationPeriod")],
-            ["Geräte / Zonen / Öffnungen", f'{cfg.get("deviceCount")} / {cfg.get("zoneCount")} / {cfg.get("openingCount")}'],
-            ["Stundensatz", cfg.get("hourlyRate")],
-            [],
-            ["SKU", "Bezeichnung", "Beschreibung", "Menge", "Stunden", "Betrag"],
-        ]
-        for line in offer["lines"]:
-            rows.append(
-                [
-                    line.get("sku"),
-                    line.get("name"),
-                    line.get("description"),
-                    line.get("qty"),
-                    line.get("hours"),
-                    line.get("amount"),
-                ]
-            )
-        rows.extend(
-            [
-                [],
-                ["IT-Aufwand Stunden", totals.get("workHours")],
-                ["IT-Aufwand Einkauf CHF", totals.get("workAmountCost")],
-                ["Reisekosten Einkauf CHF", totals.get("travelAmountCost")],
-                ["Marge %", totals.get("marginPercent")],
-                ["Marge CHF", totals.get("marginAmount")],
-                ["Fiktiver EK-Faktor (VK÷x)", totals.get("internalCostFactor")],
-                ["Fiktiver EK intern CHF", totals.get("impliedTotalCostChf")],
-                ["Deckungsbeitrag CHF / DB", totals.get("contributionMarginChf")],
-                ["DB % vom Verkauf", totals.get("contributionMarginPercent")],
-                ["Verkauf Total CHF", totals.get("totalAmount")],
-            ]
-        )
-    else:
-        rows = [
-            ["WAMAS Lift & Store – License Calculator (IC)"],
-            ["Nummer", meta.get("offerNumber")],
-            ["Kunde", customer.get("company")],
-            ["Instance", cfg.get("instanceName")],
-            ["SLL", totals.get("sllCount")],
-            ["Marge %", totals.get("marginPercent")],
-            ["Kurs EUR→CHF", totals.get("eurToChfRate")],
-            [],
-            ["SKU", "Bezeichnung", "Menge", "IC EUR", "Verkauf CHF", "SLL"],
-        ]
-        for line in offer["lines"]:
-            rows.append(
-                [
-                    line.get("sku"),
-                    line.get("name"),
-                    line.get("qty"),
-                    line.get("totalIcEur"),
-                    line.get("total"),
-                    line.get("sllUnits", 0),
-                ]
-            )
-        rows.extend(
-            [
-                [],
-                ["IC Zwischensumme EUR", totals.get("subtotal")],
-                ["IC Rabatt EUR", totals.get("discountAmount")],
-                ["IC Total EUR", totals.get("net")],
-                ["Marge EUR", totals.get("marginAmountEur")],
-                ["Verkauf EUR", totals.get("sellNetEur")],
-                ["Einkauf CHF (IC×Kurs)", totals.get("costChf")],
-                ["Verkauf CHF", totals.get("sellNetChf")],
-                ["Deckungsbeitrag EUR", totals.get("contributionMarginEur")],
-                ["Deckungsbeitrag CHF / DB", totals.get("contributionMarginChf")],
-                ["DB % vom Verkauf", totals.get("contributionMarginPercent")],
-            ]
-        )
-
-    for row in rows:
-        ws.append(row)
-    stream = io.BytesIO()
-    wb.save(stream)
-    stream.seek(0)
+    data = build_offer_excel(offer)
+    meta = offer.get("meta") or {}
     filename = f"{meta.get('offerNumber', offer_id)}.xlsx"
     return StreamingResponse(
-        stream,
+        io.BytesIO(data),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
