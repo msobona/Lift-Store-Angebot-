@@ -18,9 +18,9 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from openpyxl import Workbook
 from pydantic import BaseModel, Field
 
+from auth import create_auth_router
 from docx_export import build_offer_docx, resolve_docx_layout
 from pdf_export import PdfConversionError, convert_docx_bytes_to_pdf
 
@@ -51,6 +51,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(create_auth_router(BASE_DIR))
 
 
 def load_catalog() -> Dict[str, Any]:

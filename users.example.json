@@ -1,0 +1,8 @@
+[
+  {
+    "username": "admin",
+    "password": "REPLACE_WITH_SHA256_OR_DELETE_FILE_TO_AUTOCREATE",
+    "displayName": "Administrator",
+    "role": "admin"
+  }
+]
